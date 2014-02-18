@@ -1,0 +1,14 @@
+{
+	"name": "earthit/cmip-rest",
+	"description": "Collection-Modifiers-ID-Property REST framework",
+	"require": {
+		"php": ">=5.2.0",
+		"ryprop/nife": "~0.0.1",
+		"earthit/schema": "~0.0.1"
+	},
+	"autoload": {
+		"psr-0": {
+			"EarthIT_CMIPREST_": "lib/"
+		}
+	}
+}
