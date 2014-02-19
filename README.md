@@ -43,3 +43,8 @@ When interpreting an ID given in a URL or in JSON, it must be
 converted to its component fields.  Even if there really is only a
 single ID field int the database record, the ID data from JSON or the
 URL must be converted to the correct type.
+
+Field names may be translated between naming conventions when loading
+and storing.  The naming convention for tables and columns in Postgres
+seems to be to use squishedtogetherlowercase, which is convenient, but
+shouldn't be relied upon.
