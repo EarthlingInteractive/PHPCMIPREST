@@ -7,6 +7,7 @@
  */
 class EarthIT_CMIPREST_CMIPRESTRequest
 {
+	public    $userId;
 	protected $method;
 	protected $resourceCollectionName;
 	protected $resourceInstanceId;
@@ -26,6 +27,7 @@ class EarthIT_CMIPREST_CMIPRESTRequest
 		$this->content = $content;
 	}
 	
+	public function getUserId() { return $this->userId; }
 	public function getMethod() { return $this->method; }
 	public function getResourceCollectionName() { return $this->resourceCollectionName; }
 	public function getResourceInstanceId() { return $this->resourceInstanceId; }

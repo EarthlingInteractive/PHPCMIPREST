@@ -120,8 +120,13 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 	//// Action conversion
 	
 	protected function cmipRequestToUserAction( EarthIT_CMIPREST_CMIPRESTRequest $crr ) {
-		$userId = null; // Where to get it???
+		$userId = $crr->getUserId();
 		$resourceClass = $this->registry->getSchema()->getResourceClass( EarthIT_Schema_WordUtil::depluralize($crr->getResourceCollectionName()) );
+		
+		if( !$resourceClass->hasRestService() ) {
+			throw new EarthIT_CMIPREST_ResourceNotExposedViaService("'".$resourceClass->getName()."' records are not exposed via services");
+		}
+		
 		switch( $crr->getMethod() ) {
 		case 'GET': case 'HEAD':
 			if( $itemId = $crr->getResourceInstanceId() ) {
@@ -186,7 +191,17 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 	 * to postAuthorizeSearchResult to determine is they are allowed.
 	 */
 	protected function preAuthorizeAction( EarthIT_CMIPREST_UserAction $act, array &$explanation ) {
-		return true;
+		// TODO: Move implementation to a separate permission checker class
+		$rc = $act->getResourceClass();
+		$rcName = $rc->getName();
+		if( $rc->membersArePublic() ) {
+			// TODO: this only means visible.
+			$explanation[] = "{$rcName} records are public";
+			return true;
+		} else {
+			$explanation[] = "{$rcName} records are NOT public";
+			return false;
+		}
 	}
 	
 	protected function postAuthorizeSearchResult( $userId, EarthIT_Schema_ResourceClass $rc, array $itemData, array &$explanation ) {
@@ -280,9 +295,34 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 		}
 	}
 	
+	public static function errorStructure( $message, array $notes=array() ) {
+		return array(
+			'errors' => array(
+				array(
+					'message' => $message,
+					'notes' => $notes
+				)
+			)
+		);
+	}
+	
+	public static function errorResponse( $status, $message, array $notes=array() ) {
+		$result = self::errorStructure( $message, $notes );
+		return Nife_Util::httpResponse( $status, new EarthIT_JSON_PrettyPrintedJSONBlob($result), 'application/json' );
+	}
+	
 	public function handle( EarthIT_CMIPREST_CMIPRESTRequest $crr ) {
-		$act = $this->cmipRequestToUserAction($crr);
-		$result = $this->doAction($act);
-		return Nife_Util::httpResponse( 200, new EarthIT_JSON_PrettyPrintedJSONBlob($result), 'application/json' );
+		try {
+			$act = $this->cmipRequestToUserAction($crr);
+			$result = $this->doAction($act);
+			return Nife_Util::httpResponse( 200, new EarthIT_JSON_PrettyPrintedJSONBlob($result), 'application/json' );
+		} catch( EarthIT_CMIPREST_ActionUnauthorized $un ) {
+			$status = $act->getUserId() === null ? 401 : 403;
+			return self::errorResponse( $status, $un->getAction()->getActionDescription(), $un->getNotes() );
+		} catch( EarthIT_Schema_NoSuchResourceClass $un ) {
+			return self::errorResponse( 404, $un->getMessage() );
+		} catch( EarthIT_CMIPREST_ResourceNotExposedViaService $un ) {
+			return self::errorResponse( 404, $un->getMessage() );
+		}
 	}
 }
