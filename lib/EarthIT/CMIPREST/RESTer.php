@@ -185,7 +185,7 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 	}
 	
 	/**
-	 * Determine if an action is allowed without actually doing it.
+	 * Determine if an action is allowed before actually doing it.
 	 * For search actions, this may return null to indicate that
 	 * authorization requires the actual search results, which will be passed
 	 * to postAuthorizeSearchResult to determine is they are allowed.
@@ -196,6 +196,7 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 		$rcName = $rc->getName();
 		if( $rc->membersArePublic() ) {
 			// TODO: this only means visible.
+			// It shouldn't allow them to do anything besides searching and getting
 			$explanation[] = "{$rcName} records are public";
 			return true;
 		} else {
@@ -312,6 +313,8 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 	}
 	
 	public function handle( EarthIT_CMIPREST_CMIPRESTRequest $crr ) {
+		// TODO: Put exception -> response mapping in its own function
+		
 		try {
 			$act = $this->cmipRequestToUserAction($crr);
 			$result = $this->doAction($act);
