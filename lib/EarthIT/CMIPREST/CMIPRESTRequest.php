@@ -3,7 +3,7 @@
 /**
  * Represents a request to a REST service.
  * All strings are those given by the client, untranslated.
- * Content, if not null, is decoded.
+ * Content, if not null, is already decoded.
  */
 class EarthIT_CMIPREST_CMIPRESTRequest
 {

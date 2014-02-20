@@ -14,7 +14,9 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 
 	protected static function getIdRegex( EarthIT_Schema_ResourceClass $rc ) {
 		$pk = $rc->getPrimaryKey();
-		if( $pk === null ) throw new Exception("No ID regex because no primary key for ".$rc->getName().".");
+		if( $pk === null or count($pk->getFieldNames()) == 0 ) {
+			throw new Exception("No ID regex because no primary key for ".$rc->getName().".");
+		}
 		
 		$fields = $rc->getFields();
 		$parts = array();
@@ -52,7 +54,9 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 		return $idFieldValues;
 	}
 
-	protected function restName( EarthIT_Schema_ResourceClass $rc, EarthIT_Schema_Field $f ) {
+	//// Field conversion
+	
+	protected function fieldRestName( EarthIT_Schema_ResourceClass $rc, EarthIT_Schema_Field $f ) {
 		// Josh's priorities with respect to naming:
 		// 1) field names in JSON responses and query parameters should be identical
 		// 2) field names in JSON/query parameters should match those in the database
@@ -64,18 +68,56 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 		return EarthIT_Schema_WordUtil::minimize($f->getName());
 	}
 	
-	protected function dbRecordToRestObject( EarthIT_Schema_ResourceClass $rc, array $dbRecord ) {
+	protected function fieldDbName( EarthIT_Schema_ResourceClass $rc, EarthIT_Schema_Field $f ) {
+		return $this->registry->getDbNamer()->getColumnName( $rc, $f );
+	}
+	
+	//// Value conversion
+	
+	protected function restValueToInternal( EarthIT_Schema_DataType $dt, $v ) {
+		return $v;
+	}
+	
+	protected function restFieldsToInternal( EarthIT_Schema_ResourceClass $rc, array $restObj ) {
+		$internal = array();
+		foreach( $rc->getFields() as $field ) {
+			$frn = $this->fieldRestName( $rc, $field );
+			if( isset($restObj[$frn]) ) {
+				$internal[$field->getName()] = $this->restValueToInternal( $field->getType(), $restObj[$frn] );
+			}
+		}
+		return $internal;
+	}
+	
+	//// Object conversion
+	
+	protected function dbObjectToRest( EarthIT_Schema_ResourceClass $rc, array $columnValues ) {
 		$columnNamer = $this->registry->getDbNamer();
 		$result = array();
 		foreach( $rc->getFields() as $f ) {
 			$columnName = $columnNamer->getColumnName( $rc, $f );
-			if( isset($dbRecord[$columnName]) ) {
-				$result[$this->restName($rc, $f)] = $dbRecord[$columnName];
+			if( isset($columnValues[$columnName]) ) {
+				$result[$this->fieldRestName($rc, $f)] = $columnValues[$columnName];
 			}
 		}
 		// TODO: Need to add 'id' column in cases where the primary key is different
 		return $result;
 	}
+	
+	protected function internalObjectToDb( EarthIT_Schema_ResourceClass $rc, array $obj ) {
+		$columnNamer = $this->registry->getDbNamer();
+		$columnValues = array();
+		foreach( $rc->getFields() as $f ) {
+			$fn = $f->getName();
+			if( isset($obj[$fn]) ) {
+				$cn = $columnNamer->getColumnName($rc, $f);
+				$columnValues[$cn] = $obj[$fn];
+			}
+		}
+		return $columnValues;
+	}
+	
+	//// Action conversion
 	
 	protected function cmipRequestToUserAction( EarthIT_CMIPREST_CMIPRESTRequest $crr ) {
 		$userId = null; // Where to get it???
@@ -88,9 +130,37 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 				// TODO: Parse search parameters
 				return new EarthIT_CMIPREST_UserAction_SearchAction( $userId, $resourceClass, new EarthIT_CMIPREST_SearchParameters() ); 
 			}
-		case 'PUT': case 'POST': case 'DELETE':
-			// TODO
-			throw new Exception("PUT/POST/DELETE requests not yet supported");
+		case 'POST':
+			if( $crr->getResourceInstanceId() !== null ) {
+				throw new Exception("You may not include item ID when POSTing");
+			}
+			return new EarthIT_CMIPREST_UserAction_PostItemAction(
+				$userId, $resourceClass,
+				$this->restFieldsToInternal($resourceClass, $crr->getContent())
+			);
+		case 'PUT':
+			if( $crr->getResourceInstanceId() === null ) {
+				throw new Exception("You ust include item ID when PUTing");
+			}
+			return new EarthIT_CMIPREST_UserAction_PutItemAction(
+				$userId, $resourceClass, $crr->getResourceInstanceId(),
+				$this->restFieldsToInternal($resourceClass, $crr->getContent())
+			);
+		case 'PATCH':
+			if( $crr->getResourceInstanceId() === null ) {
+				throw new Exception("You ust include item ID when PATCHing");
+			}
+			return new EarthIT_CMIPREST_UserAction_PatchItemAction(
+				$userId, $resourceClass, $crr->getResourceInstanceId(),
+				$this->restFieldsToInternal($resourceClass, $crr->getContent())
+			);
+		case 'DELETE':
+			if( $crr->getResourceInstanceId() === null ) {
+				throw new Exception("You ust include item ID when PATCHing");
+			}
+			return new EarthIT_CMIPREST_UserAction_DeleteItemAction( $userId, $resourceClass, $crr->getResourceInstanceId() );
+		default:
+			throw new Exception("Unrecognized method, '".$crr->getMethod()."'");
 		}
 	}
 	
@@ -110,10 +180,29 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 	}
 	
 	/**
+	 * Determine if an action is allowed without actually doing it.
+	 * For search actions, this may return null to indicate that
+	 * authorization requires the actual search results, which will be passed
+	 * to postAuthorizeSearchResult to determine is they are allowed.
+	 */
+	protected function preAuthorizeAction( EarthIT_CMIPREST_UserAction $act, array &$explanation ) {
+		return true;
+	}
+	
+	protected function postAuthorizeSearchResult( $userId, EarthIT_Schema_ResourceClass $rc, array $itemData, array &$explanation ) {
+		return true;
+	}
+	
+	/**
 	 * Result will be a JSON array in REST form
 	 */
 	protected function doAction( EarthIT_CMIPREST_UserAction $act ) {
-		// TODO: include some hook for permission checking
+		$authorizationExplanation = array();
+		$preAuth = $this->preAuthorizeAction($act, $authorizationExplanation);
+		
+		if( $preAuth === false ) {
+			throw new EarthIT_CMIPREST_ActionUnauthorized($act, $authorizationExplanation);
+		}
 		
 		if( $act instanceof EarthIT_CMIPREST_UserAction_SearchAction ) {
 			$resourceClass = $act->getResourceClass();
@@ -122,11 +211,28 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 			$stmt = $builder->makeStatement("SELECT * FROM {table}", array('table'=>new EarthIT_DBC_SQLIdentifier($tableName)));
 			$stmt->execute();
 			$results = array();
-			foreach( $stmt->fetchAll() as $row ) {
-				$results[] = $this->dbRecordToRestObject($resourceClass, $row);
+			$rows = $stmt->fetchAll();
+
+			foreach( $rows as $row ) {
+				if( !$preAuth ) {
+					$obj = $this->dbRecordToInternal($resourceClass, $row);
+					if( !$this->postAuthorizeSearchResult($act->getUserId(), $resourceClass, $item, $authorizationExplanation) ) {
+						throw new EarthIT_CMIPREST_ActionUnauthorized($act, $authorizationExplanation);
+					}
+				}
+				$results[] = $this->dbObjectToRest($resourceClass, $row);
 			}
+			
 			return $results;
-		} else if( $act instanceof EarthIT_CMIPREST_UserAction_GetItemAction ) {
+		}
+		
+		if( $preAuth !== true ) {
+			throw new Exception("preAuthorizeAction should only return true or false for non-search actions, but it returned ".var_export($auth,true));
+		}
+		
+		// Otherwise it's A-Okay!
+		
+		if( $act instanceof EarthIT_CMIPREST_UserAction_GetItemAction ) {
 			$resourceClass = $act->getResourceClass();
 			$tableName = $this->registry->getDbNamer()->getTableName( $resourceClass );
 			$builder = new EarthIT_DBC_DoctrineStatementBuilder($this->registry->getDbAdapter());
@@ -138,9 +244,36 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 			$result = null;
 			foreach( $stmt->fetchAll() as $row ) {
 				// Expecting only one!  Or zero.
-				$result = $this->dbRecordToRestObject($resourceClass, $row);
+				$result = $this->dbObjectToRest($resourceClass, $row);
 			}
 			return $result;
+		} else if( $act instanceof EarthIT_CMIPREST_UserAction_PostItemAction ) {
+			$resourceClass = $act->getResourceClass();
+			$tableName = $this->registry->getDbNamer()->getTableName( $resourceClass );
+			
+			$columnValues = $this->internalObjectToDb($resourceClass, $act->getItemData());
+			$columnExpressionList = array();
+			$columnValueList = array();
+			foreach( $columnValues as $columnName => $value ) {
+				$columnExpressionList[] = new EarthIT_DBC_SQLIdentifier($columnName);
+				$columnValueList[] = $value;
+			}
+			
+			// TODO: actually determine ID columns
+			
+			$builder = new EarthIT_DBC_DoctrineStatementBuilder($this->registry->getDbAdapter());
+			$stmt = $builder->makeStatement("INSERT INTO {table} {columns} VALUES {values} RETURNING id", array(
+				'table' => new EarthIT_DBC_SQLIdentifier($tableName),
+				'columns' => $columnExpressionList,
+				'values' => $columnValueList
+			));
+			$stmt->execute();
+			$result = null;
+			foreach( $stmt->fetchAll() as $row ) {
+				// Expecting only one!  Or zero.
+				return $row['id'];
+			}
+			throw new Exception("INSERT...RETURNING didn't do what we expected");
 		} else {
 			// TODO
 			throw new Exception(get_class($act)." not supported");
