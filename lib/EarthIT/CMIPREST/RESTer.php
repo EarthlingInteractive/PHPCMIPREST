@@ -239,6 +239,33 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 				$results[] = $this->dbObjectToRest($resourceClass, $row);
 			}
 			
+			// TODO: Remove this awful hack that I put in for the presentation
+			if( preg_match('/with=(.*)/',$_SERVER['REQUEST_URI'],$bif) ) {
+				$withStuff = explode(',', $bif[1]);
+			} else $withStuff = array();
+			
+			if( in_array('user',$withStuff) ) {
+				$userRows = $this->registry->getDbAdapter()->query('SELECT * FROM "user"')->fetchAll();
+				$users = array();
+				foreach( $userRows as $ur ) {
+					$users[$ur['id']] = $ur;
+				}
+				foreach( $results as $k=>$res ) {
+					$results[$k]['user'] = $users[$res['userid']];
+				}
+			}
+			if( in_array('organization',$withStuff) ) {
+				$organizationRows = $this->registry->getDbAdapter()->query('SELECT * from "organization"')->fetchAll();
+				$organizations = array();
+				foreach( $organizationRows as $ur ) {
+					$organizations[$ur['id']] = $ur;
+				}
+				foreach( $results as $k=>$res ) {
+					$results[$k]['organization'] = $organizations[$res['organizationid']];
+				}
+			}
+			
+			
 			return $results;
 		}
 		
