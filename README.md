@@ -12,8 +12,11 @@ There are five basic operations: search, get, post, put, patch, delete.
 
 - **GET** ```/<collection>[;<modifiers>][?<searchparameters>]``` returns a list of all objects in the collection, including all their 'simple fields'.
   The list can be filtered by adding search parameters.
-  The names of these parameters match the names of the fields their values match.
+  Except for a few reserved parameters, the names of these parameters match the names of the fields their values match.
   Asterisks in values indicate 'match any string'.
+  The reserved parameters are:
+  - ```orderby=[+-]<fieldname>...``` - indicate sort order of results
+  - ```limit=[<skip>,]<count>``` - indicate how many rows of the result set to skip and include
 - **GET** ```/<collection>[;<modifiers>]/<id>``` returns a single object of the collection identified by _id_.
 - **POST** ```/<collection>``` adds a new record to the collection.
   The record's data is provided as JSON in the request content.
