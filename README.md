@@ -27,7 +27,12 @@ A path like ```/authors;with=books``` would indicate to return a list of books w
 a path like ```/books;with=author,publisher``` would indicate to return a single author and publisher with each book record.
 The set of related objects that may be requested is defined by the service, and services may provide
 alternate modifiers, possibly as aliases for long ```with=``` lists.
-Additional levels of nesting may be requested by using a dot to separate path components.  e.g. ```with=patient.facility.staff```.
+
+Additional levels of nesting may be requested by using a dot to
+separate path components.
+e.g. ```doctor;with=patients.facility.staff``` to get a list of
+patients, each including their facility, including a list of all its
+staff, for each returned doctor record.
 
 ## Collection filters
 
