@@ -5,16 +5,15 @@ Handles CMIP-style (see below) REST requests using a schema definition.
 ## What the heck is CMIP
 
 A convention for REST services.
-"CMIP" stands for "Collection, Modifiers, Identifier, Property (or search Parameters)",
-which is how URLs following this convention are layed out.
-I couldn't think of a better name.
 
 URLs are of the form ```/<collection>[;<modifiers>][/<identifier>[/<property>]]```, hence 'CMIP'.
+I couldn't think of a better name.
 
 There are five basic operations: search, get, post, put, patch, delete.
 
-- **GET** ```/<collection>[;<modifiers>][?<filter>]``` returns a list of all objects in the collection, including all their 'simple fields'
-  (see 'Collection filters', below).
+- **GET** ```/<collection>[;<modifiers>][?<filter>]``` returns a list of objects in the collection.
+  The exact subset returned is determined by the ```<filter>``` (see 'collection filters'),
+  and the way each object is represented is determined by ```<modifiers>``` (see 'record modifiers').
 - **GET** ```/<collection>[;<modifiers>]/<id>``` returns a single object of the collection identified by _id_.
 - **POST** ```/<collection>``` adds a new record to the collection.
   The record's data is provided as JSON in the request content.
@@ -23,6 +22,8 @@ There are five basic operations: search, get, post, put, patch, delete.
 - **PATCH** ```/<collection>/<id>``` updates a record with data given as JSON in the request content.
   Any fields not explicitly updated retain their old value.
 - **DELETE** ```/<collection>/<id>``` deletes a record.
+
+### Record modifiers
 
 Modifiers indicate how to structure the resulting objects.
 The ```with``` modifier is a comma-separated list indicating what related objects should be returned with each record.
@@ -37,7 +38,7 @@ e.g. ```doctor;with=patients.facility.staff``` to get a list of
 patients, each including their facility, including a list of all its
 staff, for each returned doctor record.
 
-## Collection filters
+### Collection filters
 
 Except for a few reserved parameters, query parameters to a collection
 GET request correspond to fields of the items in the collection.
@@ -66,7 +67,7 @@ for ```someNumericField=eq:5``` is interpreted as equals the number 5,
 not the string "5")
 
 
-## Collection-Table mapping
+### Collection-Table mapping
 
 When translating a database record to its REST form, all primary key
 values are combined into a single 'id', with multiple fields separated
