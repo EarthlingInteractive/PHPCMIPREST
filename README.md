@@ -10,26 +10,8 @@ URLs are of the form ```/<collection>[;<modifiers>][/<identifier>[/<property>]]`
 
 There are five basic operations: search, get, post, put, patch, delete.
 
-- **GET** ```/<collection>[;<modifiers>][?<searchparameters>]``` returns a list of all objects in the collection, including all their 'simple fields'.
-  The list can be filtered by adding search parameters.
-  Except for a few reserved parameters, the names of these parameters match the names of the fields their values match.
-  Asterisks in values indicate 'match any string'.
-  The reserved parameters are:
-  - ```orderby=[+-]<fieldname>...``` - indicate sort order of results
-  - ```limit=[<skip>,]<count>``` - indicate how many rows of the result set to skip and include
-  Search parameter values may be either a simple value that does not
-  contain a colon character (indicating that the value must match
-  exactly), or one of the following formats:
-  - ```eq:<value>``` - match a value exactly
-  - ```like:<pattern>``` - match a string based on a pattern, where ```*``` stands for any substring
-  - ```lt:<value>``` - matches values less than that given
-  - ```gt:<value>``` - matches values greater than that given
-  - ```in:<list>``` - matches any value that is mentioned in the comma-separated list
-  Search parameters will be automatically parsed as appropriate given
-  the field that they are matching on (e.g. if there is a field,
-  ```someNumericField``` that is typed as containing a number, a seach
-  for ```someNumericField=eq:5``` is interpreted as equals the number
-  5, not the string "5")
+- **GET** ```/<collection>[;<modifiers>][?<filter>]``` returns a list of all objects in the collection, including all their 'simple fields'
+  (see 'Collection filters', below).
 - **GET** ```/<collection>[;<modifiers>]/<id>``` returns a single object of the collection identified by _id_.
 - **POST** ```/<collection>``` adds a new record to the collection.
   The record's data is provided as JSON in the request content.
@@ -45,6 +27,35 @@ A path like ```/authors;with=books``` would indicate to return a list of books w
 a path like ```/books;with=author,publisher``` would indicate to return a single author and publisher with each book record.
 The set of related objects that may be requested is defined by the service, and services may provide
 alternate modifiers, possibly as aliases for long ```with=``` lists.
+Additional levels of nesting may be requested by using a dot to separate path components.  e.g. ```with=patient.facility.staff```.
+
+## Collection filters
+
+Except for a few reserved parameters, query parameters to a collection
+GET request correspond to fields of the items in the collection.
+
+The reserved parameters are:
+
+- ```orderBy=[+-]<fieldName>...``` - indicate sort order of results
+- ```limit=[<skip>,]<count>``` - indicate how many rows of the result set to skip and include
+
+Field-matching parameter values may be in one of the following formats:
+
+- ```<pattern>``` - match a pattern where ```*``` stands for any
+  substring.  Only valid if the pattern does not contain a colon.  May
+  be optimized as an exact match if the given pattern doesn't contain
+  any asterisks.
+- ```eq:<value>``` - match a value exactly
+- ```like:<pattern>``` - match a string based on a pattern, where ```*``` stands for any substring
+- ```lt:<value>``` - matches values less than that given
+- ```gt:<value>``` - matches values greater than that given
+- ```in:<list>``` - matches any value that is mentioned in the comma-separated list
+
+Search parameters will be automatically parsed as appropriate given
+the field that they are matching on (e.g. if there is a field,
+```someNumericField``` that is typed as containing a number, a seach
+for ```someNumericField=eq:5``` is interpreted as equals the number 5,
+not the string "5")
 
 
 ## Collection-Table mapping
