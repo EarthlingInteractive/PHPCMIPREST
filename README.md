@@ -49,5 +49,22 @@ Field names may be translated between naming conventions when loading
 and storing.  The naming convention for tables and columns in Postgres
 seems to be to use squishedtogetherlowercase.
 
-Field names in the representations of the collections exposed via the
-services are formatted as camelCase.
+
+### Conventional name translation
+
+Behind the scenes, class and field names can be translated to any
+convention for mapping to database tables/fields.
+In the view exposed by the REST services:
+
+- collection name is dash-separated (e.g. ```patient-stays```)
+- field names, both in the URL (modifiers and search parameters) and
+  in request/response JSON data, are camelCase
+  (e.g. ```patientAdmissionDate```)
+
+It is a goal of this project to make it simple to override these
+conventions and to allow special cases for different views of things.
+e.g. a class may be exposed as ```super-duper-car-washes```, but the
+backing table actually be called ```x_okaycarwash```.
+
+
+TODO: Add example of using this library in PHP.
