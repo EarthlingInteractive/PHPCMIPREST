@@ -157,7 +157,8 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 				return new EarthIT_CMIPREST_UserAction_GetItemAction( $userId, $resourceClass, $itemId ); 
 			} else {
 				// TODO: Parse search parameters
-				return new EarthIT_CMIPREST_UserAction_SearchAction( $userId, $resourceClass, new EarthIT_CMIPREST_SearchParameters() ); 
+				$sp = new EarthIT_CMIPREST_SearchParameters( array(), array(), 0, null );
+				return new EarthIT_CMIPREST_UserAction_SearchAction( $userId, $resourceClass, $sp );
 			}
 		case 'POST':
 			if( $crr->getResourceInstanceId() !== null ) {
