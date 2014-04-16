@@ -17,6 +17,19 @@ There are five basic operations: search, get, post, put, patch, delete.
   The reserved parameters are:
   - ```orderby=[+-]<fieldname>...``` - indicate sort order of results
   - ```limit=[<skip>,]<count>``` - indicate how many rows of the result set to skip and include
+  Search parameter values may be either a simple value that does not
+  contain a colon character (indicating that the value must match
+  exactly), or one of the following formats:
+  - ```eq:<value>``` - match a value exactly
+  - ```like:<pattern>``` - match a string based on a pattern, where ```*``` stands for any substring
+  - ```lt:<value>``` - matches values less than that given
+  - ```gt:<value>``` - matches values greater than that given
+  - ```in:<list>``` - matches any value that is mentioned in the comma-separated list
+  Search parameters will be automatically parsed as appropriate given
+  the field that they are matching on (e.g. if there is a field,
+  ```someNumericField``` that is typed as containing a number, a seach
+  for ```someNumericField=eq:5``` is interpreted as equals the number
+  5, not the string "5")
 - **GET** ```/<collection>[;<modifiers>]/<id>``` returns a single object of the collection identified by _id_.
 - **POST** ```/<collection>``` adds a new record to the collection.
   The record's data is provided as JSON in the request content.
