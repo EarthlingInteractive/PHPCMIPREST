@@ -74,7 +74,10 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 		foreach( $this->dbNamespacePath as $ns ) {
 			$components[] = new EarthIT_DBC_SQLIdentifier($ns);
 		}
-		$components[] = new EarthIT_DBC_SQLIdentifier($this->registry->getDbNamer()->getTableName($rc));
+		foreach( $rc->getDbNamespacePath() as $ns ) {
+			$components[] = new EarthIT_DBC_SQLIdentifier($ns);
+		}
+		$components[] = new EarthIT_DBC_SQLIdentifier($rc->getTableNameOverride() ?: $this->registry->getDbNamer()->getTableName($rc));
 		return new EarthIT_DBC_SQLNamespacePath($components);
 	}
 		
@@ -86,7 +89,7 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 	}
 	
 	protected function fieldDbName( EarthIT_Schema_ResourceClass $rc, EarthIT_Schema_Field $f ) {
-		return $this->registry->getDbNamer()->getColumnName( $rc, $f );
+		return $rc->getColumnNameOverride() ?: $this->registry->getDbNamer()->getColumnName( $rc, $f );
 	}
 	
 	//// Value conversion
