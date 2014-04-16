@@ -54,6 +54,30 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 		return $idFieldValues;
 	}
 
+	//// Class location
+	
+	protected $dbNamespacePath = array();
+	public function setDbNamespacePath( $path ) {
+		if( is_scalar($path) ) $path = explode('.', $path);
+		if( !is_array($path) ) {
+			throw new Exception("DB namespace path must be an array of strings or a single period.delimited.string.");
+		}
+		$this->dbNamespacePath = $path;
+	}
+	
+	/**
+	 * Return an EarthIT_DBC_SQLExpression that identifies the table.
+	 * If a dbNamespacePath has been configured, it will be part of the expression.
+	 */
+	protected function rcTableExpression( EarthIT_Schema_ResourceClass $rc ) {
+		$components = array();
+		foreach( $this->dbNamespacePath as $ns ) {
+			$components[] = new EarthIT_DBC_SQLIdentifier($ns);
+		}
+		$components[] = new EarthIT_DBC_SQLIdentifier($this->registry->getDbNamer()->getTableName($rc));
+		return new EarthIT_DBC_SQLNamespacePath($components);
+	}
+		
 	//// Field conversion
 	
 	protected function fieldRestName( EarthIT_Schema_ResourceClass $rc, EarthIT_Schema_Field $f ) {
@@ -222,9 +246,9 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 		
 		if( $act instanceof EarthIT_CMIPREST_UserAction_SearchAction ) {
 			$resourceClass = $act->getResourceClass();
-			$tableName = $this->registry->getDbNamer()->getTableName( $resourceClass );
+			$tableExpression = $this->rcTableExpression( $resourceClass );
 			$builder = new EarthIT_DBC_DoctrineStatementBuilder($this->registry->getDbAdapter());
-			$stmt = $builder->makeStatement("SELECT * FROM {table}", array('table'=>new EarthIT_DBC_SQLIdentifier($tableName)));
+			$stmt = $builder->makeStatement("SELECT * FROM {table}", array('table'=>$tableExpression));
 			$stmt->execute();
 			$results = array();
 			$rows = $stmt->fetchAll();
@@ -277,10 +301,10 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 		
 		if( $act instanceof EarthIT_CMIPREST_UserAction_GetItemAction ) {
 			$resourceClass = $act->getResourceClass();
-			$tableName = $this->registry->getDbNamer()->getTableName( $resourceClass );
+			$tableExpression = $this->rcTableExpression( $resourceClass );
 			$builder = new EarthIT_DBC_DoctrineStatementBuilder($this->registry->getDbAdapter());
 			$stmt = $builder->makeStatement("SELECT * FROM {table} WHERE {pkCondition}", array(
-				'table'=>new EarthIT_DBC_SQLIdentifier($tableName),
+				'table'=>$tableExpression,
 				'pkCondition'=>$this->makeIdMatchingExpression($resourceClass, $act->getItemId())
 			));
 			$stmt->execute();
@@ -292,7 +316,7 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 			return $result;
 		} else if( $act instanceof EarthIT_CMIPREST_UserAction_PostItemAction ) {
 			$resourceClass = $act->getResourceClass();
-			$tableName = $this->registry->getDbNamer()->getTableName( $resourceClass );
+			$tableExpression = $this->rcTableExpression( $resourceClass );
 			
 			$columnValues = $this->internalObjectToDb($resourceClass, $act->getItemData());
 			$columnExpressionList = array();
@@ -306,7 +330,7 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 			
 			$builder = new EarthIT_DBC_DoctrineStatementBuilder($this->registry->getDbAdapter());
 			$stmt = $builder->makeStatement("INSERT INTO {table} {columns} VALUES {values} RETURNING id", array(
-				'table' => new EarthIT_DBC_SQLIdentifier($tableName),
+				'table' => $tableExpression,
 				'columns' => $columnExpressionList,
 				'values' => $columnValueList
 			));
