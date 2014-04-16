@@ -34,9 +34,38 @@ alternate modifiers, possibly as aliases for long ```with=``` lists.
 
 Additional levels of nesting may be requested by using a dot to
 separate path components.
-e.g. ```doctor;with=patients.facility.staff``` to get a list of
-patients, each including their facility, including a list of all its
-staff, for each returned doctor record.
+e.g. ```/authors;with=books.publisher.postalAddress``` to get a list of authors,
+each of which contains a list of all their books,
+each of which contains a 'publisher' record with a 'postalAddress' sub-record.
+The resulting JSON might look something like:
+
+  ```
+  [
+    {
+      "id": 154,
+      "name": "Some Author",
+      "books": [
+        {
+          "id": 301,
+          "title": "A Book Containing Words",
+          "publisher": {
+            "id": 4,
+            "name": "Some Book Publishing Company",
+            "postalAddress": {
+              "streetAddress1": "450 Some Street",
+              "localityName": "Someville",
+              "regionCode": "SC",
+              "postalCode": "12345"
+              "countryCode": "USA",
+            }
+          }
+        },
+        ...more book records maybe go here...
+      ]
+    },
+    ...more author records maybe go here...
+  ]
+  ```
 
 ### Collection filters
 
@@ -70,7 +99,7 @@ not the string "5")
 ### Collection-Table mapping
 
 When translating a database record to its REST form, all primary key
-values are combined into a single 'id', with multiple fields separated
+values are combined into a single ```id```, with multiple fields separated
 by dashes.
 
 When interpreting an ID given in a URL or in JSON, it must be
@@ -82,11 +111,6 @@ Field names may be translated between naming conventions when loading
 and storing.  The naming convention for tables and columns in Postgres
 seems to be to use squishedtogetherlowercase.
 
-
-### Conventional name translation
-
-Behind the scenes, class and field names can be translated to any
-convention for mapping to database tables/fields.
 In the view exposed by the REST services:
 
 - collection name is dash-separated (e.g. ```patient-stays```)
