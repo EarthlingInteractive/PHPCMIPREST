@@ -81,15 +81,8 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 	//// Field conversion
 	
 	protected function fieldRestName( EarthIT_Schema_ResourceClass $rc, EarthIT_Schema_Field $f ) {
-		// Josh's priorities with respect to naming:
-		// 1) field names in JSON responses and query parameters should be identical
-		// 2) field names in JSON/query parameters should match those in the database
-		// 
-		// Ideally JSON fields would be camelCase to match JS objects.
-		// But I want to avoid camelCase in URLs.
-		// If we use Postgres, all identifiers will be sqishedtogetherlowercase
-		// Therefore, use squishedtogetherlowercase.
-		return EarthIT_Schema_WordUtil::minimize($f->getName());
+		// When emitting JSON, format names as the JS does
+		return EarthIT_Schema_WordUtil::toCamelCase($f->getName());
 	}
 	
 	protected function fieldDbName( EarthIT_Schema_ResourceClass $rc, EarthIT_Schema_Field $f ) {

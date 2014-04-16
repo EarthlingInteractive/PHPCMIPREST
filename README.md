@@ -33,8 +33,6 @@ a path like ```/books;with=author,publisher``` would indicate to return a single
 The set of related objects that may be requested is defined by the service, and services may provide
 alternate modifiers, possibly as aliases for long ```with=``` lists.
 
-All identifiers are squishedtogetherlowercase (this is a bit of a
-compromise and I may change my mind about it).
 
 ## Collection-Table mapping
 
@@ -49,5 +47,7 @@ URL must be converted to the correct type.
 
 Field names may be translated between naming conventions when loading
 and storing.  The naming convention for tables and columns in Postgres
-seems to be to use squishedtogetherlowercase, which is convenient, but
-shouldn't be relied upon.
+seems to be to use squishedtogetherlowercase.
+
+Field names in the representations of the collections exposed via the
+services are formatted as camelCase.
