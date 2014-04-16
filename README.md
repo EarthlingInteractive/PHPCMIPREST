@@ -5,6 +5,9 @@ Handles CMIP-style (see below) REST requests using a schema definition.
 ## What the heck is CMIP
 
 A convention for REST services.
+"CMIP" stands for "Collection, Modifiers, Identifier, Property (or search Parameters)",
+which is how URLs following this convention are layed out.
+I couldn't think of a better name.
 
 URLs are of the form ```/<collection>[;<modifiers>][/<identifier>[/<property>]]```, hence 'CMIP'.
 
