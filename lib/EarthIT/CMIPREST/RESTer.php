@@ -89,7 +89,7 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 	}
 	
 	protected function fieldDbName( EarthIT_Schema_ResourceClass $rc, EarthIT_Schema_Field $f ) {
-		return $rc->getColumnNameOverride() ?: $this->registry->getDbNamer()->getColumnName( $rc, $f );
+		return $f->getColumnNameOverride() ?: $this->registry->getDbNamer()->getColumnName( $rc, $f );
 	}
 	
 	//// Value conversion
@@ -115,7 +115,7 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 		$columnNamer = $this->registry->getDbNamer();
 		$result = array();
 		foreach( $rc->getFields() as $f ) {
-			$columnName = $columnNamer->getColumnName( $rc, $f );
+			$columnName = $this->fieldDbName($rc, $f);
 			if( isset($columnValues[$columnName]) ) {
 				$result[$this->fieldRestName($rc, $f)] = $columnValues[$columnName];
 			}
