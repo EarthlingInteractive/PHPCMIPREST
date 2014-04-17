@@ -2,13 +2,16 @@
 
 class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 {
-	protected static function dbValueToPhpValue( $value, $php_type ) {
-		switch( $php_type ) {
+	protected static function dbToPhpValue( $value, $phpType ) {
+		if( $phpType === null or $value === null ) return $value;
+		
+		switch( $phpType ) {
 		case 'string': return (string)$value;
+		case 'float': return (float)$value;
 		case 'int': return (int)$value;
 		case 'bool': return (bool)$value;
 		default:
-			throw new Exception("Don't know how to convert '$value' to PHP type '$php_type'.");
+			throw new Exception("Don't know how to cast to PHP type '$phpType'.");
 		}
 	}
 
@@ -47,7 +50,7 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 		$i = 1;
 		foreach( $pk->getFieldNames() as $fn ) {
 			$field = $fields[$fn];
-			$idFieldValues[$fn] = self::dbValueToPhpValue($bif[$i], $field->getType()->getPhpTypeName());
+			$idFieldValues[$fn] = self::dbToPhpValue($bif[$i], $field->getType()->getPhpTypeName());
 			++$i;
 		}
 		
@@ -110,19 +113,7 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 	}
 	
 	//// Object conversion
-	
-	protected static function cast( $v, $requiredType ) {
-		if( $requiredType === null ) return $v;
 		
-		switch( $requiredType ) {
-		case 'int': return (int)$v;
-		case 'float': return (float)$v;
-		case 'string': return (string)$v;
-		}
-		
-		throw new Exception("Unrecognized PHP scalar type: '$requiredType'");
-	}
-	
 	protected function dbObjectToRest( EarthIT_Schema_ResourceClass $rc, array $columnValues ) {
 		$columnNamer = $this->registry->getDbNamer();
 		$result = array();
@@ -131,7 +122,7 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 			if( isset($columnValues[$columnName]) ) {
 				$dataType = $f->getType();
 				$phpTypeName = $dataType === null ? null : $dataType->getPhpTypeName();
-				$result[$this->fieldRestName($rc, $f)] = self::cast($columnValues[$columnName], $phpTypeName);
+				$result[$this->fieldRestName($rc, $f)] = self::dbToPhpValue($columnValues[$columnName], $phpTypeName);
 			}
 		}
 		// TODO: Need to add 'id' column in cases where the primary key is different
