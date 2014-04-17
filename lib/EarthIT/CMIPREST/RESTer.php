@@ -111,13 +111,27 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 	
 	//// Object conversion
 	
+	protected static function cast( $v, $requiredType ) {
+		if( $requiredType === null ) return $v;
+		
+		switch( $requiredType ) {
+		case 'int': return (int)$v;
+		case 'float': return (float)$v;
+		case 'string': return (string)$v;
+		}
+		
+		throw new Exception("Unrecognized PHP scalar type: '$requiredType'");
+	}
+	
 	protected function dbObjectToRest( EarthIT_Schema_ResourceClass $rc, array $columnValues ) {
 		$columnNamer = $this->registry->getDbNamer();
 		$result = array();
 		foreach( $rc->getFields() as $f ) {
 			$columnName = $this->fieldDbName($rc, $f);
 			if( isset($columnValues[$columnName]) ) {
-				$result[$this->fieldRestName($rc, $f)] = $columnValues[$columnName];
+				$dataType = $f->getType();
+				$phpTypeName = $dataType === null ? null : $dataType->getPhpTypeName();
+				$result[$this->fieldRestName($rc, $f)] = self::cast($columnValues[$columnName], $phpTypeName);
 			}
 		}
 		// TODO: Need to add 'id' column in cases where the primary key is different
