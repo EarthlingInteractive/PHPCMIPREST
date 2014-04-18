@@ -19,7 +19,7 @@ class EarthIT_CMIPREST_SearchParameters
 		$this->limit = $limit;
 	}
 	
-	public function getFieldMatchers() { return $this->fieldMatcher; }
+	public function getFieldMatchers() { return $this->fieldMatchers; }
 	public function getOrdering() { return $this->ordering; }
 	public function getSkip() { return $this->skip; }
 	public function getLimit() { return $this->limit; }

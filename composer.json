@@ -6,7 +6,7 @@
 		"ryprop/nife": "~0.0.1",
 		"earthit/php-common": "~0.0.6",
 		"earthit/schema": "~0.0.4",
-		"earthit/dbc": "~0.0.3"
+		"earthit/dbc": "~0.0.4"
 	},
 	"autoload": {
 		"psr-0": {

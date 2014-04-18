@@ -3,18 +3,11 @@
 class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 {
 	protected static function dbToPhpValue( $value, $phpType ) {
-		if( $phpType === null or $value === null ) return $value;
-		
-		switch( $phpType ) {
-		case 'string': return (string)$value;
-		case 'float': return (float)$value;
-		case 'int': return (int)$value;
-		case 'bool': return (bool)$value;
-		default:
-			throw new Exception("Don't know how to cast to PHP type '$phpType'.");
-		}
+		// May want to do something different than just use cast
+		// e.g. in case we want to interpret "010" as ten instead of eight.
+		return EarthIT_CMIPREST_Util::cast( $value, $phpType );
 	}
-
+	
 	protected static function getIdRegex( EarthIT_Schema_ResourceClass $rc ) {
 		$pk = $rc->getPrimaryKey();
 		if( $pk === null or count($pk->getFieldNames()) == 0 ) {
@@ -144,6 +137,30 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 	
 	//// Action conversion
 	
+	protected function parseFieldMatcher( $v ) {
+		$colonIdx = strpos($v, ':');
+		if( $colonIdx === false ) {
+			return (strpos($v, '*') === false) ?
+				new EarthIT_CMIPREST_FieldMatcher_Equal($v) :
+				new EarthIT_CMIPREST_FieldMatcher_Like($v);
+		} else {
+			$scheme = substr($v, 0, $colonIdx);
+			$pattern = substr($v, $colonIdx+1);
+			switch( $scheme ) {
+			case 'eq': return new EarthIT_CMIPREST_FieldMatcher_Equal($pattern);
+			case 'ne': return new EarthIT_CMIPREST_FieldMatcher_NotEqual($pattern);
+			case 'gt': return new EarthIT_CMIPREST_FieldMatcher_Greater($pattern);
+			case 'ge': return new EarthIT_CMIPREST_FieldMatcher_GreaterOrEqual($pattern);
+			case 'lt': return new EarthIT_CMIPREST_FieldMatcher_Lesser($pattern);
+			case 'le': return new EarthIT_CMIPREST_FieldMatcher_LesserOrEqual($pattern);
+			case 'like': return new EarthIT_CMIPREST_FieldMatcher_Like($pattern);
+			case 'in': return new EarthIT_CMIPREST_FieldMatcher_In(explode(',',$pattern));
+			default:
+				throw new Exception("Unrecognized field match scheme: '$scheme'");
+			}
+		}
+	}
+	
 	protected function cmipRequestToUserAction( EarthIT_CMIPREST_CMIPRESTRequest $crr ) {
 		$userId = $crr->getUserId();
 		$resourceClass = $this->registry->getSchema()->getResourceClass( EarthIT_Schema_WordUtil::depluralize($crr->getResourceCollectionName()) );
@@ -157,8 +174,31 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 			if( $itemId = $crr->getResourceInstanceId() ) {
 				return new EarthIT_CMIPREST_UserAction_GetItemAction( $userId, $resourceClass, $itemId ); 
 			} else {
+				$fields = $resourceClass->getFields();
+				$fieldRestToInternalNames = array();
+				foreach( $fields as $fn=>$field ) {
+					$fieldRestToInternalNames[$this->fieldRestName($resourceClass, $field)] = $fn;
+				}
+				
+				$fieldMatchers = array();
+				foreach( $crr->getParameters() as $k=>$v ) {
+					if( $k == '_' ) {
+						// Ignore!
+					} else if( $k == 'orderBy' ) {
+						// TODO
+					} else if( $k == 'limit' ) {
+						// TODO
+					} else {
+						// TODO: 'id' may need to be remapped to multiple field matchers
+						// Will probably want to allow for other fake, searchable fields, too
+						if( !isset($fieldRestToInternalNames[$k]) ) {
+							throw new Exception("No such field: '$k'");
+						}
+						$fieldMatchers[$fieldRestToInternalNames[$k]] = self::parseFieldMatcher($v);
+					}
+				}
 				// TODO: Parse search parameters
-				$sp = new EarthIT_CMIPREST_SearchParameters( array(), array(), 0, null );
+				$sp = new EarthIT_CMIPREST_SearchParameters( $fieldMatchers, array(), 0, null );
 				return new EarthIT_CMIPREST_UserAction_SearchAction( $userId, $resourceClass, $sp );
 			}
 		case 'POST':
@@ -235,6 +275,53 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 		return true;
 	}
 	
+	protected function doSearchAction( EarthIT_CMIPREST_UserAction_SearchAction $act, $preAuth, $preAuthExplanation ) {
+			$resourceClass = $act->getResourceClass();
+			$tableExpression = $this->rcTableExpression( $resourceClass );
+			$builder = new EarthIT_DBC_DoctrineStatementBuilder($this->registry->getDbAdapter());
+
+			$fields = $resourceClass->getFields();
+			$params = array();
+			$whereClauses = array();
+			$tableAlias = 'tab';
+			$params['table'] = $tableExpression;
+			foreach( $act->getSearchParameters()->getFieldMatchers() as $fieldName => $matcher ) {
+				$field = $fields[$fieldName];
+				$columnName = $this->fieldDbName($resourceClass, $field);
+				$columnParamName = EarthIT_DBC_ParameterUtil::newParamName('column');
+				$params[$columnParamName] = new EarthIT_DBC_SQLIdentifier($columnName);
+				$columnExpression = "{$tableAlias}.{{$columnParamName}}";
+				$matcherSql = $matcher->toSql( $columnExpression, $fields[$fieldName]->getType()->getPhpTypeName(), $params );
+				if( $matcherSql === 'TRUE' ) {
+					continue;
+				} else if( $matcherSql === 'FALSE' ) {
+					// There will be no results!
+					return array();
+				}
+				$whereClauses[] = $matcherSql;
+			}
+			// TODO: include order by, limit clauses
+			$searchSql = "SELECT * FROM {table} AS {$tableAlias}";
+			if( $whereClauses ) $searchSql .= "\nWHERE ".implode("\n  AND ",$whereClauses);
+			$stmt = $builder->makeStatement($searchSql, $params);
+			$stmt->execute();
+			$results = array();
+			$rows = $stmt->fetchAll();
+			
+			foreach( $rows as $row ) {
+				if( !$preAuth ) {
+					$obj = $this->dbRecordToInternal($resourceClass, $row);
+					// TODO: Will also need to postAuthorize any with= included records
+					if( !$this->postAuthorizeSearchResult($act->getUserId(), $resourceClass, $item, $authorizationExplanation) ) {
+						throw new EarthIT_CMIPREST_ActionUnauthorized($act, $authorizationExplanation);
+					}
+				}
+				$results[] = $this->dbObjectToRest($resourceClass, $row);
+			}
+			
+			return $results;
+	}
+	
 	/**
 	 * Result will be a JSON array in REST form
 	 */
@@ -247,52 +334,7 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 		}
 		
 		if( $act instanceof EarthIT_CMIPREST_UserAction_SearchAction ) {
-			$resourceClass = $act->getResourceClass();
-			$tableExpression = $this->rcTableExpression( $resourceClass );
-			$builder = new EarthIT_DBC_DoctrineStatementBuilder($this->registry->getDbAdapter());
-			$stmt = $builder->makeStatement("SELECT * FROM {table}", array('table'=>$tableExpression));
-			$stmt->execute();
-			$results = array();
-			$rows = $stmt->fetchAll();
-
-			foreach( $rows as $row ) {
-				if( !$preAuth ) {
-					$obj = $this->dbRecordToInternal($resourceClass, $row);
-					if( !$this->postAuthorizeSearchResult($act->getUserId(), $resourceClass, $item, $authorizationExplanation) ) {
-						throw new EarthIT_CMIPREST_ActionUnauthorized($act, $authorizationExplanation);
-					}
-				}
-				$results[] = $this->dbObjectToRest($resourceClass, $row);
-			}
-			
-			// TODO: Remove this awful hack that I put in for the presentation
-			if( preg_match('/with=(.*)/',$_SERVER['REQUEST_URI'],$bif) ) {
-				$withStuff = explode(',', $bif[1]);
-			} else $withStuff = array();
-			
-			if( in_array('user',$withStuff) ) {
-				$userRows = $this->registry->getDbAdapter()->query('SELECT * FROM "user"')->fetchAll();
-				$users = array();
-				foreach( $userRows as $ur ) {
-					$users[$ur['id']] = $ur;
-				}
-				foreach( $results as $k=>$res ) {
-					$results[$k]['user'] = $users[$res['userid']];
-				}
-			}
-			if( in_array('organization',$withStuff) ) {
-				$organizationRows = $this->registry->getDbAdapter()->query('SELECT * from "organization"')->fetchAll();
-				$organizations = array();
-				foreach( $organizationRows as $ur ) {
-					$organizations[$ur['id']] = $ur;
-				}
-				foreach( $results as $k=>$res ) {
-					$results[$k]['organization'] = $organizations[$res['organizationid']];
-				}
-			}
-			
-			
-			return $results;
+			return $this->doSearchAction($act, $preAuth, $authorizationExplanation);
 		}
 		
 		if( $preAuth !== true ) {
