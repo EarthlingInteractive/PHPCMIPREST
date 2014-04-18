@@ -135,6 +135,14 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 		return $columnValues;
 	}
 	
+	protected function getFieldsByRestName( EarthIT_Schema_ResourceClass $rc ) {
+		$fbrn = array();
+		foreach( $rc->getFields() as $f ) {
+			$fbrn[$this->fieldRestName($rc, $f)] = $f;
+		}
+		return $fbrn;
+	}
+	
 	//// Action conversion
 	
 	protected function parseFieldMatcher( $v ) {
@@ -161,6 +169,27 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 		}
 	}
 	
+	protected function parseOrderByComponents( EarthIT_Schema_ResourceClass $rc, $v ) {
+		$fieldsByRestName = $this->getFieldsByRestName($rc);
+		$oorderByComponents = array();
+		foreach( explode(',',$v) as $cv ) {
+			if( $cv[0] == '+' ) {
+				$ascending = true;
+				$cv = substr($cv,1);
+			} else if( $cv[0] == '-' ) {
+				$ascending = false;
+				$cv = substr($cv,1);
+			} else $ascending = true;
+			
+			// May eventually need to take fake fields into account, here
+			if( !isset($fieldsByRestName[$cv]) ) {
+				throw new Exception("Unknown field in orderBy: '$cv'");
+			}
+			$orderByComponents[] = new EarthIT_CMIPREST_OrderByComponent($fieldsByRestName[$cv], $ascending);
+		}
+		return $orderByComponents;
+	}
+	
 	protected function cmipRequestToUserAction( EarthIT_CMIPREST_CMIPRESTRequest $crr ) {
 		$userId = $crr->getUserId();
 		$resourceClass = $this->registry->getSchema()->getResourceClass( EarthIT_Schema_WordUtil::depluralize($crr->getResourceCollectionName()) );
@@ -181,11 +210,12 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 				}
 				
 				$fieldMatchers = array();
+				$orderBy = array();
 				foreach( $crr->getParameters() as $k=>$v ) {
 					if( $k == '_' ) {
 						// Ignore!
 					} else if( $k == 'orderBy' ) {
-						// TODO
+						$orderBy = $this->parseOrderByComponents($resourceClass, $v);
 					} else if( $k == 'limit' ) {
 						// TODO
 					} else {
@@ -198,7 +228,7 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 					}
 				}
 				// TODO: Parse search parameters
-				$sp = new EarthIT_CMIPREST_SearchParameters( $fieldMatchers, array(), 0, null );
+				$sp = new EarthIT_CMIPREST_SearchParameters( $fieldMatchers, $orderBy, 0, null );
 				return new EarthIT_CMIPREST_UserAction_SearchAction( $userId, $resourceClass, $sp );
 			}
 		case 'POST':
@@ -277,15 +307,15 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 	
 	protected function doSearchAction( EarthIT_CMIPREST_UserAction_SearchAction $act, $preAuth, $preAuthExplanation ) {
 			$resourceClass = $act->getResourceClass();
+			$fields = $resourceClass->getFields();
 			$tableExpression = $this->rcTableExpression( $resourceClass );
 			$builder = new EarthIT_DBC_DoctrineStatementBuilder($this->registry->getDbAdapter());
-
-			$fields = $resourceClass->getFields();
+			$sp = $act->getSearchParameters();
 			$params = array();
 			$whereClauses = array();
 			$tableAlias = 'tab';
 			$params['table'] = $tableExpression;
-			foreach( $act->getSearchParameters()->getFieldMatchers() as $fieldName => $matcher ) {
+			foreach( $sp->getFieldMatchers() as $fieldName => $matcher ) {
 				$field = $fields[$fieldName];
 				$columnName = $this->fieldDbName($resourceClass, $field);
 				$columnParamName = EarthIT_DBC_ParameterUtil::newParamName('column');
@@ -303,6 +333,13 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 			// TODO: include order by, limit clauses
 			$searchSql = "SELECT * FROM {table} AS {$tableAlias}";
 			if( $whereClauses ) $searchSql .= "\nWHERE ".implode("\n  AND ",$whereClauses);
+			if( count($orderByComponents = $sp->getOrderByComponents()) > 0 ) {
+				$orderBySqlComponents = array();
+				foreach( $orderByComponents as $oc ) {
+					$orderBySqlComponents[] = $this->fieldDbName($resourceClass, $oc->getField()).($oc->isAscending() ? " ASC" : " DESC");
+				}
+				$searchSql .= "\nORDER BY ".implode(', ',$orderBySqlComponents);
+			}
 			$stmt = $builder->makeStatement($searchSql, $params);
 			$stmt->execute();
 			$results = array();

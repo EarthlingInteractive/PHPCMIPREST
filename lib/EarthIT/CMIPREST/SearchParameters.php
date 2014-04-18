@@ -8,19 +8,19 @@
 class EarthIT_CMIPREST_SearchParameters
 {
 	protected $fieldMatchers;
-	protected $ordering;
+	protected $orderByComponents;
 	protected $skip;
 	protected $limit;
 	
-	public function __construct( array $fieldMatchers, array $ordering, $skip, $limit ) {
+	public function __construct( array $fieldMatchers, array $orderByComponents, $skip, $limit ) {
 		$this->fieldMatchers = $fieldMatchers;
-		$this->ordering = $ordering;
+		$this->orderByComponents = $orderByComponents;
 		$this->skip = $skip;
 		$this->limit = $limit;
 	}
 	
 	public function getFieldMatchers() { return $this->fieldMatchers; }
-	public function getOrdering() { return $this->ordering; }
+	public function getOrderByComponents() { return $this->orderByComponents; }
 	public function getSkip() { return $this->skip; }
 	public function getLimit() { return $this->limit; }
 }
