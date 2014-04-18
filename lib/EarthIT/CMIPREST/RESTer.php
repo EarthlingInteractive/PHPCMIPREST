@@ -211,13 +211,21 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 				
 				$fieldMatchers = array();
 				$orderBy = array();
+				$skip = 0;
+				$limit = null;
 				foreach( $crr->getParameters() as $k=>$v ) {
 					if( $k == '_' ) {
 						// Ignore!
 					} else if( $k == 'orderBy' ) {
 						$orderBy = $this->parseOrderByComponents($resourceClass, $v);
 					} else if( $k == 'limit' ) {
-						// TODO
+						if( preg_match('/^(\d+),(\d+)$/', $v, $bif ) ) {
+							$skip = $bif[1]; $limit = $bif[2];
+						} else if( preg_match('/^(\d+)$/', $v, $bif ) ) {
+							$limit = $bif[1];
+						} else {
+							throw new Exception("Malformed skip/limit parameter: '$v'");
+						}
 					} else {
 						// TODO: 'id' may need to be remapped to multiple field matchers
 						// Will probably want to allow for other fake, searchable fields, too
@@ -228,7 +236,7 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 					}
 				}
 				// TODO: Parse search parameters
-				$sp = new EarthIT_CMIPREST_SearchParameters( $fieldMatchers, $orderBy, 0, null );
+				$sp = new EarthIT_CMIPREST_SearchParameters( $fieldMatchers, $orderBy, $skip, $limit );
 				return new EarthIT_CMIPREST_UserAction_SearchAction( $userId, $resourceClass, $sp );
 			}
 		case 'POST':
@@ -308,13 +316,15 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 	protected function doSearchAction( EarthIT_CMIPREST_UserAction_SearchAction $act, $preAuth, $preAuthExplanation ) {
 			$resourceClass = $act->getResourceClass();
 			$fields = $resourceClass->getFields();
-			$tableExpression = $this->rcTableExpression( $resourceClass );
-			$builder = new EarthIT_DBC_DoctrineStatementBuilder($this->registry->getDbAdapter());
 			$sp = $act->getSearchParameters();
+			
+			$builder = new EarthIT_DBC_DoctrineStatementBuilder($this->registry->getDbAdapter());
 			$params = array();
 			$whereClauses = array();
 			$tableAlias = 'tab';
+			$tableExpression = $this->rcTableExpression( $resourceClass );
 			$params['table'] = $tableExpression;
+			$searchSql = "SELECT * FROM {table} AS {$tableAlias}";
 			foreach( $sp->getFieldMatchers() as $fieldName => $matcher ) {
 				$field = $fields[$fieldName];
 				$columnName = $this->fieldDbName($resourceClass, $field);
@@ -330,8 +340,6 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 				}
 				$whereClauses[] = $matcherSql;
 			}
-			// TODO: include order by, limit clauses
-			$searchSql = "SELECT * FROM {table} AS {$tableAlias}";
 			if( $whereClauses ) $searchSql .= "\nWHERE ".implode("\n  AND ",$whereClauses);
 			if( count($orderByComponents = $sp->getOrderByComponents()) > 0 ) {
 				$orderBySqlComponents = array();
@@ -340,6 +348,11 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 				}
 				$searchSql .= "\nORDER BY ".implode(', ',$orderBySqlComponents);
 			}
+			$limitClauseParts = array();
+			if( $sp->getLimit() !== null ) $limitClauseParts[] = "LIMIT ".$sp->getLimit();
+			if( $sp->getSkip() != 0 ) $limitClauseParts[] = "OFFSET ".$sp->getSkip();
+			if( $limitClauseParts ) $searchSql .= "\n".implode(' ',$limitClauseParts);
+			
 			$stmt = $builder->makeStatement($searchSql, $params);
 			$stmt->execute();
 			$results = array();
