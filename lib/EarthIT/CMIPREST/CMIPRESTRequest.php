@@ -23,7 +23,6 @@ class EarthIT_CMIPREST_CMIPRESTRequest
 		$this->resourceInstanceId = $instanceId;
 		$this->resourcePropertyName = $propertyName;
 		$this->parameters = $params;
-		$this->resultModifiers = $resultModifiers;
 		$this->content = $content;
 	}
 	
@@ -47,7 +46,18 @@ class EarthIT_CMIPREST_CMIPRESTRequest
 			$instanceSeg   = self::m($bif, 3);
 			$propertySeg   = self::m($bif, 4);
 			
-			return new static( $requestMethod, $collectionSeg, $instanceSeg, $propertySeg, $params, $modifierSeg, $content );
+			$resultModifierList = explode(';',$modifierSeg);
+			$resultModifiers;
+			foreach( $resultModifierList as $mod ) {
+				$kv = explode('=',$mod,2);
+				if( count($kv) == 2 ) {
+					$resultModifiers[$kv[0]] = $kv[1];
+				} else {
+					$resultModifiers[$mod] = $mod;
+				}
+			}
+			
+			return new static( $requestMethod, $collectionSeg, $instanceSeg, $propertySeg, $params, $resultModifiers, $content );
 		} else {
 			return null;
 		}
