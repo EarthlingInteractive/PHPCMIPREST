@@ -52,18 +52,4 @@ class EarthIT_CMIPREST_CMIPRESTRequest
 			return null;
 		}
 	}
-	
-	public function toMethodName() {
-		$mods = $this->resultModifiers;
-		$inst = $this->resourceInstanceId;
-		$prop = $this->resourcePropertyName;
-		
-		$methodPhrase =
-			$this->getMethod() .
-			' resource' .
-			($mods === null ? '' : ' '.strtr($mods, '-', ' ')) .
-			($inst === null ? '' : ' item') .
-			($prop === null ? '' : ' '.strtr($prop, '-', ' '));
-		return EarthIT_Schema_WordUtil::toCamelCase($methodPhrase);
-	}
 }
