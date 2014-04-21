@@ -46,8 +46,8 @@ class EarthIT_CMIPREST_CMIPRESTRequest
 			$instanceSeg   = self::m($bif, 3);
 			$propertySeg   = self::m($bif, 4);
 			
-			$resultModifierList = explode(';',$modifierSeg);
-			$resultModifiers;
+			$resultModifierList = ($modifierSeg == '') ? array() : explode(';',$modifierSeg);
+			$resultModifiers = array();
 			foreach( $resultModifierList as $mod ) {
 				$kv = explode('=',$mod,2);
 				if( count($kv) == 2 ) {
