@@ -1,5 +1,35 @@
 <?php
 
+class EarthIT_CMIPREST_John {
+	public $originResourceClass;
+	public $originLinkFields;
+	public $targetResourceClass;
+	public $targetLinkFields;
+	public $targetIsPlural;
+	
+	public function __construct(
+		EarthIT_Schema_ResourceClass $originRc, array $originFields,
+		EarthIT_Schema_ResourceClass $targetRc, array $targetFields,
+		$targetIsPlural
+	) {
+		$this->originResourceClass = $originRc; $this->originFields = $originFields;
+		$this->targetResourceClass = $targetRc; $this->targetFields = $targetFields;
+		$this->targetIsPlural = $targetIsPlural;
+	}
+}
+
+class EarthIT_CMIPREST_JohnTreeNode
+{
+	public $join;
+	/** array of key => JohnTreeNode */
+	public $branches;
+	
+	public function __construct( EarthIT_CMIPREST_John $join, array $branches ) {
+		$this->join = $join;
+		$this->branches = $branches;
+	}
+}
+
 class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 {
 	protected static function dbToPhpValue( $value, $phpType ) {
@@ -190,6 +220,55 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 		return $orderByComponents;
 	}
 	
+	/**
+	 * a.b.c.d -> { a: { b: { c: { d: {} } } } }
+	 */
+	protected static function parsePath( $path, array &$into ) {
+		if( $path === '' ) return;
+		if( is_string($path) ) $path = explode('.', $path);
+		if( count($path) == 0 ) return;
+		
+		if( !isset($into[$path[0]]) ) {
+			$into[$path[0]] = array();
+		}
+		
+		self::parsePath( array_slice($path, 1), $into[$path[0]] );
+	}
+	
+	protected static function getFields( EarthIT_Schema_ResourceClass $rc, array $fieldNames ) {
+		$f = $rc->getFields();
+		$fields = array();
+		foreach( $fieldNames as $fn ) $fields[] = $f[$fn];
+		return $fields;
+	}
+	
+	protected function findJohnByRestName( EarthIT_Schema_ResourceClass $originRc, $linkRestName ) {
+		foreach( $originRc->getReferences() as $refName=>$ref ) {
+			$restName = EarthIT_Schema_WordUtil::toCamelCase($refName);
+			if( $linkRestName == $restName ) {
+				$targetClass = $this->registry->getSchema()->getResourceClass($ref->getTargetClassName());
+				return new EarthIT_CMIPREST_John(
+					$originRc, self::getFields($originRc, $ref->getOriginFieldNames()),
+					$targetClass, self::getFields($targetClass, $ref->getTargetFieldNames()),
+					false
+				);
+			}
+		}
+		throw new Exception("Can't find '$linkRestName' link from ".$originRc->getName());
+	}
+	
+	protected function withsToJohnBranches( array $withs, EarthIT_Schema_ResourceClass $originRc ) {
+		$branches = array();
+		foreach( $withs as $k=>$subWiths ) {
+			$join = $this->findJohnByRestName( $originRc, $k );
+			$branches[$k] = new EarthIT_CMIPREST_JohnTreeNode(
+				$join,
+				$this->withsToJohnBranches( $subWiths, $join->targetResourceClass )
+			);
+		}
+		return $branches;
+	}
+	
 	protected function cmipRequestToUserAction( EarthIT_CMIPREST_CMIPRESTRequest $crr ) {
 		$userId = $crr->getUserId();
 		$resourceClass = $this->registry->getSchema()->getResourceClass( EarthIT_Schema_WordUtil::depluralize($crr->getResourceCollectionName()) );
@@ -200,6 +279,20 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 		
 		switch( $crr->getMethod() ) {
 		case 'GET': case 'HEAD':
+			$withs = array();
+			foreach( $crr->getResultModifiers() as $k=>$v ) {
+				if( $k === 'with' ) {
+					$things = explode(',', $v);
+					foreach( $things as $thing ) {
+						self::parsePath(explode('.',$thing), $withs);
+					}
+				} else {
+					throw new Exception("Unrecognized result modifier: '$k'");
+				}
+			}
+			$joinTree = $this->withsToJohnBranches( $withs, $resourceClass );
+			// TODO: actually use joinTree.
+			
 			if( $itemId = $crr->getResourceInstanceId() ) {
 				return new EarthIT_CMIPREST_UserAction_GetItemAction( $userId, $resourceClass, $itemId ); 
 			} else {
