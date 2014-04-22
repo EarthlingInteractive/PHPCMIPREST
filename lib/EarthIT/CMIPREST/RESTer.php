@@ -12,23 +12,37 @@ class EarthIT_CMIPREST_John {
 		EarthIT_Schema_ResourceClass $targetRc, array $targetFields,
 		$targetIsPlural
 	) {
-		$this->originResourceClass = $originRc; $this->originFields = $originFields;
-		$this->targetResourceClass = $targetRc; $this->targetFields = $targetFields;
+		$this->originResourceClass = $originRc; $this->originLinkFields = $originFields;
+		$this->targetResourceClass = $targetRc; $this->targetLinkFields = $targetFields;
 		$this->targetIsPlural = $targetIsPlural;
 	}
+	
+	public function targetIsPlural() { return $this->targetIsPlural; }
 }
 
 class EarthIT_CMIPREST_JohnTreeNode
 {
-	public $join;
+	public $john;
 	/** array of key => JohnTreeNode */
 	public $branches;
 	
-	public function __construct( EarthIT_CMIPREST_John $join, array $branches ) {
-		$this->join = $join;
+	public function __construct( EarthIT_CMIPREST_John $john, array $branches ) {
+		$this->john = $john;
 		$this->branches = $branches;
 	}
+	
+	public function getJohn() { return $this->john; }
+	public function getBranches() { return $this->branches; }
 }
+
+/*
+ * TODO:
+ * - Make REST field namer configurable
+ * - Comment functions better
+ * - Split into 2 or 3 independent objects
+ *   CMIPRESTRequest -> UserAction translator
+ *   UserAction -> I/O
+ */
 
 class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 {
@@ -260,10 +274,10 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 	protected function withsToJohnBranches( array $withs, EarthIT_Schema_ResourceClass $originRc ) {
 		$branches = array();
 		foreach( $withs as $k=>$subWiths ) {
-			$join = $this->findJohnByRestName( $originRc, $k );
+			$john = $this->findJohnByRestName( $originRc, $k );
 			$branches[$k] = new EarthIT_CMIPREST_JohnTreeNode(
-				$join,
-				$this->withsToJohnBranches( $subWiths, $join->targetResourceClass )
+				$john,
+				$this->withsToJohnBranches( $subWiths, $john->targetResourceClass )
 			);
 		}
 		return $branches;
@@ -290,11 +304,10 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 					throw new Exception("Unrecognized result modifier: '$k'");
 				}
 			}
-			$joinBranches = $this->withsToJohnBranches( $withs, $resourceClass );
-			// TODO: actually use joinTree.
+			$johnBranches = $this->withsToJohnBranches( $withs, $resourceClass );
 			
 			if( $itemId = $crr->getResourceInstanceId() ) {
-				return new EarthIT_CMIPREST_UserAction_GetItemAction( $userId, $resourceClass, $itemId, $joinBranches ); 
+				return new EarthIT_CMIPREST_UserAction_GetItemAction( $userId, $resourceClass, $itemId, $johnBranches ); 
 			} else {
 				$fields = $resourceClass->getFields();
 				$fieldRestToInternalNames = array();
@@ -329,7 +342,7 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 					}
 				}
 				$sp = new EarthIT_CMIPREST_SearchParameters( $fieldMatchers, $orderBy, $skip, $limit );
-				return new EarthIT_CMIPREST_UserAction_SearchAction( $userId, $resourceClass, $sp, $joinBranches );
+				return new EarthIT_CMIPREST_UserAction_SearchAction( $userId, $resourceClass, $sp, $johnBranches );
 			}
 		case 'POST':
 			if( $crr->getResourceInstanceId() !== null ) {
@@ -402,13 +415,16 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 	}
 	
 	protected function postAuthorizeSearchResult( $userId, EarthIT_Schema_ResourceClass $rc, array $itemData, array &$explanation ) {
+		// TODO: Same as above
 		return true;
 	}
+	
+	//// Searchy with= support stuff
 	
 	protected function buildSearchSql(
 		EarthIT_Schema_ResourceClass $rc,
 		EarthIT_CMIPREST_SearchParameters $sp,
-		array $joins, array &$params
+		array &$params
 	) {
 		$fields = $rc->getFields();
 		$whereClauses = array();
@@ -427,7 +443,7 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 				continue;
 			} else if( $matcherSql === 'FALSE' ) {
 				// There will be no results!
-				return "";
+				return 'SELECT NOTHING';
 			}
 			$whereClauses[] = $matcherSql;
 		}
@@ -447,30 +463,152 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 		return $sql;
 	}
 	
+	protected function fetchRows( $sql, array $params ) {
+		if( $sql == 'SELECT NOTHING' ) return array();
+		$builder = new EarthIT_DBC_DoctrineStatementBuilder($this->registry->getDbAdapter());			
+		$stmt = $builder->makeStatement($sql, $params);
+		$stmt->execute();
+		return $stmt->fetchAll();
+	}
+	
+	protected function evaluateJohnTree(
+		EarthIT_Schema_ResourceClass $rc,
+		EarthIT_CMIPREST_SearchParameters $sp,
+		array $johns,
+		array $branches,
+		$path, array &$results
+	) {
+		$params = array();
+		$rootSql = $this->buildSearchSql( $rc, $sp, $params );
+		if( $rootSql == 'SELECT NOTHING' ) $results[$path] = array();
+		
+		if( count($johns) == 0 ) {
+			$sql = $rootSql;
+		} else {
+			$aliasNum = 0;
+			$rootAlias = 'a'.($aliasNum++);
+			$originAlias = $rootAlias;
+			$joins = array();
+			foreach( $johns as $j ) {
+				$originRc = $j->originResourceClass;
+				$targetRc = $j->targetResourceClass;
+				$targetAlias = 'a'.($aliasNum++);
+				$joinConditions = array();
+				for( $li=0; $li<count($j->originLinkFields); ++$li ) {
+					$originColumnParam = EarthIT_DBC_ParameterUtil::newParamName('originColumn');
+					$targetColumnParam = EarthIT_DBC_ParameterUtil::newParamName('targetColumn');
+					$params[$originColumnParam] = new EarthIT_DBC_SQLIdentifier($this->fieldDbName($originRc, $j->originLinkFields[$li]));
+					$params[$targetColumnParam] = new EarthIT_DBC_SQLIdentifier($this->fieldDbName($targetRc, $j->targetLinkFields[$li]));
+					$joinConditions[] = "{$targetAlias}.{{$targetColumnParam}} = {$originAlias}.{{$originColumnParam}}";
+				}
+				$targetTableParam = EarthIT_DBC_ParameterUtil::newParamName('targetTable');
+				$params[$targetTableParam] = $this->rcTableExpression($targetRc);
+				$joins[] = "JOIN {{$targetTableParam}} AS {$targetAlias} ON ".implode(' AND ',$joinConditions);
+				$originAlias = $targetAlias;
+			}
+			$sql = "SELECT {$targetAlias}.* FROM (\n".
+				"\t".str_replace("\n","\n\t",trim($rootSql))."\n".
+				") AS {$rootAlias}\n".implode("\n",$joins);
+		}
+		
+		$results[$path] = $this->fetchRows($sql, $params);
+			
+		foreach( $branches as $k=>$johnTreeNode ) {
+			$newJohns = $johns;
+			$newJohns[] = $johnTreeNode->getJohn();
+			$this->evaluateJohnTree( $rc, $sp, $newJohns, $johnTreeNode->branches, $path.".".$k, $results );
+		}
+	}
+	
+	protected function collectJohns( $branches, $prefix, array $johns=array(), array &$paths=array() ) {
+		$paths[$prefix] = $johns;
+		foreach( $branches as $k=>$johnTreeNode ) {
+			$johns2 = $johns;
+			$johns2[] = $johnTreeNode->getJohn();
+			$this->collectJohns( $johnTreeNode->getBranches(), $prefix.'.'.$k, $johns2, $paths );
+		}
+		return $paths;
+	}
+	
+	/**
+	 * Convert the given rows from DB to REST format according to the
+	 * specified resource class and, if userId not null, ensure that
+	 * they are visible to the user.
+	 */
+	protected function _q45( EarthIT_Schema_ResourceClass $rc, array $rows, $userId=null ) {
+		$restObjects = array();
+		foreach( $rows as $row ) {
+			if( $userId !== null ) {
+				$iitem = $this->dbObjectToInternal($rc, $row);
+				if( !$this->postAuthorizeSearchResult($userId, $rc, $item, $authorizationExplanation) ) {
+					throw new EarthIT_CMIPREST_ActionUnauthorized($act, $authorizationExplanation);
+				}					
+			}
+			$restObjects[] = $this->dbObjectToRest($rc, $row);
+		}
+		return $restObjects;
+	}
+	
 	protected function doSearchAction( EarthIT_CMIPREST_UserAction_SearchAction $act, $preAuth, $preAuthExplanation ) {
 		$rc = $act->getResourceClass();
 		$sp = $act->getSearchParameters();
 		$queryParams = array();
-		$querySql = $this->buildSearchSql( $rc, $sp, array(), $queryParams );
-		if( $querySql == '' ) return array();
-		$builder = new EarthIT_DBC_DoctrineStatementBuilder($this->registry->getDbAdapter());			
-		$stmt = $builder->makeStatement($querySql, $queryParams);
-		$stmt->execute();
-		$results = array();
-		$rows = $stmt->fetchAll();
+		//$querySql = $this->buildSearchSql( $rc, $sp, array(), $queryParams );
+		//if( $querySql == '' ) return array();
+		//$this->fetchRows( $querySql, $queryParams );
+		$relevantRows = array();
+		$this->evaluateJohnTree( $rc, $sp, array(), $act->getJohnBranches(), 'root', $relevantRows );
+		$johnCollections = $this->collectJohns( $act->getJohnBranches(), 'root' );
 		
-		foreach( $rows as $row ) {
-			if( !$preAuth ) {
-				$obj = $this->dbRecordToInternal($rc, $row);
-				// TODO: Will also need to postAuthorize any with= included records
-				if( !$this->postAuthorizeSearchResult($act->getUserId(), $rc, $item, $authorizationExplanation) ) {
-					throw new EarthIT_CMIPREST_ActionUnauthorized($act, $authorizationExplanation);
-				}
-			}
-			$results[] = $this->dbObjectToRest($rc, $row);
+		$postAuthUserId = $preAuth ? null : $act->getUserId();
+		
+		$relevantRestObjects = array();
+		foreach( $johnCollections as $path => $johns ) {
+			$targetRc = count($johns) == 0 ? $rc : $johns[count($johns)-1]->targetResourceClass;
+			$relevantRestObjects[$path] = $this->_q45( $targetRc, $relevantRows[$path], $postAuthUserId );
 		}
 		
-		return $results;
+		$assembled = array();
+		
+		// Assemble!
+		foreach( $johnCollections as $path => $johns ) {
+			$pathParts = explode('.',$path);
+			if( count($pathParts) == 1 ) {
+				foreach( $relevantRestObjects[$path] as $k=>$obj ) {
+					$assembled[$k] =& $obj;
+				}
+			} else {
+				$lastPathPart = $pathParts[count($pathParts)-1];
+				$originPath = implode('.',array_slice($pathParts,0,count($pathParts)-1));
+				$j = $johns[count($johns)-1];
+				$plural = $j->targetIsPlural();
+				$originRc = $j->originResourceClass;
+				$targetRc = $j->targetResourceClass;
+				$matchFields = array(); // target field rest name => origin field rest name
+				for( $li=0; $li<count($j->originLinkFields); ++$li ) {
+					$targetFieldName = $this->fieldRestName($targetRc, $j->targetLinkFields[$li]);
+					$originFieldName = $this->fieldRestName($originRc, $j->originLinkFields[$li]);
+					$matchFields[$targetFieldName] = $originFieldName;
+				}
+				foreach( $relevantRestObjects[$originPath] as $ok=>$ov ) {
+					$relations = array();
+					foreach( $relevantRestObjects[$path] as $tk=>$tv ) {
+						$matches = true;
+						foreach( $matchFields as $trf=>$orf ) {
+							if( $tv[$trf] != $ov[$orf] ) $matches = false;
+						}
+						if( $matches ) {
+							$relations[] =& $relevantRestObjects[$path][$tk];
+						}
+					}
+					$relevantRestObjects[$originPath][$ok][$lastPathPart] = $plural ?
+						$relations :
+						(count($relations) == 0 ? null : $relations[0]);
+				}
+			}
+		}
+		
+		return $relevantRestObjects['root'];
 	}
 	
 	/**
