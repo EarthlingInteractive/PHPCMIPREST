@@ -183,7 +183,7 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 				new EarthIT_CMIPREST_FieldMatcher_Like($v);
 		} else {
 			$scheme = substr($v, 0, $colonIdx);
-			$pattern = substr($v, $colonIdx+1);
+			$pattern = substr($v, $colonIdx+1) ?: ''; // Because substr('xyz',3) returns false. #phpwtf
 			switch( $scheme ) {
 			case 'eq': return new EarthIT_CMIPREST_FieldMatcher_Equal($pattern);
 			case 'ne': return new EarthIT_CMIPREST_FieldMatcher_NotEqual($pattern);
@@ -192,7 +192,7 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 			case 'lt': return new EarthIT_CMIPREST_FieldMatcher_Lesser($pattern);
 			case 'le': return new EarthIT_CMIPREST_FieldMatcher_LesserOrEqual($pattern);
 			case 'like': return new EarthIT_CMIPREST_FieldMatcher_Like($pattern);
-			case 'in': return new EarthIT_CMIPREST_FieldMatcher_In(explode(',',$pattern));
+			case 'in': return new EarthIT_CMIPREST_FieldMatcher_In($pattern === '' ? array() : explode(',',$pattern));
 			default:
 				throw new Exception("Unrecognized field match scheme: '$scheme'");
 			}
@@ -410,6 +410,7 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 		EarthIT_CMIPREST_SearchParameters $sp,
 		array $joins, array &$params
 	) {
+		$fields = $rc->getFields();
 		$whereClauses = array();
 		$tableAlias = 'tab';
 		$tableExpression = $this->rcTableExpression( $rc );
@@ -426,7 +427,7 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 				continue;
 			} else if( $matcherSql === 'FALSE' ) {
 				// There will be no results!
-				return array();
+				return "";
 			}
 			$whereClauses[] = $matcherSql;
 		}
@@ -448,10 +449,10 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 	
 	protected function doSearchAction( EarthIT_CMIPREST_UserAction_SearchAction $act, $preAuth, $preAuthExplanation ) {
 		$rc = $act->getResourceClass();
-		$fields = $rc->getFields();
 		$sp = $act->getSearchParameters();
 		$queryParams = array();
 		$querySql = $this->buildSearchSql( $rc, $sp, array(), $queryParams );
+		if( $querySql == '' ) return array();
 		$builder = new EarthIT_DBC_DoctrineStatementBuilder($this->registry->getDbAdapter());			
 		$stmt = $builder->makeStatement($querySql, $queryParams);
 		$stmt->execute();

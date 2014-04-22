@@ -9,6 +9,7 @@ class EarthIT_CMIPREST_FieldMatcher_In implements EarthIT_CMIPREST_FieldMatcher
 	}
 	
 	public function toSql( $fieldValueSql, $fieldType, &$params ) {
+		if( count($this->values) == 0 ) return 'FALSE';
 		$values = array();
 		foreach( $this->values as $v ) {
 			$values[] = EarthIT_CMIPREST_Util::cast($v, $fieldType);
