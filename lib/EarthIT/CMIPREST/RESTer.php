@@ -290,11 +290,11 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 					throw new Exception("Unrecognized result modifier: '$k'");
 				}
 			}
-			$joinTree = $this->withsToJohnBranches( $withs, $resourceClass );
+			$joinBranches = $this->withsToJohnBranches( $withs, $resourceClass );
 			// TODO: actually use joinTree.
 			
 			if( $itemId = $crr->getResourceInstanceId() ) {
-				return new EarthIT_CMIPREST_UserAction_GetItemAction( $userId, $resourceClass, $itemId ); 
+				return new EarthIT_CMIPREST_UserAction_GetItemAction( $userId, $resourceClass, $itemId, $joinBranches ); 
 			} else {
 				$fields = $resourceClass->getFields();
 				$fieldRestToInternalNames = array();
@@ -328,9 +328,8 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 						$fieldMatchers[$fieldRestToInternalNames[$k]] = self::parseFieldMatcher($v);
 					}
 				}
-				// TODO: Parse search parameters
 				$sp = new EarthIT_CMIPREST_SearchParameters( $fieldMatchers, $orderBy, $skip, $limit );
-				return new EarthIT_CMIPREST_UserAction_SearchAction( $userId, $resourceClass, $sp );
+				return new EarthIT_CMIPREST_UserAction_SearchAction( $userId, $resourceClass, $sp, $joinBranches );
 			}
 		case 'POST':
 			if( $crr->getResourceInstanceId() !== null ) {
@@ -406,63 +405,71 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 		return true;
 	}
 	
+	protected function buildSearchSql(
+		EarthIT_Schema_ResourceClass $rc,
+		EarthIT_CMIPREST_SearchParameters $sp,
+		array $joins, array &$params
+	) {
+		$whereClauses = array();
+		$tableAlias = 'tab';
+		$tableExpression = $this->rcTableExpression( $rc );
+		$params['table'] = $tableExpression;
+		$sql = "SELECT * FROM {table} AS {$tableAlias}";
+		foreach( $sp->getFieldMatchers() as $fieldName => $matcher ) {
+			$field = $fields[$fieldName];
+			$columnName = $this->fieldDbName($rc, $field);
+			$columnParamName = EarthIT_DBC_ParameterUtil::newParamName('column');
+			$params[$columnParamName] = new EarthIT_DBC_SQLIdentifier($columnName);
+			$columnExpression = "{$tableAlias}.{{$columnParamName}}";
+			$matcherSql = $matcher->toSql( $columnExpression, $fields[$fieldName]->getType()->getPhpTypeName(), $params );
+			if( $matcherSql === 'TRUE' ) {
+				continue;
+			} else if( $matcherSql === 'FALSE' ) {
+				// There will be no results!
+				return array();
+			}
+			$whereClauses[] = $matcherSql;
+		}
+		if( $whereClauses ) $sql .= "\nWHERE ".implode("\n  AND ",$whereClauses);
+		if( count($orderByComponents = $sp->getOrderByComponents()) > 0 ) {
+			$orderBySqlComponents = array();
+			foreach( $orderByComponents as $oc ) {
+				$orderBySqlComponents[] = $this->fieldDbName($rc, $oc->getField()).($oc->isAscending() ? " ASC" : " DESC");
+			}
+			$sql .= "\nORDER BY ".implode(', ',$orderBySqlComponents);
+		}
+		$limitClauseParts = array();
+		if( $sp->getLimit() !== null ) $limitClauseParts[] = "LIMIT ".$sp->getLimit();
+		if( $sp->getSkip() != 0 ) $limitClauseParts[] = "OFFSET ".$sp->getSkip();
+		if( $limitClauseParts ) $sql .= "\n".implode(' ',$limitClauseParts);
+		
+		return $sql;
+	}
+	
 	protected function doSearchAction( EarthIT_CMIPREST_UserAction_SearchAction $act, $preAuth, $preAuthExplanation ) {
-			$resourceClass = $act->getResourceClass();
-			$fields = $resourceClass->getFields();
-			$sp = $act->getSearchParameters();
-			
-			$builder = new EarthIT_DBC_DoctrineStatementBuilder($this->registry->getDbAdapter());
-			$params = array();
-			$whereClauses = array();
-			$tableAlias = 'tab';
-			$tableExpression = $this->rcTableExpression( $resourceClass );
-			$params['table'] = $tableExpression;
-			$searchSql = "SELECT * FROM {table} AS {$tableAlias}";
-			foreach( $sp->getFieldMatchers() as $fieldName => $matcher ) {
-				$field = $fields[$fieldName];
-				$columnName = $this->fieldDbName($resourceClass, $field);
-				$columnParamName = EarthIT_DBC_ParameterUtil::newParamName('column');
-				$params[$columnParamName] = new EarthIT_DBC_SQLIdentifier($columnName);
-				$columnExpression = "{$tableAlias}.{{$columnParamName}}";
-				$matcherSql = $matcher->toSql( $columnExpression, $fields[$fieldName]->getType()->getPhpTypeName(), $params );
-				if( $matcherSql === 'TRUE' ) {
-					continue;
-				} else if( $matcherSql === 'FALSE' ) {
-					// There will be no results!
-					return array();
+		$rc = $act->getResourceClass();
+		$fields = $rc->getFields();
+		$sp = $act->getSearchParameters();
+		$queryParams = array();
+		$querySql = $this->buildSearchSql( $rc, $sp, array(), $queryParams );
+		$builder = new EarthIT_DBC_DoctrineStatementBuilder($this->registry->getDbAdapter());			
+		$stmt = $builder->makeStatement($querySql, $queryParams);
+		$stmt->execute();
+		$results = array();
+		$rows = $stmt->fetchAll();
+		
+		foreach( $rows as $row ) {
+			if( !$preAuth ) {
+				$obj = $this->dbRecordToInternal($rc, $row);
+				// TODO: Will also need to postAuthorize any with= included records
+				if( !$this->postAuthorizeSearchResult($act->getUserId(), $rc, $item, $authorizationExplanation) ) {
+					throw new EarthIT_CMIPREST_ActionUnauthorized($act, $authorizationExplanation);
 				}
-				$whereClauses[] = $matcherSql;
 			}
-			if( $whereClauses ) $searchSql .= "\nWHERE ".implode("\n  AND ",$whereClauses);
-			if( count($orderByComponents = $sp->getOrderByComponents()) > 0 ) {
-				$orderBySqlComponents = array();
-				foreach( $orderByComponents as $oc ) {
-					$orderBySqlComponents[] = $this->fieldDbName($resourceClass, $oc->getField()).($oc->isAscending() ? " ASC" : " DESC");
-				}
-				$searchSql .= "\nORDER BY ".implode(', ',$orderBySqlComponents);
-			}
-			$limitClauseParts = array();
-			if( $sp->getLimit() !== null ) $limitClauseParts[] = "LIMIT ".$sp->getLimit();
-			if( $sp->getSkip() != 0 ) $limitClauseParts[] = "OFFSET ".$sp->getSkip();
-			if( $limitClauseParts ) $searchSql .= "\n".implode(' ',$limitClauseParts);
-			
-			$stmt = $builder->makeStatement($searchSql, $params);
-			$stmt->execute();
-			$results = array();
-			$rows = $stmt->fetchAll();
-			
-			foreach( $rows as $row ) {
-				if( !$preAuth ) {
-					$obj = $this->dbRecordToInternal($resourceClass, $row);
-					// TODO: Will also need to postAuthorize any with= included records
-					if( !$this->postAuthorizeSearchResult($act->getUserId(), $resourceClass, $item, $authorizationExplanation) ) {
-						throw new EarthIT_CMIPREST_ActionUnauthorized($act, $authorizationExplanation);
-					}
-				}
-				$results[] = $this->dbObjectToRest($resourceClass, $row);
-			}
-			
-			return $results;
+			$results[] = $this->dbObjectToRest($rc, $row);
+		}
+		
+		return $results;
 	}
 	
 	/**
