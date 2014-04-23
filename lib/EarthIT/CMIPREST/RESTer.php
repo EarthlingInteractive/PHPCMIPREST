@@ -378,19 +378,13 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 		}
 	}
 	
-	protected function makeIdMatchingExpression( EarthIT_Schema_ResourceClass $rc, $id ) {
-		$fields = $rc->getFields();
+	protected function itemIdToSearchParameters( EarthIT_Schema_ResourceClass $rc, $id ) {
 		$fieldValues = self::idToFieldValues( $rc, $id );
-		$columnNamer = $this->registry->getDbNamer();
-		
-		$conditionTemplates = array();
-		$conditionParameters = array();
+		$fieldMatchers = array();
 		foreach( $fieldValues as $fieldName => $value ) {
-			$field = $fields[$fieldName];
-			$conditionTemplates[] = $columnNamer->getColumnName($rc,$field). ' = {'.$fieldName.'}';
-			$conditionParameters[$fieldName] = $value;
+			$fieldMatchers[$fieldName] = new EarthIT_CMIPREST_FieldMatcher_Equal($value);
 		}
-		return new EarthIT_DBC_BaseSQLExpression( implode(" AND ", $conditionTemplates), $conditionParameters );
+		return new EarthIT_CMIPREST_SearchParameters($fieldMatchers, array(), 0, null);
 	}
 	
 	/**
@@ -633,20 +627,16 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 		// Otherwise it's A-Okay!
 		
 		if( $act instanceof EarthIT_CMIPREST_UserAction_GetItemAction ) {
-			$resourceClass = $act->getResourceClass();
-			$tableExpression = $this->rcTableExpression( $resourceClass );
-			$builder = new EarthIT_DBC_DoctrineStatementBuilder($this->registry->getDbAdapter());
-			$stmt = $builder->makeStatement("SELECT * FROM {table} WHERE {pkCondition}", array(
-				'table'=>$tableExpression,
-				'pkCondition'=>$this->makeIdMatchingExpression($resourceClass, $act->getItemId())
-			));
-			$stmt->execute();
-			$result = null;
-			foreach( $stmt->fetchAll() as $row ) {
-				// Expecting only one!  Or zero.
-				$result = $this->dbObjectToRest($resourceClass, $row);
-			}
-			return $result;
+			// Translate to a search action and take the first result
+			$searchAct = new EarthIT_CMIPREST_UserAction_SearchAction(
+				$act->getUserId(), $act->getResourceClass(),
+				$this->itemIdToSearchParameters($act->getResourceClass(), $act->getItemId()),
+				$act->getJohnBranches()
+			);
+			$results = $this->doAction($searchAct);
+			if( count($results) == 0 ) return null;
+			if( count($results) == 1 ) return $results[0];
+			throw new Exception("Multiple records found with ID = '".$act->getItemId()."'");
 		} else if( $act instanceof EarthIT_CMIPREST_UserAction_PostItemAction ) {
 			$resourceClass = $act->getResourceClass();
 			$tableExpression = $this->rcTableExpression( $resourceClass );
@@ -702,7 +692,7 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 		try {
 			$act = $this->cmipRequestToUserAction($crr);
 			$result = $this->doAction($act);
-			return Nife_Util::httpResponse( 200, new EarthIT_JSON_PrettyPrintedJSONBlob($result), 'application/json' );
+			return Nife_Util::httpResponse( $result === null ? 404 : 200, new EarthIT_JSON_PrettyPrintedJSONBlob($result), 'application/json' );
 		} catch( EarthIT_CMIPREST_ActionUnauthorized $un ) {
 			$status = $act->getUserId() === null ? 401 : 403;
 			return self::errorResponse( $status, $un->getAction()->getActionDescription(), $un->getNotes() );
