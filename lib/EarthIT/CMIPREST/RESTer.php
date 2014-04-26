@@ -46,6 +46,12 @@ class EarthIT_CMIPREST_JohnTreeNode
 
 class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 {
+	/**
+	 * Returned to indicate that an action succeeded but that there is
+	 * no meaningful data to return
+	 */
+	const SUCCESS = "You're Winner!";
+	
 	protected static function dbToPhpValue( $value, $phpType ) {
 		// May want to do something different than just use cast
 		// e.g. in case we want to interpret "010" as ten instead of eight.
@@ -420,7 +426,7 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 			);
 		case 'DELETE':
 			if( $crr->getResourceInstanceId() === null ) {
-				throw new Exception("You ust include item ID when PATCHing");
+				throw new Exception("You ust include item ID when DELETEing");
 			}
 			return new EarthIT_CMIPREST_UserAction_DeleteItemAction( $userId, $resourceClass, $crr->getResourceInstanceId() );
 		default:
@@ -675,6 +681,8 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 	 * Perform a PUT (merge = false) or PATCH (merge = true) action.
 	 */
 	protected function doPatchLikeAction( EarthIT_CMIPREST_UserAction $act, $merge ) {
+		// TODO: Make it work even if the record does not already exist
+		
 		$itemId = $act->getItemId();
 		$resourceClass = $act->getResourceClass();
 		$idFieldValues = self::idToFieldValues( $resourceClass, $itemId );
@@ -700,12 +708,22 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 		);
 		return $this->getRestObject( $resourceClass, $itemId );
 	}
-
-
+	
+	/**
+	 * Ensure that the given action is structurally valid so that
+	 * assumptions made while authorizing hold true.
+	 * Will throw an exception otherwise.
+	 */
+	protected function validateAction( EarthIT_CMIPREST_UserAction $act ) {
+		// TODO
+	}
+	
 	/**
 	 * Result will be a JSON array in REST form
 	 */
 	protected function doAction( EarthIT_CMIPREST_UserAction $act ) {
+		$this->validateAction($act);
+		
 		$authorizationExplanation = array();
 		$preAuth = $this->preAuthorizeAction($act, $authorizationExplanation);
 		
@@ -764,7 +782,15 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 		} else if( $act instanceof EarthIT_CMIPREST_UserAction_PatchItemAction ) {
 			return $this->doPatchLikeAction($act, true);
 		} else if( $act instanceof EarthIT_CMIPREST_UserAction_DeleteItemAction ) {
-			throw new Exception(get_class($act)." not supported");
+			$resourceClass = $act->getResourceClass();
+			$params = array('table' => $this->rcTableExpression( $resourceClass ));
+			$conditions = self::encodeColumnValuePairs($this->itemIdToColumnValues($resourceClass, $act->getItemId()), $params);
+			$this->doQuery(
+				"DELETE FROM {table}\n".
+				"WHERE ".implode("\n  AND ",$conditions),
+				$params
+			);
+			return self::SUCCESS;
 		} else {
 			// TODO
 			throw new Exception(get_class($act)." not supported");
@@ -787,13 +813,23 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 		return Nife_Util::httpResponse( $status, new EarthIT_JSON_PrettyPrintedJSONBlob($result), 'application/json' );
 	}
 	
+	protected static function normalResponse( $result ) {
+		if( $result === null ) {
+			return Nife_Util::httpResponse( 404, new EarthIT_JSON_PrettyPrintedJSONBlob($result), 'application/json' );
+		} else if( $result === self::SUCCESS ) {
+			return Nife_Util::httpResponse( 201, '' );
+		} else {
+			return Nife_Util::httpResponse( 200, new EarthIT_JSON_PrettyPrintedJSONBlob($result), 'application/json' );
+		}
+	}
+
 	public function handle( EarthIT_CMIPREST_CMIPRESTRequest $crr ) {
 		// TODO: Put exception -> response mapping in its own function
 		
 		try {
 			$act = $this->cmipRequestToUserAction($crr);
 			$result = $this->doAction($act);
-			return Nife_Util::httpResponse( $result === null ? 404 : 200, new EarthIT_JSON_PrettyPrintedJSONBlob($result), 'application/json' );
+			return self::normalResponse($result);
 		} catch( EarthIT_CMIPREST_ActionUnauthorized $un ) {
 			$status = $act->getUserId() === null ? 401 : 403;
 			return self::errorResponse( $status, $un->getAction()->getActionDescription(), $un->getNotes() );
