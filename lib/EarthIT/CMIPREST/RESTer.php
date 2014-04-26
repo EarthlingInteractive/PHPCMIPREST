@@ -125,7 +125,7 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 			foreach( $arr as $k=>$v ) {
 				if( isset($result[$k]) ) {
 					if( $result[$k] !== $v ) {
-						throw new Exception("Conflicting values given for '$k': {$result[$k]}, ${v}");
+						throw new Exception("Conflicting values given for '$k': ".json_encode($result[$k]).", ".json_encode($v));
 					}
 				} else {
 					$result[$k] = $v;
