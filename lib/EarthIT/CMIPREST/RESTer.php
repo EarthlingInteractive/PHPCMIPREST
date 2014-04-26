@@ -93,7 +93,57 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 		
 		return $idFieldValues;
 	}
-
+	
+	/**
+	 * @param array $columnValues array of column name => column value
+	 * @param array &$params column and value parameter values will be put here
+	 * @return array of "{col...X} = {val...X}" strings, one per column,
+	 *   with {placeholders} corresponding to the keys added to $params
+	 */
+	protected static function encodeColumnValuePairs( array $columnValues, array &$params ) {
+		$parts = array();
+		foreach( $columnValues as $colName=>$val ) {
+			$cnp = EarthIT_DBC_ParameterUtil::newParamName('col');
+			$cvp = EarthIT_DBC_ParameterUtil::newParamName('val');
+			$params[$cnp] = new EarthIT_DBC_SQLIdentifier($colName);
+			$params[$cvp] = $val;
+			$parts[] = "{{$cnp}} = {{$cvp}}";
+		}
+		return $parts;
+	}
+	
+	protected static function mergeEnsuringNoContradictions() {
+		$arrays = func_get_args();
+		$result = array();
+		foreach( $arrays as $arr ) {
+			foreach( $arr as $k=>$v ) {
+				if( isset($result[$k]) ) {
+					if( $result[$k] !== $v ) {
+						throw new Exception("Conflicting values given for '$k': {$result[$k]}, ${v}");
+					}
+				} else {
+					$result[$k] = $v;
+				}
+			}
+		}
+		return $result;
+	}
+	
+	//// DB calls
+	
+	protected function fetchRows( $sql, array $params ) {
+		if( $sql == 'SELECT NOTHING' ) return array();
+		$builder = new EarthIT_DBC_DoctrineStatementBuilder($this->registry->getDbAdapter());			
+		$stmt = $builder->makeStatement($sql, $params);
+		$stmt->execute();
+		return $stmt->fetchAll();
+	}
+	
+	/** Same as fetchRows; just doesn't return anything. */
+	protected function doQuery( $sql, array $params ) {
+		$this->fetchRows($sql, $params);
+	}
+		
 	//// Class location
 	
 	protected $dbNamespacePath = array();
@@ -128,6 +178,7 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 		return EarthIT_Schema_WordUtil::toCamelCase($f->getName());
 	}
 	
+	/** i.e. 'name of column corresponding to field' */
 	protected function fieldDbName( EarthIT_Schema_ResourceClass $rc, EarthIT_Schema_Field $f ) {
 		return $f->getColumnNameOverride() ?: $this->registry->getDbNamer()->getColumnName( $rc, $f );
 	}
@@ -170,10 +221,9 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 		$columnNamer = $this->registry->getDbNamer();
 		$columnValues = array();
 		foreach( $rc->getFields() as $f ) {
-			$fn = $f->getName();
-			if( isset($obj[$fn]) ) {
-				$cn = $columnNamer->getColumnName($rc, $f);
-				$columnValues[$cn] = $obj[$fn];
+			$fieldName = $f->getName();
+			if( isset($obj[$fieldName]) ) {
+				$columnValues[$this->fieldDbName($rc, $f)] = $obj[$fieldName];
 			}
 		}
 		return $columnValues;
@@ -378,6 +428,16 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 		}
 	}
 	
+	protected function itemIdToColumnValues( EarthIT_Schema_ResourceClass $rc, $id ) {
+		$fieldValues = self::idToFieldValues( $rc, $id );
+		$columnValues = array();
+		$fields = $rc->getFields();
+		foreach( $fieldValues as $fieldName=>$value ) {
+			$columnValues[$this->fieldDbName($rc, $fields[$fieldName])] = $value;
+		}
+		return $columnValues;
+	}
+
 	protected function itemIdToSearchParameters( EarthIT_Schema_ResourceClass $rc, $id ) {
 		$fieldValues = self::idToFieldValues( $rc, $id );
 		$fieldMatchers = array();
@@ -456,15 +516,7 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 		
 		return $sql;
 	}
-	
-	protected function fetchRows( $sql, array $params ) {
-		if( $sql == 'SELECT NOTHING' ) return array();
-		$builder = new EarthIT_DBC_DoctrineStatementBuilder($this->registry->getDbAdapter());			
-		$stmt = $builder->makeStatement($sql, $params);
-		$stmt->execute();
-		return $stmt->fetchAll();
-	}
-	
+
 	protected function evaluateJohnTree(
 		EarthIT_Schema_ResourceClass $rc,
 		EarthIT_CMIPREST_SearchParameters $sp,
@@ -605,6 +657,51 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 		return $relevantRestObjects['root'];
 	}
 	
+	protected function getDbObject( EarthIT_Schema_ResourceClass $resourceClass, $itemId ) {
+		$params = array('table' => $this->rcTableExpression( $resourceClass ));
+		$whereClauses = self::encodeColumnValuePairs($this->itemIdToColumnValues( $resourceClass, $itemId ), $params);
+		$rows = $this->fetchRows( "SELECT * FROM {table}\nWHERE ".implode("\n  AND ",$whereClauses), $params );
+		if( count($rows) == 1 ) return $rows[0];
+		if( count($rows) == 0 ) return null;
+		throw new Exception("Getting an item by ID returned multiple rows.");
+	}
+	
+	protected function getRestObject( EarthIT_Schema_ResourceClass $resourceClass, $itemId ) {
+		$obj = $this->getDbObject($resourceClass, $itemId);
+		return $obj === null ? null : $this->dbObjectToRest($resourceClass, $obj);
+	}
+	
+	/**
+	 * Perform a PUT (merge = false) or PATCH (merge = true) action.
+	 */
+	protected function doPatchLikeAction( EarthIT_CMIPREST_UserAction $act, $merge ) {
+		$itemId = $act->getItemId();
+		$resourceClass = $act->getResourceClass();
+		$idFieldValues = self::idToFieldValues( $resourceClass, $itemId );
+		$internalValues = self::mergeEnsuringNoContradictions( $idFieldValues, $act->getItemData() );
+		if( !$merge ) {
+			// Set other field values to their defaults.
+			// Assuming null for now...
+			foreach( $resourceClass->getFields() as $fieldName => $field ) {
+				if( !isset($internalValues[$fieldName]) ) {
+					$internalValues[$fieldName] = null;
+				}
+			}
+		}
+		
+		$params = array('table' => $this->rcTableExpression($resourceClass));
+		$conditions = self::encodeColumnValuePairs($this->internalObjectToDb($resourceClass, $idFieldValues ), $params);
+		$sets       = self::encodeColumnValuePairs($this->internalObjectToDb($resourceClass, $internalValues), $params);
+		$this->doQuery(
+			"UPDATE {table} SET\n".
+			"\t".implode(",\n\t", $sets).
+			"WHERE ".implode("\n  AND ",$conditions),
+			$params
+		);
+		return $this->getRestObject( $resourceClass, $itemId );
+	}
+
+
 	/**
 	 * Result will be a JSON array in REST form
 	 */
@@ -651,19 +748,23 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 			
 			// TODO: actually determine ID columns
 			
-			$builder = new EarthIT_DBC_DoctrineStatementBuilder($this->registry->getDbAdapter());
-			$stmt = $builder->makeStatement("INSERT INTO {table} {columns} VALUES {values} RETURNING id", array(
+			$rows = $this->fetchRows("INSERT INTO {table} {columns} VALUES {values} RETURNING *", array(
 				'table' => $tableExpression,
 				'columns' => $columnExpressionList,
 				'values' => $columnValueList
 			));
-			$stmt->execute();
-			$result = null;
-			foreach( $stmt->fetchAll() as $row ) {
-				// Expecting only one!  Or zero.
-				return $row['id'];
+			if( count($rows) != 1 ) {
+				throw new Exception("INSERT INTO ... RETURNING returned ".count($rows)." rows; expected exactly 1.");
 			}
-			throw new Exception("INSERT...RETURNING didn't do what we expected");
+			foreach( $rows as $row ) {
+				return $this->dbObjectToRest($resourceClass, $row);
+			}
+		} else if( $act instanceof EarthIT_CMIPREST_UserAction_PutItemAction ) {
+			return $this->doPatchLikeAction($act, false);
+		} else if( $act instanceof EarthIT_CMIPREST_UserAction_PatchItemAction ) {
+			return $this->doPatchLikeAction($act, true);
+		} else if( $act instanceof EarthIT_CMIPREST_UserAction_DeleteItemAction ) {
+			throw new Exception(get_class($act)." not supported");
 		} else {
 			// TODO
 			throw new Exception(get_class($act)." not supported");

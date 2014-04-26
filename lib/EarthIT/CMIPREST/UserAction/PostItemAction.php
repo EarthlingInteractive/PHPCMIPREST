@@ -2,7 +2,7 @@
 
 class EarthIT_CMIPREST_UserAction_PostItemAction extends EarthIT_CMIPREST_UserAction_ResourceAction
 {
-	protected $itemdata;
+	protected $itemData;
 	
 	public function __construct( $userId, EarthIT_Schema_ResourceClass $resourceClass, array $itemData ) {
 		parent::__construct( $userId, $resourceClass );
