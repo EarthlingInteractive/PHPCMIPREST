@@ -336,12 +336,13 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 		 * Try to find a reference from a class 'X' where plural(X) = the requested link,
 		 * and return a plural John of the inverse of that reference.
 		 */
+		$inverseJohns = array();
 		foreach( $this->registry->getSchema()->getResourceClasses() as $targetRc ) {
 			$pluralRestName = EarthIT_Schema_WordUtil::toCamelCase(EarthIT_Schema_WordUtil::pluralize($targetRc->getName()));
 			if( $pluralRestName == $linkRestName ) {
 				foreach( $targetRc->getReferences() as $inverseRef ) {
 					if( $inverseRef->getTargetClassName() == $originRc->getName() ) {
-						return new EarthIT_CMIPREST_John(
+						$inverseJohns[] = new EarthIT_CMIPREST_John(
 							$originRc, self::getFields($originRc, $inverseRef->getTargetFieldNames()),
 							$targetRc, self::getFields($targetRc, $inverseRef->getOriginFieldNames()),
 							true // Assuming plural for now.
@@ -349,6 +350,23 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 					}
 				}
 			}
+		}
+		if( count($inverseJohns) == 1 ) {
+			return $inverseJohns[0];
+		} else if( count($inverseJohns) > 1 ) {
+			$list = array();
+			foreach( $inverseJohns as $ij ) {
+				$originFieldNames = array();
+				foreach( $ij->targetLinkFields as $fn=>$f ) {
+					$originFieldNames[] = $f->getName();
+				}
+				$list[] = implode(', ',$originFieldNames);
+			}
+			// Alternatively, we could just include all of them.
+			throw new Exception(
+				"The link '$linkRestName' from ".$originRc->getName()." is ambiguous.\n".
+				"It could indicate a link based on any of: ".implode('; ',$list)
+			);
 		}
 		
 		throw new Exception("Can't find '$linkRestName' link from ".$originRc->getName());
