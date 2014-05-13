@@ -179,6 +179,7 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 		
 	//// Field conversion
 	
+	// TODO: Make configurable
 	protected function fieldRestName( EarthIT_Schema_ResourceClass $rc, EarthIT_Schema_Field $f ) {
 		// When emitting JSON, format names as the JS does
 		return EarthIT_Schema_WordUtil::toCamelCase($f->getName());
@@ -316,14 +317,40 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 		foreach( $originRc->getReferences() as $refName=>$ref ) {
 			$restName = EarthIT_Schema_WordUtil::toCamelCase($refName);
 			if( $linkRestName == $restName ) {
-				$targetClass = $this->registry->getSchema()->getResourceClass($ref->getTargetClassName());
+				$targetRc = $this->registry->getSchema()->getResourceClass($ref->getTargetClassName());
 				return new EarthIT_CMIPREST_John(
 					$originRc, self::getFields($originRc, $ref->getOriginFieldNames()),
-					$targetClass, self::getFields($targetClass, $ref->getTargetFieldNames()),
+					$targetRc, self::getFields($targetRc, $ref->getTargetFieldNames()),
 					false
 				);
 			}
 		}
+		
+		/* TODO:
+		 * Eventually we should be able to define inverse relationship
+		 * names and plurality in the schema, possibly falling back on
+		 * the method of finding them following this comment.
+		 */
+		
+		/*
+		 * Try to find a reference from a class 'X' where plural(X) = the requested link,
+		 * and return a plural John of the inverse of that reference.
+		 */
+		foreach( $this->registry->getSchema()->getResourceClasses() as $targetRc ) {
+			$pluralRestName = EarthIT_Schema_WordUtil::toCamelCase(EarthIT_Schema_WordUtil::pluralize($targetRc->getName()));
+			if( $pluralRestName == $linkRestName ) {
+				foreach( $targetRc->getReferences() as $inverseRef ) {
+					if( $inverseRef->getTargetClassName() == $originRc->getName() ) {
+						return new EarthIT_CMIPREST_John(
+							$originRc, self::getFields($originRc, $inverseRef->getTargetFieldNames()),
+							$targetRc, self::getFields($targetRc, $inverseRef->getOriginFieldNames()),
+							true // Assuming plural for now.
+						);
+					}
+				}
+			}
+		}
+		
 		throw new Exception("Can't find '$linkRestName' link from ".$originRc->getName());
 	}
 	
