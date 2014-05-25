@@ -698,9 +698,13 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 							$relations[] =& $relevantRestObjects[$path][$tk];
 						}
 					}
-					$relevantRestObjects[$originPath][$ok][$lastPathPart] = $plural ?
-						$relations :
-						(count($relations) == 0 ? null : $relations[0]);
+					if( $plural ) {
+						$relevantRestObjects[$originPath][$ok][$lastPathPart] = $relations;
+					} else if( count($relations) == 0 ) {
+						$relevantRestObjects[$originPath][$ok][$lastPathPart] = null;
+					} else {
+						$relevantRestObjects[$originPath][$ok][$lastPathPart] =& $relations[0];
+					}
 				}
 			}
 		}
