@@ -636,7 +636,7 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 		$restObjects = array();
 		foreach( $rows as $row ) {
 			if( $userId !== null ) {
-				$iitem = $this->dbObjectToInternal($rc, $row);
+				$item = $this->dbObjectToInternal($rc, $row);
 				if( !$this->postAuthorizeSearchResult($userId, $rc, $item, $authorizationExplanation) ) {
 					throw new EarthIT_CMIPREST_ActionUnauthorized($act, $authorizationExplanation);
 				}					
