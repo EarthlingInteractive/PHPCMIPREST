@@ -1,9 +1,8 @@
 .create-database.sql
-.create-tables.sql
 .database-created
-.drop-tables.sql
 composer.lock
 config/test-dbc.json
 test-schema.php
 util/SchemaSchemaDemo.jar
+util/test-psql
 vendor

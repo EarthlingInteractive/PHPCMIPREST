@@ -1,8 +1,6 @@
 generated_files = \
 	.create-database.sql \
-	.create-tables.sql \
 	.database-created \
-	.drop-tables.sql \
 	test-schema.php \
 	vendor
 
@@ -18,6 +16,10 @@ all: test
 	clean \
 	test
 
+util/test-psql: config/test-dbc.json util/generate-psql-script
+	php util/generate-psql-script "$<" > "$@"
+	chmod +x "$@"
+
 util/SchemaSchemaDemo.jar: util/SchemaSchemaDemo.jar.urn
 	rm -f $@
 	mkdir -p `dirname $@`
@@ -25,16 +27,8 @@ util/SchemaSchemaDemo.jar: util/SchemaSchemaDemo.jar.urn
 
 run_schema_processor = \
 	java -jar util/SchemaSchemaDemo.jar \
-	-o-create-tables-script .create-tables.sql \
-	-o-drop-tables-script .drop-tables.sql \
 	-o-schema-php test-schema.php -php-schema-class-namespace EarthIT_Schema \
 	test-schema.txt
-
-.create-tables.sql: test-schema.txt util/SchemaSchemaDemo.jar
-	${run_schema_processor}
-
-.drop-tables.sql: test-schema.txt util/SchemaSchemaDemo.jar
-	${run_schema_processor}
 
 test-schema.php: test-schema.txt util/SchemaSchemaDemo.jar
 	${run_schema_processor}
@@ -52,7 +46,7 @@ config/test-dbc.json:
 .create-database.sql: config/test-dbc.json
 	php util/generate-database-creation-script config/test-dbc.json >"$@"
 
-.database-created: config/test-dbc.json .create-database.sql
+.database-created: config/test-dbc.json .create-database.sql util/test-psql
 	echo "-------------------------------------------------------------------" >&2
 	echo "Creating database on default postgres server based on configuration" >&2
 	echo "in config/test-dbc.json." >&2
@@ -69,6 +63,7 @@ config/test-dbc.json:
 	echo "This file is a marker created/used by the build process to indicate"      >"$@"
 	echo "that a database has been created.  If you've deleted the datbase"        >>"$@"
 	echo "or need to re-create it for some other reason, you may delete this file" >>"$@"
+	cat util/create-test-tables.sql | util/test-psql -v ON_ERROR_STOP=1
 
-test: vendor .database-created test-schema.php .create-tables.sql .drop-tables.sql
+test: vendor .database-created test-schema.php
 	phpunit --bootstrap vendor/autoload.php test
