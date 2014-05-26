@@ -44,7 +44,7 @@ class EarthIT_CMIPREST_JohnTreeNode
  *   UserAction -> I/O
  */
 
-class EarthIT_CMIPREST_RESTer extends EarthIT_Component
+class EarthIT_CMIPREST_RESTer
 {
 	/**
 	 * Returned to indicate that an action succeeded but that there is
@@ -55,11 +55,41 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 	//// Component management
 	
 	protected $storage;
-	protected function getStorage() {
-		if( $this->storage === null ) {
-			$this->storage = new EarthIT_CMIPREST_PostgresStorage($this->registry->getDbAdapter(), $this->registry->getDbNamer());
+	protected $schema;
+	
+	public function __construct( $params ) {
+		if( $params instanceof EarthIT_Registry ) {
+			$registry = $params;
+			$params = array(
+				'dbAdapter' => $registry->getDbAdapter(),
+				'dbNamer' => $registry->getDbNamer(),
+				'schema' => $registry->getSchema(),
+			);
 		}
-		return $this->storage;
+		if( is_array($params) ) {
+			$params = array_merge(array(
+				'storage' => null,
+				'dbAdapter' => null,
+				'dbNamer' => null,
+				'schema' => null,
+			), $params);
+		} else {
+			throw new Exception("Parameters to RESTer constructor must be an array or an EarthIT_Registry");
+		}
+		
+		if( ($this->storage = $params['storage']) ) {
+			// Okay!
+		} else if( $params['dbAdapter'] and $params['dbNamer'] ) {
+			$this->storage = new EarthIT_CMIPREST_PostgresStorage($params['dbAdapter'], $params['dbNamer']);
+		} else {
+			throw new Exception("No storage or (dbAdapter + dbNamer) specified.");
+		}
+		
+		if( ($this->schema = $params['schema']) ) {
+			// Okay!
+		} else {
+			throw new Exception("No schema specified.");
+		}
 	}
 	
 	////
@@ -281,7 +311,7 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 		foreach( $originRc->getReferences() as $refName=>$ref ) {
 			$restName = EarthIT_Schema_WordUtil::toCamelCase($refName);
 			if( $linkRestName == $restName ) {
-				$targetRc = $this->registry->getSchema()->getResourceClass($ref->getTargetClassName());
+				$targetRc = $this->schema->getResourceClass($ref->getTargetClassName());
 				return new EarthIT_CMIPREST_John(
 					$originRc, self::getFields($originRc, $ref->getOriginFieldNames()),
 					$targetRc, self::getFields($targetRc, $ref->getTargetFieldNames()),
@@ -301,7 +331,7 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 		 * and return a plural John of the inverse of that reference.
 		 */
 		$inverseJohns = array();
-		foreach( $this->registry->getSchema()->getResourceClasses() as $targetRc ) {
+		foreach( $this->schema->getResourceClasses() as $targetRc ) {
 			$pluralRestName = EarthIT_Schema_WordUtil::toCamelCase(EarthIT_Schema_WordUtil::pluralize($targetRc->getName()));
 			if( $pluralRestName == $linkRestName ) {
 				foreach( $targetRc->getReferences() as $inverseRef ) {
@@ -350,7 +380,7 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 	
 	protected function cmipRequestToUserAction( EarthIT_CMIPREST_CMIPRESTRequest $crr ) {
 		$userId = $crr->getUserId();
-		$resourceClass = $this->registry->getSchema()->getResourceClass( EarthIT_Schema_WordUtil::depluralize($crr->getResourceCollectionName()) );
+		$resourceClass = $this->schema->getResourceClass( EarthIT_Schema_WordUtil::depluralize($crr->getResourceCollectionName()) );
 		
 		if( !$resourceClass->hasRestService() ) {
 			throw new EarthIT_CMIPREST_ResourceNotExposedViaService("'".$resourceClass->getName()."' records are not exposed via services");
@@ -522,7 +552,7 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 		$rc = $act->getResourceClass();
 		$sp = $act->getSearchParameters();
 		$queryParams = array();
-		$relevantObjects = $this->getStorage()->search( $rc, $sp, $act->getJohnBranches() );
+		$relevantObjects = $this->storage->search( $rc, $sp, $act->getJohnBranches() );
 		$johnCollections = $this->collectJohns( $act->getJohnBranches(), 'root' );
 		
 		$postAuthUserId = $preAuth ? null : $act->getUserId();
@@ -581,7 +611,7 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 	}
 	
 	protected function getRestObject( EarthIT_Schema_ResourceClass $resourceClass, $itemId ) {
-		$obj = $this->getStorage()->getItem($resourceClass, $itemId);
+		$obj = $this->storage->getItem($resourceClass, $itemId);
 		return $obj === null ? null : $this->dbObjectToRest($resourceClass, $obj);
 	}
 	
