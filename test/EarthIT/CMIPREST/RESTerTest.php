@@ -3,6 +3,7 @@
 class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 {
 	protected $dbAdapter;
+	protected $storage;
 	protected $rester;
 	
 	public function setUp() {
@@ -14,9 +15,9 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 		}
 		$dbConfig = EarthIT_JSON::decode($dbConfigJson);
 		$this->dbAdapter = Doctrine\DBAL\DriverManager::getConnection($dbConfig);
+		$this->storage = new EarthIT_CMIPREST_PostgresStorage($this->dbAdapter, new EarthIT_DBC_PostgresNamer());
 		$this->rester = new EarthIT_CMIPREST_RESTer(array(
-			'dbAdapter' => $this->dbAdapter,
-			'dbNamer' => new EarthIT_DBC_PostgresNamer(),
+			'storage' => $this->storage,
 			'schema' => (require 'test-schema.php')
 		));
 	}
