@@ -1,17 +1,17 @@
 generated_files = \
-	vendor \
-	.database-created
+	.create-database.sql \
+	.create-tables.sql \
+	.database-created \
+	.drop-tables.sql \
+	test-schema.php \
+	vendor
 
 all: test
 
 .DELETE_ON_ERROR:
 
 .SILENT: \
-	.create-database.sql \
-	.create-tables.sql \
-	.database-created \
-	.drop-tables.sql \
-	test-schema.php
+	.database-created
 
 .PHONY: \
 	all \
