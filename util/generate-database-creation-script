@@ -1,0 +1,46 @@
+#!/usr/bin/env php
+<?php
+
+require __DIR__.'/../vendor/autoload.php';
+
+$aboutText =
+	  "{$argv[0]}: Generate SQL to be run as the database administrator\n".
+	  "to create the test database.";
+
+$usageText = "Usage: {$argv[0]} <path-to-config-json>";
+
+if( count($argv) < 2 ) {
+	fwrite(STDERR, "{$argv[0]}: Error: No config JSON file provided.\n\n");
+	fwrite(STDERR, $usageText."\n");
+	exit(1);
+} else if( $argv[1] == '-?' or $argv[1] == '-h' or $argv[1] == '--help' ) {
+	echo
+		$aboutText, "\n\n",
+		$usageText, "\n";
+	exit(0);
+}
+
+$dbcConfigFile = $argv[1];
+if( ($dbcConfigJson = file_get_contents($dbcConfigFile)) === false ) {
+	fwrite(STDERR, "{$argv[0]}: Error: Could not read specified config file, '$dbcConfigFile'\n");
+	exit(1);
+}
+
+try {
+	$dbcConfig = EarthIT_JSON::decode($dbcConfigJson);
+} catch( EarthIT_JSON_JSONDecodeError $e ) {
+	fwrite(STDERR, "{$argv[0]}: Error: Failed to parse config JSON from '$dbcConfigFile':\n".$e->getMessage()."\n");
+	exit(1);
+}
+
+$sePassword = $dbcConfig['password'];
+// $seHost     = $dbcConfig['host'];
+// $sePort     = coalesce($dbcConfig['port'], 5432);
+$seDatabase = $dbcConfig['dbname'];
+$seUser     = $dbcConfig['user'];
+
+echo
+	"DROP DATABASE IF EXISTS \"{$seDatabase}\";\n",
+	"CREATE DATABASE \"{$seDatabase}\";\n",
+	"CREATE USER \"{$seUser}\" WITH PASSWORD '{$sePassword}';\n",
+	"GRANT ALL PRIVILEGES ON DATABASE \"{$seDatabase}\" TO \"{$seUser}\";\n";
