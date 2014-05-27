@@ -55,7 +55,7 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 		$columnValues = array();
 		foreach( $rc->getFields() as $f ) {
 			$fieldName = $f->getName();
-			if( isset($obj[$fieldName]) ) {
+			if( array_key_exists($fieldName, $obj) ) {
 				$columnValues[$this->fieldDbName($rc, $f)] = $obj[$fieldName];
 			}
 		}
@@ -276,11 +276,44 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 		}
 	}
 	
+	protected function doPatchLikeAction( EarthIT_Schema_ResourceClass $rc, $itemId, array $itemData, $merge ) {
+		// TODO: Make it work even if the record does not already exist
+		
+		$idFieldValues = EarthIT_CMIPREST_Util::idToFieldValues( $rc, $itemId );
+		$internalValues = EarthIT_CMIPREST_Util::mergeEnsuringNoContradictions( $idFieldValues, $itemData );
+		if( !$merge ) {
+			// Set other field values to their defaults.
+			// Assuming null for now...
+			foreach( $rc->getFields() as $fieldName => $field ) {
+				if( !isset($internalValues[$fieldName]) ) {
+					$internalValues[$fieldName] = null;
+				}
+			}
+		}
+		
+		$params = array('table' => $this->rcTableExpression($rc));
+		$conditions = self::encodeColumnValuePairs($this->internalObjectToDb($rc, $idFieldValues ), $params);
+		$sets       = self::encodeColumnValuePairs($this->internalObjectToDb($rc, $internalValues), $params);
+		$rows = $this->fetchRows(
+			"UPDATE {table} SET\n".
+			"\t".implode(",\n\t", $sets).
+			"WHERE ".implode("\n  AND ",$conditions)."\n".
+			"RETURNING *",
+			$params
+		);
+		if( count($rows) != 1 ) {
+			throw new Exception("UPDATE ... RETURNING returned ".count($rows)." rows; expected exactly 1.");
+		}
+		foreach( $rows as $row ) {
+			return $this->dbObjectToInternal($rc, $row);
+		}
+	}
+	
 	public function putItem( EarthIT_Schema_ResourceClass $rc, $itemId, array $itemData ) {
-		throw new Exception("Not yet implemented");
+		return $this->doPatchLikeAction($rc, $itemId, $itemData, false);
 	}
 	
 	public function patchItem( EarthIT_Schema_ResourceClass $rc, $itemId, array $itemData ) {
-		throw new Exception("Not yet implemented");
+		return $this->doPatchLikeAction($rc, $itemId, $itemData, true);
 	}
 }

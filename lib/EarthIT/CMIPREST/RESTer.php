@@ -596,34 +596,14 @@ class EarthIT_CMIPREST_RESTer
 			if( count($results) == 1 ) return $results[0];
 			throw new Exception("Multiple records found with ID = '".$act->getItemId()."'");
 		} else if( $act instanceof EarthIT_CMIPREST_UserAction_PostItemAction ) {
-			$resourceClass = $act->getResourceClass();
-			$tableExpression = $this->rcTableExpression( $resourceClass );
-			
-			$columnValues = $this->internalObjectToDb($resourceClass, $act->getItemData());
-			$columnExpressionList = array();
-			$columnValueList = array();
-			foreach( $columnValues as $columnName => $value ) {
-				$columnExpressionList[] = new EarthIT_DBC_SQLIdentifier($columnName);
-				$columnValueList[] = $value;
-			}
-			
-			// TODO: actually determine ID columns
-			
-			$rows = $this->fetchRows("INSERT INTO {table} {columns} VALUES {values} RETURNING *", array(
-				'table' => $tableExpression,
-				'columns' => $columnExpressionList,
-				'values' => $columnValueList
-			));
-			if( count($rows) != 1 ) {
-				throw new Exception("INSERT INTO ... RETURNING returned ".count($rows)." rows; expected exactly 1.");
-			}
-			foreach( $rows as $row ) {
-				return $this->dbObjectToRest($resourceClass, $row);
-			}
+			$rc = $act->getResourceClass();
+			return $this->internalObjectToRest( $rc, $this->storage->postItem($rc, $act->getItemData()) );
 		} else if( $act instanceof EarthIT_CMIPREST_UserAction_PutItemAction ) {
-			return $this->doPatchLikeAction($act, false);
+			$rc = $act->getResourceClass();
+			return $this->internalObjectToRest( $rc, $this->storage->putItem($rc, $act->getItemId(), $act->getItemData()) );
 		} else if( $act instanceof EarthIT_CMIPREST_UserAction_PatchItemAction ) {
-			return $this->doPatchLikeAction($act, true);
+			$rc = $act->getResourceClass();
+			return $this->internalObjectToRest( $rc, $this->storage->patchItem($rc, $act->getItemId(), $act->getItemData()) );
 		} else if( $act instanceof EarthIT_CMIPREST_UserAction_DeleteItemAction ) {
 			$resourceClass = $act->getResourceClass();
 			$params = array('table' => $this->rcTableExpression( $resourceClass ));
