@@ -217,4 +217,16 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 		$this->evaluateJohnTree( $rc, $sp, array(), $branches, 'root', $results );
 		return $results;
 	}
+
+	public function postItem( EarthIT_Schema_ResourceClass $rc, array $itemData ) {
+		throw new Exception("Not yet implemented");
+	}
+	
+	public function putItem( EarthIT_Schema_ResourceClass $rc, $itemId, array $itemData ) {
+		throw new Exception("Not yet implemented");
+	}
+	
+	public function patchItem( EarthIT_Schema_ResourceClass $rc, $itemId, array $itemData ) {
+		throw new Exception("Not yet implemented");
+	}
 }

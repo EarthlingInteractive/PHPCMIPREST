@@ -37,4 +37,19 @@ interface EarthIT_CMIPREST_Storage
 		EarthIT_CMIPREST_SearchParameters $sp,
 		array $johnBranches
 	);
+	
+	/**
+	 * Create a new object, returning its ID
+	 */
+	public function postItem( EarthIT_Schema_ResourceClass $rc, array $itemData );
+	
+	/**
+	 * Replace all data of an object, setting unspecified fields to their default values
+	 */
+	public function putItem( EarthIT_Schema_ResourceClass $rc, $itemId, array $itemData );
+	
+	/**
+	 * Update only specified fields of the given object
+	 */
+	public function patchItem( EarthIT_Schema_ResourceClass $rc, $itemId, array $itemData );
 }
