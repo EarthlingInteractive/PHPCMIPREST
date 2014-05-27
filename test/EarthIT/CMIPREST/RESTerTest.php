@@ -16,8 +16,8 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 		}
 		$dbConfig = EarthIT_JSON::decode($dbConfigJson);
 		$this->dbAdapter = Doctrine\DBAL\DriverManager::getConnection($dbConfig);
-		$this->storage = new EarthIT_CMIPREST_PostgresStorage($this->dbAdapter, new EarthIT_DBC_PostgresNamer());
 		$this->schema = require 'test-schema.php';
+		$this->storage = new EarthIT_CMIPREST_PostgresStorage($this->dbAdapter, $this->schema, new EarthIT_DBC_PostgresNamer());
 		$this->rester = new EarthIT_CMIPREST_RESTer(array(
 			'storage' => $this->storage,
 			'schema' => $this->schema

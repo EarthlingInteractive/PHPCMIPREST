@@ -10,7 +10,9 @@ class EarthIT_CMIPREST_PostgresStorageTest extends EarthIT_CMIPREST_StorageTest
 			throw new Exception("Failed to load database config from $dbConfigFile");
 		}
 		$dbConfig = EarthIT_JSON::decode($dbConfigJson);
+		$this->schema = require 'test-schema.php';
 		$this->dbAdapter = Doctrine\DBAL\DriverManager::getConnection($dbConfig);
-		return new EarthIT_CMIPREST_PostgresStorage($this->dbAdapter, $this->schema);
+		$this->dbNamer = new EarthIT_DBC_PostgresNamer();
+		return new EarthIT_CMIPREST_PostgresStorage($this->dbAdapter, $this->schema, $this->dbNamer);
 	}
 }

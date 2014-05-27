@@ -39,17 +39,20 @@ interface EarthIT_CMIPREST_Storage
 	);
 	
 	/**
-	 * Create a new object, returning its ID
+	 * Create a new object, returning the values of all it fields after
+	 * being created
 	 */
 	public function postItem( EarthIT_Schema_ResourceClass $rc, array $itemData );
 	
 	/**
-	 * Replace all data of an object, setting unspecified fields to their default values
+	 * Replace all data of an object, setting unspecified fields to their default values,
+	 * returning the new values of all its fields
 	 */
 	public function putItem( EarthIT_Schema_ResourceClass $rc, $itemId, array $itemData );
 	
 	/**
-	 * Update only specified fields of the given object
+	 * Update only specified fields of the given object,
+	 * returning the values of all its fields after being updated
 	 */
 	public function patchItem( EarthIT_Schema_ResourceClass $rc, $itemId, array $itemData );
 }

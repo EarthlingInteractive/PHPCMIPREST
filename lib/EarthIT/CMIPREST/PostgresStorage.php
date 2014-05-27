@@ -3,10 +3,12 @@
 class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 {
 	protected $dbAdapter;
+	protected $schema;
 	protected $dbNamer;
 	
-	public function __construct($dbAdapter, $dbNamer) {
+	public function __construct( Doctrine\DBAL\Connection $dbAdapter, EarthIT_Schema $schema, EarthIT_DBC_Namer $dbNamer) {
 		$this->dbAdapter = $dbAdapter;
+		$this->schema = $schema;
 		$this->dbNamer = $dbNamer;
 	}
 	
@@ -68,6 +70,36 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 			$fieldValues[$f->getName()] = self::dbToPhpValue($obj[$columnName], $f->getType()->getPhpTypeName());
 		}
 		return $fieldValues;
+	}
+	
+	//// SQL generation
+	
+	protected function itemIdToColumnValues( EarthIT_Schema_ResourceClass $rc, $id ) {
+		$fieldValues = EarthIT_CMIPREST_Util::idToFieldValues( $rc, $id );
+		$columnValues = array();
+		$fields = $rc->getFields();
+		foreach( $fieldValues as $fieldName=>$value ) {
+			$columnValues[$this->fieldDbName($rc, $fields[$fieldName])] = $value;
+		}
+		return $columnValues;
+	}
+	
+	/**
+	 * @param array $columnValues array of column name => column value
+	 * @param array &$params column and value parameter values will be put here
+	 * @return array of "{col...X} = {val...X}" strings, one per column,
+	 *   with {placeholders} corresponding to the keys added to $params
+	 */
+	protected static function encodeColumnValuePairs( array $columnValues, array &$params ) {
+		$parts = array();
+		foreach( $columnValues as $colName=>$val ) {
+			$cnp = EarthIT_DBC_ParameterUtil::newParamName('col');
+			$cvp = EarthIT_DBC_ParameterUtil::newParamName('val');
+			$params[$cnp] = new EarthIT_DBC_SQLIdentifier($colName);
+			$params[$cvp] = $val;
+			$parts[] = "{{$cnp}} = {{$cvp}}";
+		}
+		return $parts;
 	}
 	
 	//// Do stuff
@@ -199,11 +231,11 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 	
 	////
 	
-	public function getItem( EarthIT_Schema_ResourceClass $resourceClass, $itemId ) {
-		$params = array('table' => $this->rcTableExpression( $resourceClass ));
-		$whereClauses = self::encodeColumnValuePairs($this->itemIdToColumnValues( $resourceClass, $itemId ), $params);
+	public function getItem( EarthIT_Schema_ResourceClass $rc, $itemId ) {
+		$params = array('table' => $this->rcTableExpression( $rc ));
+		$whereClauses = self::encodeColumnValuePairs($this->itemIdToColumnValues( $rc, $itemId ), $params);
 		$rows = $this->fetchRows( "SELECT * FROM {table}\nWHERE ".implode("\n  AND ",$whereClauses), $params );
-		if( count($rows) == 1 ) return $rows[0];
+		if( count($rows) == 1 ) return $this->dbObjectToInternal($rc, $rows[0]);
 		if( count($rows) == 0 ) return null;
 		throw new Exception("Getting an item by ID returned multiple rows.");
 	}
@@ -217,9 +249,31 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 		$this->evaluateJohnTree( $rc, $sp, array(), $branches, 'root', $results );
 		return $results;
 	}
-
+	
 	public function postItem( EarthIT_Schema_ResourceClass $rc, array $itemData ) {
-		throw new Exception("Not yet implemented");
+		$tableExpression = $this->rcTableExpression( $rc );
+		
+		$columnValues = $this->internalObjectToDb($rc, $itemData);
+		$columnExpressionList = array();
+		$columnValueList = array();
+		foreach( $columnValues as $columnName => $value ) {
+			$columnExpressionList[] = new EarthIT_DBC_SQLIdentifier($columnName);
+			$columnValueList[] = $value;
+		}
+		
+		// TODO: actually determine ID columns
+		
+		$rows = $this->fetchRows("INSERT INTO {table} {columns} VALUES {values} RETURNING *", array(
+			'table' => $tableExpression,
+			'columns' => $columnExpressionList,
+			'values' => $columnValueList
+		));
+		if( count($rows) != 1 ) {
+			throw new Exception("INSERT INTO ... RETURNING returned ".count($rows)." rows; expected exactly 1.");
+		}
+		foreach( $rows as $row ) {
+			return $this->dbObjectToInternal($rc, $row);
+		}
 	}
 	
 	public function putItem( EarthIT_Schema_ResourceClass $rc, $itemId, array $itemData ) {

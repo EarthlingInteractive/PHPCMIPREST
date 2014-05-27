@@ -11,19 +11,23 @@ sequence 'entity IDs' : initial value @ 1001
 
 class 'integer' :
 	SQL type @ "INT" :
-	PHP type @ "int" : JSON type @ "number"
+	PHP type @ "int" :
+	JSON type @ "number" :
+	regex @ "\\d+"
 class 'boolean' :
 	SQL type @ "BOOLEAN" :
-	PHP type @ "bool" : JSON type @ "boolean"
+	PHP type @ "bool" :
+	JSON type @ "boolean"
 class 'string' :
 	SQL type @ "VARCHAR(127)" :
-	PHP type @ "string" : JSON type @ "string"
+	PHP type @ "string" :
+	JSON type @ "string"
 class 'text' : extends(string) :
 	SQL type @ "TEXT"
 class 'entity ID' : extends(integer) :
 	SQL type @ "BIGINT"
 class 'percentage' : extends(integer) :
-    SQL type @ "SMALLINT"
+	SQL type @ "SMALLINT"
 
 # Standard Rest Resource
 class modifier 'SRR' = has a database table : has a REST service : members are public
