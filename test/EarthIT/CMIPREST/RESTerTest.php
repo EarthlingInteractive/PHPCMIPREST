@@ -32,7 +32,7 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 		);
 	}
 	
-	public function testGetUserItem() {
+	public function testGetItem() {
 		$rc = $this->schema->getResourceClass('resource');
 		
 		foreach( $this->savedItems as $savedItem ) {
@@ -40,5 +40,14 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 			$this->assertEquals($savedItem['ID'], $getItemResult['id']);
 			$this->assertEquals($savedItem['URN'], $getItemResult['urn']);
 		}
+	}
+	
+	public function testPostItem() {
+		$rc = $this->schema->getResourceClass('resource');
+		
+		$urn = 'data:text/plain,'.rand(1000000,9999999);
+		$posted = $this->rester->doAction( new EarthIT_CMIPREST_UserAction_PostItemAction(0, $rc, array('URN'=>$urn)) );
+		$got = $this->storage->getItem($rc, $posted['id']);
+		$this->assertEquals($urn, $got['URN']);
 	}
 }
