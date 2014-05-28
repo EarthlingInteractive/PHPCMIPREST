@@ -180,6 +180,7 @@ class EarthIT_CMIPREST_RESTer
 	}
 	
 	protected function parseOrderByComponents( EarthIT_Schema_ResourceClass $rc, $v ) {
+		$fieldsByName = $rc->getFields();
 		$fieldsByRestName = $this->getFieldsByRestName($rc);
 		$oorderByComponents = array();
 		foreach( explode(',',$v) as $cv ) {
@@ -192,10 +193,14 @@ class EarthIT_CMIPREST_RESTer
 			} else $ascending = true;
 			
 			// May eventually need to take fake fields into account, here
-			if( !isset($fieldsByRestName[$cv]) ) {
+			if( isset($fieldsByName[$cv]) ) {
+				$field = $fieldsByName[$cv];
+			} else if( isset($fieldsByRestName[$cv]) ) {
+				$field = $fieldsByRestName[$cv];
+			} else {
 				throw new Exception("Unknown field in orderBy: '$cv'");
 			}
-			$orderByComponents[] = new EarthIT_CMIPREST_OrderByComponent($fieldsByRestName[$cv], $ascending);
+			$orderByComponents[] = new EarthIT_CMIPREST_OrderByComponent($field, $ascending);
 		}
 		return $orderByComponents;
 	}
@@ -203,7 +208,7 @@ class EarthIT_CMIPREST_RESTer
 	/**
 	 * a.b.c.d -> { a: { b: { c: { d: {} } } } }
 	 */
-	protected static function parsePath( $path, array &$into ) {
+	protected static function parsePathToTree( $path, array &$into ) {
 		if( $path === '' ) return;
 		if( is_string($path) ) $path = explode('.', $path);
 		if( count($path) == 0 ) return;
@@ -212,7 +217,7 @@ class EarthIT_CMIPREST_RESTer
 			$into[$path[0]] = array();
 		}
 		
-		self::parsePath( array_slice($path, 1), $into[$path[0]] );
+		self::parsePathToTree( array_slice($path, 1), $into[$path[0]] );
 	}
 	
 	protected static function getFields( EarthIT_Schema_ResourceClass $rc, array $fieldNames ) {
@@ -293,6 +298,14 @@ class EarthIT_CMIPREST_RESTer
 		return $branches;
 	}
 	
+	protected function parseWithsToJohnBranches( EarthIT_Schema_ResourceClass $originRc, $withs ) {
+		if( is_scalar($withs) ) $withs = explode(',',$withs);
+		if( !is_array($withs) ) throw new Exception("withs parameter must be an array or comma-delimited string.");
+		$pathTree = array();
+		foreach( $withs as $segment ) self::parsePathToTree(explode('.',$segment), $pathTree);
+		return $this->withsToJohnBranches( $pathTree, $originRc );
+	}
+	
 	protected function cmipRequestToUserAction( EarthIT_CMIPREST_CMIPRESTRequest $crr ) {
 		$userId = $crr->getUserId();
 		$resourceClass = $this->schema->getResourceClass( EarthIT_Schema_WordUtil::depluralize($crr->getResourceCollectionName()) );
@@ -303,18 +316,14 @@ class EarthIT_CMIPREST_RESTer
 		
 		switch( $crr->getMethod() ) {
 		case 'GET': case 'HEAD':
-			$withs = array();
+			$johnBranches = array();
 			foreach( $crr->getResultModifiers() as $k=>$v ) {
 				if( $k === 'with' ) {
-					$things = explode(',', $v);
-					foreach( $things as $thing ) {
-						self::parsePath(explode('.',$thing), $withs);
-					}
+					$johnBranches = $this->parseWithsToJohnBranches($resourceClass, $v);
 				} else {
 					throw new Exception("Unrecognized result modifier: '$k'");
 				}
 			}
-			$johnBranches = $this->withsToJohnBranches( $withs, $resourceClass );
 			
 			if( $itemId = $crr->getResourceInstanceId() ) {
 				return new EarthIT_CMIPREST_UserAction_GetItemAction( $userId, $resourceClass, $itemId, $johnBranches ); 
