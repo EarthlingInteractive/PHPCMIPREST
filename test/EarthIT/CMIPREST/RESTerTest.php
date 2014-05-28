@@ -7,6 +7,8 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 	protected $rester;
 	protected $schema;
 	
+	protected $savedItems;
+	
 	public function setUp() {
 		// Relative to the pwd, yes.
 		$dbConfigFile = 'config/test-dbc.json';
@@ -22,9 +24,21 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 			'storage' => $this->storage,
 			'schema' => $this->schema
 		));
+		
+		$rc = $this->schema->getResourceClass('resource');
+		$this->savedItems = array(
+			$this->storage->postItem( $rc, array('URN'=>'data:text/plain,'.rand(1000000,9999999))),
+			$this->storage->postItem( $rc, array('URN'=>'data:text/plain,'.rand(1000000,9999999)))
+		);
 	}
 	
-	public function testAbc() {
-		$this->fail("Nothing workx");
+	public function testGetUserItem() {
+		$rc = $this->schema->getResourceClass('resource');
+		
+		foreach( $this->savedItems as $savedItem ) {
+			$getItemResult = $this->rester->doAction( new EarthIT_CMIPREST_UserAction_GetItemAction(0, $rc, $savedItem['ID'], array() ) );
+			$this->assertEquals($savedItem['ID'], $getItemResult['id']);
+			$this->assertEquals($savedItem['URN'], $getItemResult['urn']);
+		}
 	}
 }

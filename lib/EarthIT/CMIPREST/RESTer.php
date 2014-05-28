@@ -389,7 +389,7 @@ class EarthIT_CMIPREST_RESTer
 	}
 	
 	protected function itemIdToSearchParameters( EarthIT_Schema_ResourceClass $rc, $id ) {
-		$fieldValues = self::idToFieldValues( $rc, $id );
+		$fieldValues = EarthIT_CMIPREST_Util::idToFieldValues( $rc, $id );
 		$fieldMatchers = array();
 		foreach( $fieldValues as $fieldName => $value ) {
 			$fieldMatchers[$fieldName] = new EarthIT_CMIPREST_FieldMatcher_Equal($value);
@@ -562,9 +562,10 @@ class EarthIT_CMIPREST_RESTer
 	}
 	
 	/**
-	 * Result will be a JSON array in REST form
+	 * Result will be a JSON array in REST form.
+	 * Errors will be thrown as exceptions.
 	 */
-	protected function doAction( EarthIT_CMIPREST_UserAction $act ) {
+	public function doAction( EarthIT_CMIPREST_UserAction $act ) {
 		$this->validateAction($act);
 		
 		$authorizationExplanation = array();
