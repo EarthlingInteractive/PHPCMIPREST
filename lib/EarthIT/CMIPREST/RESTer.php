@@ -79,10 +79,10 @@ class EarthIT_CMIPREST_RESTer
 		
 		if( ($this->storage = $params['storage']) ) {
 			// Okay!
-		} else if( $params['dbAdapter'] and $params['dbNamer'] ) {
-			$this->storage = new EarthIT_CMIPREST_PostgresStorage($params['dbAdapter'], $params['dbNamer']);
+		} else if( $params['dbAdapter'] and $params['schema'] and $params['dbNamer'] ) {
+			$this->storage = new EarthIT_CMIPREST_PostgresStorage($params['dbAdapter'], $params['schema'], $params['dbNamer']);
 		} else {
-			throw new Exception("No storage or (dbAdapter + dbNamer) specified.");
+			throw new Exception("No storage or (dbAdapter + schema + dbNamer) specified.");
 		}
 		
 		if( ($this->schema = $params['schema']) ) {
