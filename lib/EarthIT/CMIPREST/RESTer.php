@@ -271,6 +271,7 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 	}
 	
 	protected function parseOrderByComponents( EarthIT_Schema_ResourceClass $rc, $v ) {
+		$fieldsByName = $rc->getFields();
 		$fieldsByRestName = $this->getFieldsByRestName($rc);
 		$oorderByComponents = array();
 		foreach( explode(',',$v) as $cv ) {
@@ -283,10 +284,14 @@ class EarthIT_CMIPREST_RESTer extends EarthIT_Component
 			} else $ascending = true;
 			
 			// May eventually need to take fake fields into account, here
-			if( !isset($fieldsByRestName[$cv]) ) {
+			if( isset($fieldsByName[$cv]) ) {
+				$field = $fieldsByName[$cv];
+			} else if( isset($fieldsByRestName[$cv]) ) {
+				$field = $fieldsByRestName[$cv];
+			} else {
 				throw new Exception("Unknown field in orderBy: '$cv'");
 			}
-			$orderByComponents[] = new EarthIT_CMIPREST_OrderByComponent($fieldsByRestName[$cv], $ascending);
+			$orderByComponents[] = new EarthIT_CMIPREST_OrderByComponent($field, $ascending);
 		}
 		return $orderByComponents;
 	}
