@@ -13,7 +13,7 @@ class 'integer' :
 	SQL type @ "INT" :
 	PHP type @ "int" :
 	JSON type @ "number" :
-	regex @ "\\d+"
+	regex @ "[+-]?\\d+"
 class 'boolean' :
 	SQL type @ "BOOLEAN" :
 	PHP type @ "bool" :

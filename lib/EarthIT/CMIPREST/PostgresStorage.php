@@ -263,7 +263,7 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 		
 		// TODO: actually determine ID columns
 		
-		$rows = $this->fetchRows("INSERT INTO {table} {columns} VALUES {values} RETURNING *", array(
+		$rows = $this->fetchRows("INSERT INTO {table} {columns}\nVALUES {values}\nRETURNING *", array(
 			'table' => $tableExpression,
 			'columns' => $columnExpressionList,
 			'values' => $columnValueList
@@ -291,16 +291,35 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 			}
 		}
 		
+		$columnValues = $this->internalObjectToDb($rc, $internalValues);
+
 		$params = array('table' => $this->rcTableExpression($rc));
 		$conditions = self::encodeColumnValuePairs($this->internalObjectToDb($rc, $idFieldValues ), $params);
-		$sets       = self::encodeColumnValuePairs($this->internalObjectToDb($rc, $internalValues), $params);
-		$rows = $this->fetchRows(
-			"UPDATE {table} SET\n".
-			"\t".implode(",\n\t", $sets).
-			"WHERE ".implode("\n  AND ",$conditions)."\n".
-			"RETURNING *",
-			$params
-		);
+		$sets       = self::encodeColumnValuePairs($columnValues, $params);
+		
+		$params['columns'] = array();
+		$values = array();
+		foreach( $columnValues as $colName => $value ) {
+			$params['columns'][] = new EarthIT_DBC_SQLIdentifier($colName);
+			$valueParamName = EarthIT_DBC_ParameterUtil::newParamName('v');
+			$valueSelects[] = "{{$valueParamName}}";
+			$params[$valueParamName] = $value;
+		}
+
+		$sql =
+			"WITH los_updatos AS (\n".
+			"\t"."UPDATE {table} SET\n".
+			"\t\t".implode(",\n\t\t",$sets)."\n".
+			"\t"."WHERE ".implode("\n\t  AND",$conditions)."\n".
+			"\t"."RETURNING *\n".
+			"), los_insertsos AS (\n".
+			"\t"."INSERT INTO {table} {columns}\n".
+			"\t"."SELECT ".implode(", ",$valueSelects)."\n".
+			"\t"."WHERE NOT EXISTS ( SELECT * FROM los_updatos )\n".
+			"\t"."RETURNING *\n".
+			")\n".
+			"SELECT * FROM los_updatos UNION ALL SELECT * FROM los_insertsos";
+		$rows = $this->fetchRows( $sql, $params );
 		if( count($rows) != 1 ) {
 			throw new Exception("UPDATE ... RETURNING returned ".count($rows)." rows; expected exactly 1.");
 		}
