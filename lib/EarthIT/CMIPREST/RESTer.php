@@ -474,6 +474,7 @@ class EarthIT_CMIPREST_RESTer
 		$relevantRestObjects = array();
 		foreach( $johnCollections as $path => $johns ) {
 			$targetRc = count($johns) == 0 ? $rc : $johns[count($johns)-1]->targetResourceClass;
+			if( !isset($relevantObjects[$path]) ) $relevantObjects[$path] = array();
 			$relevantRestObjects[$path] = $this->_q45( $targetRc, $relevantObjects[$path], $postAuthUserId );
 		}
 		
