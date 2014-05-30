@@ -8,6 +8,10 @@ abstract class EarthIT_CMIPREST_FieldMatcher_BaseComparison implements EarthIT_C
 		$this->value = $value;
 	}
 	
+	public function getValue() {
+		return $this->value;
+	}
+	
 	protected abstract function getSqlComparisonOp();
 	
 	public function toSql( $fieldValueSql, $fieldType, &$params ) {
