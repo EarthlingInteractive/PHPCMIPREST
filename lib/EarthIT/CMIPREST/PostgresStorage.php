@@ -180,8 +180,17 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 		array $branches,
 		$path, array &$results
 	) {
+		foreach( $branches as $k=>$johnTreeNode ) {
+			$newJohns = $johns;
+			$newJohns[] = $johnTreeNode->getJohn();
+			$this->evaluateJohnTree( $rc, $sp, $newJohns, $johnTreeNode->branches, $path.".".$k, $results );
+		}
+		
+		$results[$path] = array();
+		
 		$params = array();
 		$rootSql = $this->buildSearchSql( $rc, $sp, $params );
+		if( $rootSql == 'SELECT NOTHING' ) return;
 		
 		$aliasNum = 0;
 		$rootAlias = 'a'.($aliasNum++);
@@ -209,7 +218,9 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 				$originAlias = $targetAlias;
 			}
 		}
-		$sql = "SELECT {$targetAlias}.* FROM (\n".
+		
+		$sql =
+			"SELECT {$targetAlias}.* FROM (\n".
 			"\t".str_replace("\n","\n\t",trim($rootSql))."\n".
 			") AS {$rootAlias}";
 		
@@ -217,15 +228,8 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 			$sql .= "\n".implode("\n",$joins);
 		}
 		
-		$results[$path] = array();
 		foreach( $this->fetchRows($sql, $params) AS $dbObj ) {
 			$results[$path][] = $this->dbObjectToInternal($targetRc, $dbObj);
-		}
-		
-		foreach( $branches as $k=>$johnTreeNode ) {
-			$newJohns = $johns;
-			$newJohns[] = $johnTreeNode->getJohn();
-			$this->evaluateJohnTree( $rc, $sp, $newJohns, $johnTreeNode->branches, $path.".".$k, $results );
 		}
 	}
 	
