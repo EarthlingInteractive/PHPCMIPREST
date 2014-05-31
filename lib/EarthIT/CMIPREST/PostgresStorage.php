@@ -182,7 +182,6 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 	) {
 		$params = array();
 		$rootSql = $this->buildSearchSql( $rc, $sp, $params );
-		if( $rootSql == 'SELECT NOTHING' ) $results[$path] = array();
 		
 		$aliasNum = 0;
 		$rootAlias = 'a'.($aliasNum++);
@@ -218,6 +217,7 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 			$sql .= "\n".implode("\n",$joins);
 		}
 		
+		$results[$path] = array();
 		foreach( $this->fetchRows($sql, $params) AS $dbObj ) {
 			$results[$path][] = $this->dbObjectToInternal($targetRc, $dbObj);
 		}
