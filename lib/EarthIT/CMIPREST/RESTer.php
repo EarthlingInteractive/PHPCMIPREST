@@ -108,7 +108,7 @@ class EarthIT_CMIPREST_RESTer
 	
 	protected function restFieldsToInternal( EarthIT_Schema_ResourceClass $rc, array $restObj ) {
 		$internal = array();
-		foreach( $rc->getFields() as $field ) {
+		foreach( EarthIT_CMIPREST_Util::storableFields($rc) as $field ) {
 			$frn = $this->fieldRestName( $rc, $field );
 			if( isset($restObj[$frn]) ) {
 				$internal[$field->getName()] = $this->restValueToInternal( $field->getType(), $restObj[$frn] );
@@ -121,7 +121,7 @@ class EarthIT_CMIPREST_RESTer
 	
 	protected function internalObjectToRest( EarthIT_Schema_ResourceClass $rc, array $fieldValues ) {
 		$result = array();
-		foreach( $rc->getFields() as $f ) {
+		foreach( EarthIT_CMIPREST_Util::storableFields($rc) as $f ) {
 			$result[$this->fieldRestName($rc, $f)] = $fieldValues[$f->getName()];
 		}
 		// TODO: Need to add 'id' column in cases where the primary key is different
