@@ -124,26 +124,8 @@ class EarthIT_CMIPREST_RESTer
 		foreach( EarthIT_CMIPREST_Util::storableFields($rc) as $f ) {
 			$result[$this->fieldRestName($rc, $f)] = $fieldValues[$f->getName()];
 		}
-		// TODO: Need to add 'id' column in cases where the primary key is different
 		return $result;
 	}
-	
-	/*
-	protected function dbObjectToRest( EarthIT_Schema_ResourceClass $rc, array $columnValues ) {
-		$columnNamer = $this->registry->getDbNamer();
-		$result = array();
-		foreach( $rc->getFields() as $f ) {
-			$columnName = $this->fieldDbName($rc, $f);
-			if( isset($columnValues[$columnName]) ) {
-				$dataType = $f->getType();
-				$phpTypeName = $dataType === null ? null : $dataType->getPhpTypeName();
-				$result[$this->fieldRestName($rc, $f)] = self::dbToPhpValue($columnValues[$columnName], $phpTypeName);
-			}
-		}
-		// TODO: Need to add 'id' column in cases where the primary key is different
-		return $result;
-	}
-	*/
 	
 	protected function getFieldsByRestName( EarthIT_Schema_ResourceClass $rc ) {
 		$fbrn = array();
