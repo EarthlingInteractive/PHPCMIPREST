@@ -53,7 +53,7 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 	protected function internalObjectToDb( EarthIT_Schema_ResourceClass $rc, array $obj ) {
 		$columnNamer = $this->dbNamer;
 		$columnValues = array();
-		foreach( $rc->getFields() as $f ) {
+		foreach( EarthIT_CMIPREST_Util::storableFields($rc) as $f ) {
 			$fieldName = $f->getName();
 			if( array_key_exists($fieldName, $obj) ) {
 				$columnValues[$this->fieldDbName($rc, $f)] = $obj[$fieldName];
@@ -64,7 +64,7 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 	
 	protected function dbObjectToInternal( EarthIT_Schema_ResourceClass $rc, array $obj ) {
 		$fieldValues = array();
-		foreach( $rc->getFields() as $f ) {
+		foreach( EarthIT_CMIPREST_Util::storableFields($rc) as $f ) {
 			$fieldName = $f->getName();
 			$columnName = $this->fieldDbName($rc, $f);
 			$fieldValues[$f->getName()] = self::dbToPhpValue($obj[$columnName], $f->getType()->getPhpTypeName());
@@ -163,7 +163,7 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 	
 	protected function fieldSelects( $rc, $tableAlias, array &$params ) {
 		$selectedThings = array();
-		foreach( $rc->getFields() as $f ) {
+		foreach( EarthIT_CMIPREST_Util::storableFields($rc) as $f ) {
 			$columnNameParam = EarthIT_DBC_ParameterUtil::newParamName('column');
 			$fieldNameParam = EarthIT_DBC_ParameterUtil::newParamName('field');
 			$params[$columnNameParam] = new EarthIT_DBC_SQLIdentifier($this->fieldDbName($rc, $f));

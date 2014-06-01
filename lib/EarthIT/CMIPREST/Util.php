@@ -76,4 +76,15 @@ class EarthIT_CMIPREST_Util
 		}
 		return $result;
 	}
+	
+	public static function storableFields( EarthIT_Schema_ResourceClass $rc ) {
+		$storableFields = array();
+		foreach( $rc->getFields() as $k=>$f ) {
+			if( $f->getFirstPropertyValue('http://ns.earthit.com/CMIPREST/isFakeSearchableField') ) {
+				continue;
+			}
+			$storableFields[$k] = $f;
+		}
+		return $storableFields;
+	}
 }
