@@ -4,7 +4,7 @@ generated_files = \
 	test-schema.php \
 	vendor
 
-all: test
+all: run-tests
 
 .DELETE_ON_ERROR:
 
@@ -14,7 +14,7 @@ all: test
 .PHONY: \
 	all \
 	clean \
-	test
+	run-tests
 
 util/test-psql: config/test-dbc.json util/generate-psql-script
 	php util/generate-psql-script "$<" > "$@"
@@ -65,5 +65,5 @@ config/test-dbc.json:
 	echo "or need to re-create it for some other reason, you may delete this file" >>"$@"
 	cat util/create-test-tables.sql | util/test-psql -v ON_ERROR_STOP=1
 
-test: vendor .database-created test-schema.php
+run-tests: vendor .database-created test-schema.php
 	phpunit --bootstrap vendor/autoload.php test
