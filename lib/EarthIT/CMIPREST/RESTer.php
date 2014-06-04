@@ -108,7 +108,7 @@ class EarthIT_CMIPREST_RESTer
 	
 	protected function restFieldsToInternal( EarthIT_Schema_ResourceClass $rc, array $restObj ) {
 		$internal = array();
-		foreach( EarthIT_CMIPREST_Util::storableFields($rc) as $field ) {
+		foreach( $rc->getFields() as $field ) {
 			$frn = $this->fieldRestName( $rc, $field );
 			if( isset($restObj[$frn]) ) {
 				$internal[$field->getName()] = $this->restValueToInternal( $field->getType(), $restObj[$frn] );
@@ -121,8 +121,10 @@ class EarthIT_CMIPREST_RESTer
 	
 	protected function internalObjectToRest( EarthIT_Schema_ResourceClass $rc, array $fieldValues ) {
 		$result = array();
-		foreach( EarthIT_CMIPREST_Util::storableFields($rc) as $f ) {
-			$result[$this->fieldRestName($rc, $f)] = $fieldValues[$f->getName()];
+		foreach( $rc->getFields() as $f ) {
+			if( isset($fieldValues[$f->getName()]) ) {
+				$result[$this->fieldRestName($rc, $f)] = $fieldValues[$f->getName()];
+			}
 		}
 		return $result;
 	}
