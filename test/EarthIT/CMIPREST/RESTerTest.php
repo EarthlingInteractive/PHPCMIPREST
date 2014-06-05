@@ -50,4 +50,19 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 		$got = $this->storage->getItem($rc, $posted['id']);
 		$this->assertEquals($urn, $got['URN']);
 	}
+	
+	public function testDeleteItem() {
+		$rc = $this->schema->getResourceClass('resource');
+		$urn = 'data:text/plain,'.rand(1000000,9999999);
+		$posted = $this->storage->postItem( $rc, array('URN'=>$urn) );
+		$id = $posted['ID'];
+		$got = $this->storage->getItem($rc, $id);
+		$this->assertEquals($urn, $got['URN']);
+		
+		// Now baleete it!
+		$this->rester->doAction( new EarthIT_CMIPREST_UserAction_DeleteItemAction(0, $rc, $id) );
+		
+		// Now make sure it's gone!
+		$this->assertNull( $this->storage->getItem($rc, $id) );
+	}
 }

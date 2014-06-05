@@ -512,39 +512,7 @@ class EarthIT_CMIPREST_RESTer
 		$obj = $this->storage->getItem($resourceClass, $itemId);
 		return $obj === null ? null : $this->dbObjectToRest($resourceClass, $obj);
 	}
-	
-	/**
-	 * Perform a PUT (merge = false) or PATCH (merge = true) action.
-	 */
-	protected function doPatchLikeAction( EarthIT_CMIPREST_UserAction $act, $merge ) {
-		// TODO: Make it work even if the record does not already exist
 		
-		$itemId = $act->getItemId();
-		$resourceClass = $act->getResourceClass();
-		$idFieldValues = self::idToFieldValues( $resourceClass, $itemId );
-		$internalValues = self::mergeEnsuringNoContradictions( $idFieldValues, $act->getItemData() );
-		if( !$merge ) {
-			// Set other field values to their defaults.
-			// Assuming null for now...
-			foreach( $resourceClass->getFields() as $fieldName => $field ) {
-				if( !isset($internalValues[$fieldName]) ) {
-					$internalValues[$fieldName] = null;
-				}
-			}
-		}
-		
-		$params = array('table' => $this->rcTableExpression($resourceClass));
-		$conditions = self::encodeColumnValuePairs($this->internalObjectToDb($resourceClass, $idFieldValues ), $params);
-		$sets       = self::encodeColumnValuePairs($this->internalObjectToDb($resourceClass, $internalValues), $params);
-		$this->doQuery(
-			"UPDATE {table} SET\n".
-			"\t".implode(",\n\t", $sets).
-			"WHERE ".implode("\n  AND ",$conditions),
-			$params
-		);
-		return $this->getRestObject( $resourceClass, $itemId );
-	}
-	
 	/**
 	 * Ensure that the given action is structurally valid so that
 	 * assumptions made while authorizing hold true.
@@ -599,14 +567,7 @@ class EarthIT_CMIPREST_RESTer
 			$rc = $act->getResourceClass();
 			return $this->internalObjectToRest( $rc, $this->storage->patchItem($rc, $act->getItemId(), $act->getItemData()) );
 		} else if( $act instanceof EarthIT_CMIPREST_UserAction_DeleteItemAction ) {
-			$resourceClass = $act->getResourceClass();
-			$params = array('table' => $this->rcTableExpression( $resourceClass ));
-			$conditions = self::encodeColumnValuePairs($this->itemIdToColumnValues($resourceClass, $act->getItemId()), $params);
-			$this->doQuery(
-				"DELETE FROM {table}\n".
-				"WHERE ".implode("\n  AND ",$conditions),
-				$params
-			);
+			$this->storage->deleteItem($act->getResourceClass(), $act->getItemId());
 			return self::SUCCESS;
 		} else {
 			// TODO
