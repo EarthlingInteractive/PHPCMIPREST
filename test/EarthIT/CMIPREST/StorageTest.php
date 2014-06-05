@@ -50,4 +50,45 @@ abstract class EarthIT_CMIPREST_StorageTest extends PHPUnit_Framework_TestCase
 		$refetchedItem = $this->storage->getItem($resourceRc, $item1['ID']);
 		$this->assertEquals( $item1, $refetchedItem );
 	}
+	
+	public function testDelete() {
+		$resourceRc = $this->schema->getResourceClass('resource');
+		$urn = 'data:text/plain,'.rand(1000000,9999999);
+		$item = $originalItem = $this->storage->postItem( $resourceRc, array('URN' => $urn) );
+		$id = $item['ID'];
+		
+		// Should still be there for now
+		$item = $this->storage->getItem($resourceRc, $id);
+		$this->assertNotNull( $item );
+		$this->assertEquals( $urn, $item['URN'] );
+		
+		// Until we delete it
+		$this->storage->deleteItem( $resourceRc, $id );
+		
+		// Then it should no longer exist
+		$item = $this->storage->getItem($resourceRc, $id);
+		$this->assertNull( $item );
+		
+		// Deleting it again should not be a problem
+		$this->storage->deleteItem( $resourceRc, $id );
+		
+		// It should still no longer exist
+		$item = $this->storage->getItem($resourceRc, $id);
+		$this->assertNull( $item );
+		
+		// If we put it back...
+		$this->storage->putItem( $resourceRc, $id, $originalItem ); 
+		
+		// It should exist again
+		$item = $this->storage->getItem($resourceRc, $id);
+		$this->assertNotNull( $item );
+		$this->assertEquals( $urn, $item['URN'] );
+		
+		// Deleting it yet again should, again, not be a problem
+		$this->storage->deleteItem( $resourceRc, $id );
+		
+		// It should be deleted, again
+		$item = $this->storage->getItem($resourceRc, $id);
+		$this->assertNull( $item );
+	}
 }

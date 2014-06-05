@@ -55,4 +55,10 @@ interface EarthIT_CMIPREST_Storage
 	 * returning the values of all its fields after being updated
 	 */
 	public function patchItem( EarthIT_Schema_ResourceClass $rc, $itemId, array $itemData );
+	
+	/**
+	 * Make the item not exist.
+	 * Deleting an item that already does not exist should NOT be considered an error.
+	 */
+	public function deleteItem( EarthIT_Schema_ResourceClass $rc, $itemId );
 }

@@ -339,4 +339,15 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 	public function patchItem( EarthIT_Schema_ResourceClass $rc, $itemId, array $itemData ) {
 		return $this->doPatchLikeAction($rc, $itemId, $itemData, true);
 	}
+	
+	public function deleteItem( EarthIT_Schema_ResourceClass $rc, $itemId ) {
+		$idFieldValues = EarthIT_CMIPREST_Util::idToFieldValues( $rc, $itemId );
+		$params = array('table' => $this->rcTableExpression($rc));
+		$conditions = self::encodeColumnValuePairs($this->internalObjectToDb($rc, $idFieldValues ), $params);
+		$sql =
+			"DELETE FROM {table}\n".
+			"WHERE ".implode("\n  AND ", $conditions);
+		$this->fetchRows( $sql, $params );
+		// Nothing to return
+	}
 }
