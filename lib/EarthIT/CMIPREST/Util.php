@@ -87,4 +87,16 @@ class EarthIT_CMIPREST_Util
 		}
 		return $storableFields;
 	}
+	
+	public static function getResourceClassByCollectionName( $schema, $collectionName ) {
+		$minCollectionName = EarthIT_Schema_WordUtil::minimize($collectionName);
+		foreach( $schema->getResourceClasses() as $rc ) {
+			if( $minCollectionName == EarthIT_Schema_WordUtil::minimize(
+				$rc->getFirstPropertyValue("http://ns.earthit.com/CMIPREST/collectionName")
+			) ) {
+				return $rc;
+			}
+		}
+		return $schema->getResourceClass( EarthIT_Schema_WordUtil::depluralize($collectionName) );
+	}
 }

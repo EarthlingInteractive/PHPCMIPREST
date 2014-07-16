@@ -292,7 +292,7 @@ class EarthIT_CMIPREST_RESTer
 	
 	protected function cmipRequestToUserAction( EarthIT_CMIPREST_CMIPRESTRequest $crr ) {
 		$userId = $crr->getUserId();
-		$resourceClass = $this->schema->getResourceClass( EarthIT_Schema_WordUtil::depluralize($crr->getResourceCollectionName()) );
+		$resourceClass = EarthIT_CMIPREST_Util::getResourceClassByCollectionName($this->schema, $crr->getResourceCollectionName());
 		
 		if( !$resourceClass->hasRestService() ) {
 			throw new EarthIT_CMIPREST_ResourceNotExposedViaService("'".$resourceClass->getName()."' records are not exposed via services");
