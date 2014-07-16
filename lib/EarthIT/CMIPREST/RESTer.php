@@ -236,7 +236,10 @@ class EarthIT_CMIPREST_RESTer
 		 */
 		$inverseJohns = array();
 		foreach( $this->schema->getResourceClasses() as $targetRc ) {
-			$pluralRestName = EarthIT_Schema_WordUtil::toCamelCase(EarthIT_Schema_WordUtil::pluralize($targetRc->getName()));
+			$pluralRestName = EarthIT_Schema_WordUtil::toCamelCase(
+				$targetRc->getFirstPropertyValue("http://ns.earthit.com/CMIPREST/collectionName") ?:
+				EarthIT_Schema_WordUtil::pluralize($targetRc->getName())
+			);
 			if( $pluralRestName == $linkRestName ) {
 				foreach( $targetRc->getReferences() as $inverseRef ) {
 					if( $inverseRef->getTargetClassName() == $originRc->getName() ) {
