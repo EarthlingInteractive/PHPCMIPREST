@@ -44,9 +44,17 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 	
 	//// Conversion
 	
+	protected static function valuesOfTypeShouldBeSelectedAsGeoJson( EarthIT_Schema_DataType $t ) {
+		return
+			preg_match('/^(GEOMETRY|GEOGRAPHY)(\(|$)/', $t->getSqlTypeName()) &&
+			$t->getPhpTypeName() == 'GeoJSON array';
+	}
+	
 	protected static function dbToPhpValue( EarthIT_Schema_DataType $t, $value ) {
-		// May want to do something different than just use cast
-		// e.g. in case we want to interpret "010" as ten instead of eight.
+		if( self::valuesOfTypeShouldBeSelectedAsGeoJson($t) ) {
+			return $value === null ? null : EarthIT_JSON::decode($value);
+		}
+		// Various special rules may end up here
 		return EarthIT_CMIPREST_Util::cast( $value, $t->getPhpTypeName() );
 	}
 	
@@ -119,6 +127,20 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 	
 	//// Build complimicated queries
 	
+	protected function buildSelects( EarthIT_Schema_ResourceClass $rc ) {
+		$selects = array();
+		foreach( $rc->getFields() as $f ) {
+			$columnName = $this->fieldDbName($rc, $f);
+			// TODO: parameterize column names
+			if( self::valuesOfTypeShouldBeSelectedAsGeoJson($f->getType()) ) {
+				$selects[] = "ST_AsGeoJSON({$columnName}) AS $columnName";
+			} else {
+				$selects[] = $columnName;
+			}
+		}
+		return $selects;
+	}
+	
 	protected function buildSearchSql(
 		EarthIT_Schema_ResourceClass $rc,
 		EarthIT_CMIPREST_SearchParameters $sp,
@@ -129,7 +151,7 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 		$tableAlias = 'tab';
 		$tableExpression = $this->rcTableExpression( $rc );
 		$params['table'] = $tableExpression;
-		$sql = "SELECT * FROM {table} AS {$tableAlias}";
+		$sql = "SELECT ".implode(', ',$this->buildSelects($rc))." FROM {table} AS {$tableAlias}";
 		foreach( $sp->getFieldMatchers() as $fieldName => $matcher ) {
 			$field = $fields[$fieldName];
 			$columnName = $this->fieldDbName($rc, $field);
