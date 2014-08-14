@@ -44,10 +44,10 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 	
 	//// Conversion
 	
-	protected static function dbToPhpValue( $value, $phpType ) {
+	protected static function dbToPhpValue( EarthIT_Schema_DataType $t, $value ) {
 		// May want to do something different than just use cast
 		// e.g. in case we want to interpret "010" as ten instead of eight.
-		return EarthIT_CMIPREST_Util::cast( $value, $phpType );
+		return EarthIT_CMIPREST_Util::cast( $value, $t->getPhpTypeName() );
 	}
 	
 	protected function internalObjectToDb( EarthIT_Schema_ResourceClass $rc, array $obj ) {
@@ -67,7 +67,7 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 		foreach( EarthIT_CMIPREST_Util::storableFields($rc) as $f ) {
 			$fieldName = $f->getName();
 			$columnName = $this->fieldDbName($rc, $f);
-			$fieldValues[$f->getName()] = self::dbToPhpValue($obj[$columnName], $f->getType()->getPhpTypeName());
+			$fieldValues[$f->getName()] = self::dbToPhpValue($f->getType(), $obj[$columnName]);
 		}
 		return $fieldValues;
 	}
