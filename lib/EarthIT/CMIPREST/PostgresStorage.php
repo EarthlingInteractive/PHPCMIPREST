@@ -58,13 +58,21 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 		return EarthIT_CMIPREST_Util::cast( $value, $t->getPhpTypeName() );
 	}
 	
-	protected function internalObjectToDb( EarthIT_Schema_ResourceClass $rc, array $obj ) {
+	protected function internalObjectToDb( EarthIT_Schema_ResourceClass $rc, array $obj, array &$params ) {
 		$columnNamer = $this->dbNamer;
 		$columnValues = array();
 		foreach( EarthIT_CMIPREST_Util::storableFields($rc) as $f ) {
 			$fieldName = $f->getName();
 			if( array_key_exists($fieldName, $obj) ) {
-				$columnValues[$this->fieldDbName($rc, $f)] = $obj[$fieldName];
+				$value = $obj[$fieldName];
+				if( self::valuesOfTypeShouldBeSelectedAsGeoJson($f->getType()) and $value !== null ) {
+					$paramName = EarthIT_DBC_ParameterUtil::newParamName('geojson');
+					$params[$paramName] = json_encode($value);
+					$dbValue = new EarthIT_DBC_BaseSQLExpression("ST_GeomFromGeoJSON({{$paramName}})");
+				} else {
+					$dbValue = $value;
+				}
+				$columnValues[$this->fieldDbName($rc, $f)] = $dbValue;
 			}
 		}
 		return $columnValues;
@@ -278,8 +286,9 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 	
 	public function postItem( EarthIT_Schema_ResourceClass $rc, array $itemData ) {
 		$tableExpression = $this->rcTableExpression( $rc );
-		
-		$columnValues = $this->internalObjectToDb($rc, $itemData);
+
+		$params = array();
+		$columnValues = $this->internalObjectToDb($rc, $itemData, $params);
 		$columnExpressionList = array();
 		$columnValueList = array();
 		foreach( $columnValues as $columnName => $value ) {
@@ -289,11 +298,11 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 		
 		// TODO: actually determine ID columns
 		
-		$rows = $this->fetchRows("INSERT INTO {table} {columns}\nVALUES {values}\nRETURNING *", array(
+		$rows = $this->fetchRows("INSERT INTO {table} {columns}\nVALUES {values}\nRETURNING *", array_merge(array(
 			'table' => $tableExpression,
 			'columns' => $columnExpressionList,
 			'values' => $columnValueList
-		));
+		), $params));
 		if( count($rows) != 1 ) {
 			throw new Exception("INSERT INTO ... RETURNING returned ".count($rows)." rows; expected exactly 1.");
 		}
@@ -317,10 +326,10 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 			}
 		}
 		
-		$columnValues = $this->internalObjectToDb($rc, $internalValues);
-
 		$params = array('table' => $this->rcTableExpression($rc));
-		$conditions = self::encodeColumnValuePairs($this->internalObjectToDb($rc, $idFieldValues ), $params);
+		$columnValues = $this->internalObjectToDb($rc, $internalValues, $params);
+
+		$conditions = self::encodeColumnValuePairs($this->internalObjectToDb($rc, $idFieldValues, $params), $params);
 		$sets       = self::encodeColumnValuePairs($columnValues, $params);
 		
 		$params['columns'] = array();
@@ -331,18 +340,19 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 			$valueSelects[] = "{{$valueParamName}}";
 			$params[$valueParamName] = $value;
 		}
-
+		
+		$selects = implode(', ',$this->buildSelects($rc));
 		$sql =
 			"WITH los_updatos AS (\n".
 			"\t"."UPDATE {table} SET\n".
 			"\t\t".implode(",\n\t\t",$sets)."\n".
 			"\t"."WHERE ".implode("\n\t  AND",$conditions)."\n".
-			"\t"."RETURNING *\n".
+			"\t"."RETURNING {$selects}\n".
 			"), los_insertsos AS (\n".
 			"\t"."INSERT INTO {table} {columns}\n".
 			"\t"."SELECT ".implode(", ",$valueSelects)."\n".
 			"\t"."WHERE NOT EXISTS ( SELECT * FROM los_updatos )\n".
-			"\t"."RETURNING *\n".
+			"\t"."RETURNING {$selects}\n".
 			")\n".
 			"SELECT * FROM los_updatos UNION ALL SELECT * FROM los_insertsos";
 		$rows = $this->fetchRows( $sql, $params );
@@ -365,7 +375,7 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 	public function deleteItem( EarthIT_Schema_ResourceClass $rc, $itemId ) {
 		$idFieldValues = EarthIT_CMIPREST_Util::idToFieldValues( $rc, $itemId );
 		$params = array('table' => $this->rcTableExpression($rc));
-		$conditions = self::encodeColumnValuePairs($this->internalObjectToDb($rc, $idFieldValues ), $params);
+		$conditions = self::encodeColumnValuePairs($this->internalObjectToDb($rc, $idFieldValues, $params), $params);
 		$sql =
 			"DELETE FROM {table}\n".
 			"WHERE ".implode("\n  AND ", $conditions);
