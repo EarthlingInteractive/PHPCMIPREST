@@ -23,7 +23,11 @@ util/test-psql: config/test-dbc.json util/generate-psql-script
 util/SchemaSchemaDemo.jar: util/SchemaSchemaDemo.jar.urn
 	rm -f $@
 	mkdir -p `dirname $@`
-	curl -o $@ 'http://pvps1.nuke24.net/uri-res/N2R?'`cat "$<"`
+	java -jar util/TJFetcher.jar \
+		-repo pvps1.nuke24.net \
+		-repo fs.marvin.nuke24.net \
+		-repo robert.nuke24.net:8080 \
+		-o $@ `cat $<`
 
 run_schema_processor = \
 	java -jar util/SchemaSchemaDemo.jar \
