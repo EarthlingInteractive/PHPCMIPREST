@@ -137,7 +137,7 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 	
 	protected function buildSelects( EarthIT_Schema_ResourceClass $rc ) {
 		$selects = array();
-		foreach( $rc->getFields() as $f ) {
+		foreach( EarthIT_CMIPREST_Util::storableFields($rc) as $f ) {
 			$columnName = $this->fieldDbName($rc, $f);
 			// TODO: parameterize column names
 			if( self::valuesOfTypeShouldBeSelectedAsGeoJson($f->getType()) ) {
