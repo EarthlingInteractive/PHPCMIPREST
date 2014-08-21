@@ -80,7 +80,7 @@ class EarthIT_CMIPREST_Util
 	public static function storableFields( EarthIT_Schema_ResourceClass $rc ) {
 		$storableFields = array();
 		foreach( $rc->getFields() as $k=>$f ) {
-			if( $f->getFirstPropertyValue('http://ns.earthit.com/CMIPREST/isFakeSearchableField') ) {
+			if( $f->getFirstPropertyValue('http://ns.nuke24.net/Schema/Application/hasADatabaseColumn') === false ) {
 				continue;
 			}
 			$storableFields[$k] = $f;
