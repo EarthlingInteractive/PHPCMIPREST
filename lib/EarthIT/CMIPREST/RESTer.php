@@ -38,6 +38,7 @@ class EarthIT_CMIPREST_JohnTreeNode
 /*
  * TODO:
  * - Make REST field namer configurable
+ *   or make it part of the action
  * - Comment functions better
  * - Split into 2 or 3 independent objects
  *   CMIPRESTRequest -> UserAction translator
