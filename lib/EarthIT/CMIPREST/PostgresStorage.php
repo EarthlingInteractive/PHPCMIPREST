@@ -290,19 +290,25 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 		$params = array();
 		$columnValues = $this->internalObjectToDb($rc, $itemData, $params);
 		$columnExpressionList = array();
-		$columnValueList = array();
 		foreach( $columnValues as $columnName => $value ) {
+			$valueParamName = EarthIT_DBC_ParameterUtil::newParamName('v');
+			$valuex[] = "{{$valueParamName}}";
+			$params[$valueParamName] = $value;
 			$columnExpressionList[] = new EarthIT_DBC_SQLIdentifier($columnName);
 			$columnValueList[] = $value;
 		}
 		
 		// TODO: actually determine ID columns
+		// So we can validate or something?
 		
-		$rows = $this->fetchRows("INSERT INTO {table} {columns}\nVALUES {values}\nRETURNING *", array_merge(array(
-			'table' => $tableExpression,
-			'columns' => $columnExpressionList,
-			'values' => $columnValueList
-		), $params));
+		$selects = implode(', ',$this->buildSelects($rc));
+		$params['table'] = $tableExpression;
+		$params['columns'] = $columnExpressionList;
+		$rows = $this->fetchRows(
+			"INSERT INTO {table}\n".
+			"{columns} VALUES\n".
+			"(".implode(',',$valuex).")\n".
+			"RETURNING {$selects}", $params);
 		if( count($rows) != 1 ) {
 			throw new Exception("INSERT INTO ... RETURNING returned ".count($rows)." rows; expected exactly 1.");
 		}
