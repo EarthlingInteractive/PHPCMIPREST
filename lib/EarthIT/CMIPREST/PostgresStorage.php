@@ -135,15 +135,16 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 	
 	//// Build complimicated queries
 	
-	protected function buildSelects( EarthIT_Schema_ResourceClass $rc ) {
+	protected function buildSelects( EarthIT_Schema_ResourceClass $rc, array &$params ) {
 		$selects = array();
 		foreach( EarthIT_CMIPREST_Util::storableFields($rc) as $f ) {
 			$columnName = $this->fieldDbName($rc, $f);
-			// TODO: parameterize column names
+			$columnNameParam = EarthIT_DBC_ParameterUtil::newParamName('c');
+			$params[$columnNameParam] = new EarthIT_DBC_SQLIdentifier($columnName);
 			if( self::valuesOfTypeShouldBeSelectedAsGeoJson($f->getType()) ) {
-				$selects[] = "ST_AsGeoJSON({$columnName}) AS $columnName";
+				$selects[] = "ST_AsGeoJSON({{$columnNameParam}}) AS {{$columnNameParam}}";
 			} else {
-				$selects[] = $columnName;
+				$selects[] = "{{$columnNameParam}}";
 			}
 		}
 		return $selects;
@@ -159,7 +160,7 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 		$tableAlias = 'tab';
 		$tableExpression = $this->rcTableExpression( $rc );
 		$params['table'] = $tableExpression;
-		$sql = "SELECT ".implode(', ',$this->buildSelects($rc))." FROM {table} AS {$tableAlias}";
+		$sql = "SELECT ".implode(', ',$this->buildSelects($rc, $params))." FROM {table} AS {$tableAlias}";
 		foreach( $sp->getFieldMatchers() as $fieldName => $matcher ) {
 			$field = $fields[$fieldName];
 			$columnName = $this->fieldDbName($rc, $field);
@@ -268,7 +269,7 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 	public function getItem( EarthIT_Schema_ResourceClass $rc, $itemId ) {
 		$params = array('table' => $this->rcTableExpression( $rc ));
 		$whereClauses = self::encodeColumnValuePairs($this->itemIdToColumnValues( $rc, $itemId ), $params);
-		$rows = $this->fetchRows( "SELECT * FROM {table}\nWHERE ".implode("\n  AND ",$whereClauses), $params );
+		$rows = $this->fetchRows( "SELECT ".implode(', ',$this->buildSelects($rc,$params))." FROM {table}\nWHERE ".implode("\n  AND ",$whereClauses), $params );
 		if( count($rows) == 1 ) return $this->dbObjectToInternal($rc, $rows[0]);
 		if( count($rows) == 0 ) return null;
 		throw new Exception("Getting an item by ID returned multiple rows.");
@@ -301,7 +302,7 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 		// TODO: actually determine ID columns
 		// So we can validate or something?
 		
-		$selects = implode(', ',$this->buildSelects($rc));
+		$selects = implode(', ',$this->buildSelects($rc, $params));
 		$params['table'] = $tableExpression;
 		$params['columns'] = $columnExpressionList;
 		$rows = $this->fetchRows(
@@ -347,7 +348,7 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 			$params[$valueParamName] = $value;
 		}
 		
-		$selects = implode(', ',$this->buildSelects($rc));
+		$selects = implode(', ',$this->buildSelects($rc, $params));
 		$sql =
 			"WITH los_updatos AS (\n".
 			"\t"."UPDATE {table} SET\n".
