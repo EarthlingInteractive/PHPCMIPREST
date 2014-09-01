@@ -212,7 +212,8 @@ class EarthIT_CMIPREST_RESTer
 		return $fields;
 	}
 	
-	protected function findJohnByRestName( EarthIT_Schema_ResourceClass $originRc, $linkRestName ) {
+	// TODO: Delegate to utility class.  Remove for 1.0.0.
+	private function findJohnByRestName( EarthIT_Schema_ResourceClass $originRc, $linkRestName ) {
 		foreach( $originRc->getReferences() as $refName=>$ref ) {
 			$restName = EarthIT_Schema_WordUtil::toCamelCase($refName);
 			if( $linkRestName == $restName ) {
@@ -274,26 +275,34 @@ class EarthIT_CMIPREST_RESTer
 		throw new Exception("Can't find '$linkRestName' link from ".$originRc->getName());
 	}
 	
-	protected function withsToJohnBranches( array $withs, EarthIT_Schema_ResourceClass $originRc ) {
+	// TODO: Delegate to utility class.  Remove for 1.0.0.
+	private function _withsToJohnBranches( array $withs, EarthIT_Schema_ResourceClass $originRc ) {
 		$branches = array();
 		foreach( $withs as $k=>$subWiths ) {
 			$john = $this->findJohnByRestName( $originRc, $k );
 			$branches[$k] = new EarthIT_CMIPREST_JohnTreeNode(
 				$john,
-				$this->withsToJohnBranches( $subWiths, $john->targetResourceClass )
+				$this->_withsToJohnBranches( $subWiths, $john->targetResourceClass )
 			);
 		}
 		return $branches;
 	}
 	
-	protected function parseWithsToJohnBranches( EarthIT_Schema_ResourceClass $originRc, $withs ) {
+	// TODO: Delegate to utility class.  Remove for 1.0.0.
+	public function withsToJohnBranches( EarthIT_Schema_ResourceClass $originRc, $withs ) {
 		if( is_scalar($withs) ) $withs = explode(',',$withs);
 		if( !is_array($withs) ) throw new Exception("withs parameter must be an array or comma-delimited string.");
 		$pathTree = array();
 		foreach( $withs as $segment ) self::parsePathToTree(explode('.',$segment), $pathTree);
-		return $this->withsToJohnBranches( $pathTree, $originRc );
+		return $this->_withsToJohnBranches( $pathTree, $originRc );
 	}
 	
+	// TODO: Delegate to utility class.  Remove for 1.0.0.
+	// Here for compatibility with overriding classes.
+	protected function parseWithsToJohnBranches( EarthIT_Schema_ResourceClass $originRc, $withs ) {
+		return $this->withsToJohnBranches($originRc,$withs);
+	}
+
 	protected function cmipRequestToUserAction( EarthIT_CMIPREST_CMIPRESTRequest $crr ) {
 		$userId = $crr->getUserId();
 		$resourceClass = EarthIT_CMIPREST_Util::getResourceClassByCollectionName($this->schema, $crr->getResourceCollectionName());
