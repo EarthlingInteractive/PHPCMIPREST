@@ -599,7 +599,7 @@ class EarthIT_CMIPREST_RESTer
 		if( $result === null ) {
 			return Nife_Util::httpResponse( 404, new EarthIT_JSON_PrettyPrintedJSONBlob($result), 'application/json' );
 		} else if( $result === self::SUCCESS ) {
-			return Nife_Util::httpResponse( 201, '' );
+			return Nife_Util::httpResponse( 204, '' );
 		} else {
 			return Nife_Util::httpResponse( 200, new EarthIT_JSON_PrettyPrintedJSONBlob($result), 'application/json' );
 		}
