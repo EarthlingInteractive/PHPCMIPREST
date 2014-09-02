@@ -135,16 +135,17 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 	
 	//// Build complimicated queries
 	
-	protected function buildSelects( EarthIT_Schema_ResourceClass $rc, array &$params ) {
+	protected function buildSelects( EarthIT_Schema_ResourceClass $rc, array &$params, $tableAlias=null ) {
+		$taPrefix = $tableAlias ? "{$tableAlias}." : '';
 		$selects = array();
 		foreach( EarthIT_CMIPREST_Util::storableFields($rc) as $f ) {
 			$columnName = $this->fieldDbName($rc, $f);
 			$columnNameParam = EarthIT_DBC_ParameterUtil::newParamName('c');
 			$params[$columnNameParam] = new EarthIT_DBC_SQLIdentifier($columnName);
 			if( self::valuesOfTypeShouldBeSelectedAsGeoJson($f->getType()) ) {
-				$selects[] = "ST_AsGeoJSON({{$columnNameParam}}) AS {{$columnNameParam}}";
+				$selects[] = "ST_AsGeoJSON({$taPrefix}{{$columnNameParam}}) AS {{$columnNameParam}}";
 			} else {
-				$selects[] = "{{$columnNameParam}}";
+				$selects[] = "{$taPrefix}{{$columnNameParam}}";
 			}
 		}
 		return $selects;
@@ -166,7 +167,7 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 			$columnName = $this->fieldDbName($rc, $field);
 			$columnParamName = EarthIT_DBC_ParameterUtil::newParamName('column');
 			$params[$columnParamName] = new EarthIT_DBC_SQLIdentifier($columnName);
-			$columnExpression = "{$tableAlias}.{{$columnParamName}}";
+			$columnExpression = "{$tableAlias}.{{$columnParamName}}"; // aaaaa
 			$matcherSql = $matcher->toSql( $columnExpression, $fields[$fieldName]->getType()->getPhpTypeName(), $params );
 			if( $matcherSql === 'TRUE' ) {
 				continue;
@@ -251,10 +252,9 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 		}
 		
 		$sql =
-			"SELECT {$targetAlias}.* FROM (\n".
+			"SELECT ".implode(', ', $this->buildSelects($targetRc, $params, $targetAlias))." FROM (\n".
 			"\t".str_replace("\n","\n\t",trim($rootSql))."\n".
 			") AS {$rootAlias}";
-		
 		if( count($joins) > 0 ) {
 			$sql .= "\n".implode("\n",$joins);
 		}
