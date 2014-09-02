@@ -151,46 +151,51 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 		return $selects;
 	}
 	
-	protected function buildSearchSql(
+	private function buildSearchSql(
 		EarthIT_Schema_ResourceClass $rc,
 		EarthIT_CMIPREST_SearchParameters $sp,
+		$tableAlias,
 		array &$params
 	) {
 		$fields = $rc->getFields();
 		$whereClauses = array();
-		$tableAlias = 'tab';
 		$tableExpression = $this->rcTableExpression( $rc );
 		$params['table'] = $tableExpression;
-		$sql = "SELECT ".implode(', ',$this->buildSelects($rc, $params))." FROM {table} AS {$tableAlias}";
 		foreach( $sp->getFieldMatchers() as $fieldName => $matcher ) {
 			$field = $fields[$fieldName];
 			$columnName = $this->fieldDbName($rc, $field);
 			$columnParamName = EarthIT_DBC_ParameterUtil::newParamName('column');
 			$params[$columnParamName] = new EarthIT_DBC_SQLIdentifier($columnName);
-			$columnExpression = "{$tableAlias}.{{$columnParamName}}"; // aaaaa
+			$columnExpression = "{$tableAlias}.{{$columnParamName}}";
 			$matcherSql = $matcher->toSql( $columnExpression, $fields[$fieldName]->getType()->getPhpTypeName(), $params );
 			if( $matcherSql === 'TRUE' ) {
 				continue;
 			} else if( $matcherSql === 'FALSE' ) {
-				// There will be no results!
-				return 'SELECT NOTHING';
+				return array('emptyResultSetGuaranteed' => true);
 			}
 			$whereClauses[] = $matcherSql;
 		}
-		if( $whereClauses ) $sql .= "\nWHERE ".implode("\n  AND ",$whereClauses);
+		
 		if( count($orderByComponents = $sp->getOrderByComponents()) > 0 ) {
 			$orderBySqlComponents = array();
 			foreach( $orderByComponents as $oc ) {
 				$orderBySqlComponents[] = $this->fieldDbName($rc, $oc->getField()).($oc->isAscending() ? " ASC" : " DESC");
 			}
-			$sql .= "\nORDER BY ".implode(', ',$orderBySqlComponents);
-		}
+			$orderBySection = "ORDER BY ".implode(', ',$orderBySqlComponents)."\n";
+		} else $orderBySection = '';
+
 		$limitClauseParts = array();
 		if( $sp->getLimit() !== null ) $limitClauseParts[] = "LIMIT ".$sp->getLimit();
 		if( $sp->getSkip() != 0 ) $limitClauseParts[] = "OFFSET ".$sp->getSkip();
-		if( $limitClauseParts ) $sql .= "\n".implode(' ',$limitClauseParts);
+		$limitSection = $limitClauseParts ? implode(' ',$limitClauseParts)."\n" : '';
 		
-		return $sql;
+		return array(
+			'emptyResultSetGuaranteed' => false,
+			'fromSection' => "FROM {table} AS {$tableAlias}\n",
+			'whereSection' => $whereClauses ? "WHERE ".implode("\n  AND ",$whereClauses)."\n" : '',
+			'orderBySection' => $orderBySection,
+			'limitSection' => $limitSection
+		);
 	}
 	
 	protected function fieldSelects( $rc, $tableAlias, array &$params ) {
@@ -220,12 +225,13 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 		
 		$results[$path] = array();
 		
-		$params = array();
-		$rootSql = $this->buildSearchSql( $rc, $sp, $params );
-		if( $rootSql == 'SELECT NOTHING' ) return;
-		
 		$aliasNum = 0;
 		$rootAlias = 'a'.($aliasNum++);
+
+		$params = array();
+		$searchQuery = $this->buildSearchSql( $rc, $sp, $rootAlias, $params );
+		if( $searchQuery['emptyResultSetGuaranteed'] ) return;
+		
 		$joins = array();
 		if( count($johns) == 0 ) {
 			$targetRc = $rc;
@@ -251,13 +257,14 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 			}
 		}
 		
-		$sql =
-			"SELECT ".implode(', ', $this->buildSelects($targetRc, $params, $targetAlias))." FROM (\n".
-			"\t".str_replace("\n","\n\t",trim($rootSql))."\n".
-			") AS {$rootAlias}";
-		if( count($joins) > 0 ) {
-			$sql .= "\n".implode("\n",$joins);
-		}
+		$sql = implode('', array(
+			"SELECT ".implode(', ', $this->buildSelects($targetRc, $params, $targetAlias))."\n",
+			$searchQuery['fromSection'],
+			count($joins) ? implode("\n",$joins)."\n" : '',
+			$searchQuery['whereSection'],
+			$searchQuery['orderBySection'],
+			$searchQuery['limitSection']
+		));
 		
 		foreach( $this->fetchRows($sql, $params) AS $dbObj ) {
 			$results[$path][] = $this->dbObjectToInternal($targetRc, $dbObj);
