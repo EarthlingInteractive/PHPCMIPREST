@@ -296,6 +296,7 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 		$tableExpression = $this->rcTableExpression( $rc );
 
 		$params = array();
+		$valuex = array();
 		$columnValues = $this->internalObjectToDb($rc, $itemData, $params);
 		$columnExpressionList = array();
 		foreach( $columnValues as $columnName => $value ) {
