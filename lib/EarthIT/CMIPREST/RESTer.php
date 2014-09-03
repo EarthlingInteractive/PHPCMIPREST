@@ -364,10 +364,38 @@ class EarthIT_CMIPREST_RESTer
 			if( $crr->getResourceInstanceId() !== null ) {
 				throw new Exception("You may not include item ID when POSTing");
 			}
-			return new EarthIT_CMIPREST_UserAction_PostItemAction(
-				$userId, $resourceClass,
-				$this->restFieldsToInternal($resourceClass, $crr->getContent())
-			);
+			$data = $crr->getContent();
+			
+			// If all keys are sequential integers (this includes the
+			// case when an empty list is posted), then a list of items
+			// is being posted.
+			// Otherwise, a single item is being posted and will be returned.
+			// The multi-item case should be considered the normal one;
+			// auto-detecting the single-item case is for backward-compatibility only.
+			
+			$isSingleItemPost = false;
+			$len = count($data);
+			for( $i=0; $i<$len; ++$i ) {
+				if( !array_key_exists($i, $data) ) {
+					$isSingleItemPost = true;
+					break;
+				}
+			}
+			
+			if( $isSingleItemPost ) {
+				return new EarthIT_CMIPREST_UserAction_PostItemAction(
+					$userId, $resourceClass,
+					$this->restFieldsToInternal($resourceClass, $data)
+				);
+			} else {
+				$items = array();
+				foreach( $data as $dat ) {
+					$items[] = $this->restFieldsToInternal($resourceClass, $dat);
+				}
+				return new EarthIT_CMIPREST_UserAction_PostItemsAction(
+					$userId, $resourceClass, $items
+				);
+			}
 		case 'PUT':
 			if( $crr->getResourceInstanceId() === null ) {
 				throw new Exception("You ust include item ID when PUTing");
@@ -573,6 +601,13 @@ class EarthIT_CMIPREST_RESTer
 		} else if( $act instanceof EarthIT_CMIPREST_UserAction_PostItemAction ) {
 			$rc = $act->getResourceClass();
 			return $this->internalObjectToRest( $rc, $this->storage->postItem($rc, $act->getItemData()) );
+		} else if( $act instanceof EarthIT_CMIPREST_UserAction_PostItemsAction ) {
+			$rc = $act->getResourceClass();
+			$rez = array();
+			foreach( $act->getItemData() as $item ) {
+				$rez[] = $this->internalObjectToRest( $rc, $this->storage->postItem($rc, $item) );
+			}
+			return $rez;
 		} else if( $act instanceof EarthIT_CMIPREST_UserAction_PutItemAction ) {
 			$rc = $act->getResourceClass();
 			return $this->internalObjectToRest( $rc, $this->storage->putItem($rc, $act->getItemId(), $act->getItemData()) );

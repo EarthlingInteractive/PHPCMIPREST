@@ -42,6 +42,20 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 		}
 	}
 	
+	public function testPostItems() {
+		$rc = $this->schema->getResourceClass('resource');
+		
+		$items = array();
+		for( $i=0; $i<5; ++$i ) {
+			$items[] = array('URN'=>'data:text/plain,'.rand(1000000,9999999));
+		}
+		$posted = $this->rester->doAction( new EarthIT_CMIPREST_UserAction_PostItemsAction(0, $rc, $items) );
+		for( $i=0; $i<5; ++$i ) {
+			$this->assertNotNull($posted[$i]['id']);
+			$this->assertEquals($items[$i]['URN'], $posted[$i]['urn']);
+		}
+	}
+	
 	public function testPostItem() {
 		$rc = $this->schema->getResourceClass('resource');
 		
