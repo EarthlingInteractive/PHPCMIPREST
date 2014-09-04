@@ -257,6 +257,11 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 			}
 		}
 		
+		// TODO: FIX THIS IT'S HORRIBLY (subtly) WRONG
+		// Hint: we want to limit the number of outermost objects,
+		// not the number of records returned for johnned-to items.
+		// Which is why this used to be implemented with ( SELECT ... ) AS a0 JOIN ....
+		
 		$sql = implode('', array(
 			"SELECT ".implode(', ', $this->buildSelects($targetRc, $params, $targetAlias))."\n",
 			$searchQuery['fromSection'],
