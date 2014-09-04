@@ -6,7 +6,7 @@
 		"ryprop/nife": "~0.0.1",
 		"earthit/php-common": "~0.0.6",
 		"earthit/schema": "~0.1.0",
-		"earthit/dbc": "~0.0.4"
+		"earthit/dbc": "~0.0.5"
 	},
 	"require-dev": {
 		"doctrine/dbal": "~2.4.0"
