@@ -226,18 +226,18 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 		$results[$path] = array();
 		
 		$aliasNum = 0;
-		$rootAlias = 'a'.($aliasNum++);
+		$alias0 = 'a'.($aliasNum++);
 
 		$params = array();
-		$searchQuery = $this->buildSearchSql( $rc, $sp, $rootAlias, $params );
+		$searchQuery = $this->buildSearchSql( $rc, $sp, 'root', $params );
 		if( $searchQuery['emptyResultSetGuaranteed'] ) return;
 		
 		$joins = array();
 		if( count($johns) == 0 ) {
 			$targetRc = $rc;
-			$targetAlias = $rootAlias;
+			$targetAlias = $alias0;
 		} else {
-			$originAlias = $rootAlias;
+			$originAlias = $alias0;
 			foreach( $johns as $j ) {
 				$originRc = $j->originResourceClass;
 				$targetRc = $j->targetResourceClass;
@@ -257,19 +257,21 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 			}
 		}
 		
-		// TODO: FIX THIS IT'S HORRIBLY (subtly) WRONG
-		// Hint: we want to limit the number of outermost objects,
-		// not the number of records returned for johnned-to items.
-		// Which is why this used to be implemented with ( SELECT ... ) AS a0 JOIN ....
+		// The root table needs to be wrapped
+		// into its own sub-query because it can be ordered and limited.
+		// We want the order and limit clauses to apply only to the root
+		// table, not the things we join to!
 		
-		$sql = implode('', array(
-			"SELECT ".implode(', ', $this->buildSelects($targetRc, $params, $targetAlias))."\n",
-			$searchQuery['fromSection'],
-			count($joins) ? implode("\n",$joins)."\n" : '',
-			$searchQuery['whereSection'],
-			$searchQuery['orderBySection'],
-			$searchQuery['limitSection']
-		));
+		$sql =
+			"SELECT ".implode(', ', $this->buildSelects($targetRc, $params, $targetAlias))."\n".
+			"FROM (\n\t".str_replace("\n","\n\t",
+				"SELECT *\n".
+				$searchQuery['fromSection'].
+				$searchQuery['whereSection'].
+				$searchQuery['orderBySection'].
+				$searchQuery['limitSection']
+			).") AS $alias0\n".
+			(count($joins) ? implode("\n",$joins)."\n" : '');
 		
 		foreach( $this->fetchRows($sql, $params) AS $dbObj ) {
 			$results[$path][] = $this->dbObjectToInternal($targetRc, $dbObj);
