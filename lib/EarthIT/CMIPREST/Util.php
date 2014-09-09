@@ -80,9 +80,16 @@ class EarthIT_CMIPREST_Util
 	public static function storableFields( EarthIT_Schema_ResourceClass $rc ) {
 		$storableFields = array();
 		foreach( $rc->getFields() as $k=>$f ) {
-			if( $f->getFirstPropertyValue('http://ns.nuke24.net/Schema/Application/hasADatabaseColumn') === false ) {
-				continue;
-			}
+			// Every field is assumed to have a database column unless:
+			// - it is explicitly marked as not having one, or
+			// - it is marked as fake
+			// Fake fields may still have a database column if explicitly marked as having one.
+			if(
+				$f->getFirstPropertyValue('http://ns.nuke24.net/Schema/Application/hasADatabaseColumn') === false or
+				$f->getFirstPropertyValue('http://ns.nuke24.net/Schema/Application/isFakeField') &&
+				!$f->getFirstPropertyValue('http://ns.nuke24.net/Schema/Application/hasADatabaseColumn')
+			) continue;
+			
 			$storableFields[$k] = $f;
 		}
 		return $storableFields;
