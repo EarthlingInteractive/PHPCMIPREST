@@ -77,22 +77,34 @@ class EarthIT_CMIPREST_Util
 		return $result;
 	}
 	
-	public static function storableFields( EarthIT_Schema_ResourceClass $rc ) {
-		$storableFields = array();
-		foreach( $rc->getFields() as $k=>$f ) {
-			// Every field is assumed to have a database column unless:
-			// - it is explicitly marked as not having one, or
-			// - it is marked as fake
-			// Fake fields may still have a database column if explicitly marked as having one.
-			if(
-				$f->getFirstPropertyValue('http://ns.nuke24.net/Schema/Application/hasADatabaseColumn') === false or
-				$f->getFirstPropertyValue('http://ns.nuke24.net/Schema/Application/isFakeField') &&
-				!$f->getFirstPropertyValue('http://ns.nuke24.net/Schema/Application/hasADatabaseColumn')
-			) continue;
-			
-			$storableFields[$k] = $f;
+	/**
+	 * Get a field property value, taking into account
+	 * whether the field is fake or not, and defaults for either case.
+	 */
+	protected static function fieldPropertyValue( $f, $propUri, $nonFakeDefault=true, $fakeDefault=false ) {
+		$v = $f->getFirstPropertyValue($propUri);
+		if( $v !== null ) return $v;
+		
+		$isFake = $f->getFirstPropertyValue('http://ns.nuke24.net/Schema/Application/isFakeField');
+		return $isFake ? $fakeDefault : $nonFakeDefault;
+	}
+	
+	protected static function fieldsWithProperty( array $l, $propUri, $nonFakeDefault=true, $fakeDefault=false ) {
+		$filtered = array();
+		foreach( $l as $k=>$f ) {
+			if( self::fieldPropertyValue($f, $propUri) ) {
+				$filtered[$k] = $f;
+			}
 		}
-		return $storableFields;
+		return $filtered;
+	}
+	
+	public static function restReturnableFields( EarthIT_Schema_ResourceClass $rc ) {
+		return self::fieldsWithProperty($rc->getFields(), 'http://ns.nuke24.net/Schema/Application/isReturnedByRestServices');
+	}
+	
+	public static function storableFields( EarthIT_Schema_ResourceClass $rc ) {
+		return self::fieldsWithProperty($rc->getFields(), 'http://ns.nuke24.net/Schema/Application/hasADatabaseColumn');
 	}
 	
 	public static function getResourceClassByCollectionName( $schema, $collectionName ) {

@@ -87,7 +87,7 @@ class EarthIT_CMIPREST_RESTer
 	
 	protected function internalObjectToRest( EarthIT_Schema_ResourceClass $rc, array $fieldValues ) {
 		$result = array();
-		foreach( $rc->getFields() as $f ) {
+		foreach( EarthIT_CMIPREST_Util::restReturnableFields($rc) as $f ) {
 			if( array_key_exists($f->getName(), $fieldValues) ) {
 				$result[$this->fieldRestName($rc, $f)] = $fieldValues[$f->getName()];
 			}
