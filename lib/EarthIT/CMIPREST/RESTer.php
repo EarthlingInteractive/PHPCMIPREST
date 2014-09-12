@@ -540,11 +540,6 @@ class EarthIT_CMIPREST_RESTer
 		
 		return $relevantRestObjects['root'];
 	}
-	
-	protected function getRestObject( EarthIT_Schema_ResourceClass $resourceClass, $itemId ) {
-		$obj = $this->storage->getItem($resourceClass, $itemId);
-		return $obj === null ? null : $this->dbObjectToRest($resourceClass, $obj);
-	}
 		
 	/**
 	 * Ensure that the given action is structurally valid so that
