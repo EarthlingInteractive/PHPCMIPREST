@@ -293,7 +293,11 @@ class EarthIT_CMIPREST_RESTer
 		return $this->withsToJohnBranches($originRc,$withs);
 	}
 
-	protected function cmipRequestToUserAction( EarthIT_CMIPREST_CMIPRESTRequest $crr ) {
+	public function cmipRequestToUserAction( EarthIT_CMIPREST_CMIPRESTRequest $crr ) {
+		if( ($propName = $crr->getResourcePropertyName()) !== null ) {
+			throw new Exception("Unrecognized resource property, '$propName'");
+		}
+		
 		$userId = $crr->getUserId();
 		$resourceClass = EarthIT_CMIPREST_Util::getResourceClassByCollectionName($this->schema, $crr->getResourceCollectionName());
 		
