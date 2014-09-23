@@ -1,6 +1,7 @@
 {
 	"name": "earthit/cmip-rest",
 	"description": "Collection-Modifiers-ID-Property REST framework",
+	"license": "MIT",
 	"require": {
 		"php": ">=5.2.0",
 		"ryprop/nife": "~0.0.1",
