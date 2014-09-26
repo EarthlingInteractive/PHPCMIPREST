@@ -650,6 +650,10 @@ class EarthIT_CMIPREST_RESTer
 		} catch( EarthIT_CMIPREST_ActionUnauthorized $un ) {
 			$status = $act->getUserId() === null ? 401 : 403;
 			return self::errorResponse( $status, $un->getAction()->getActionDescription(), $un->getNotes() );
+		} catch( EarthIT_CMIPREST_ActionInvalid $un ) {
+			return Nife_Util::httpResponse( 409,
+				new EarthIT_JSON_PrettyPrintedJSONBlob(array("errors"=>$un->getErrorDetails())),
+				"application/json" );
 		} catch( EarthIT_Schema_NoSuchResourceClass $un ) {
 			return self::errorResponse( 404, $un->getMessage() );
 		} catch( EarthIT_CMIPREST_ResourceNotExposedViaService $un ) {
