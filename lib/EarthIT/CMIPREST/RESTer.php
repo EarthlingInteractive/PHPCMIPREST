@@ -554,6 +554,13 @@ class EarthIT_CMIPREST_RESTer
 		// TODO
 	}
 	
+	// TODO:
+	// Sometimes projects will want to extend
+	// the set of actions and how they are implemented.
+	// It might be nice if doAction were refactored to delegate
+	// to separate validateAction, preAuthorizeAction, actuallyDoAction methods
+	// (or somesuch) so that they could be more easily overridden.
+	
 	/**
 	 * Result will be a JSON array in REST form.
 	 * Errors will be thrown as exceptions.
