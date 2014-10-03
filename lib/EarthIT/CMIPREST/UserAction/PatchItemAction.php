@@ -19,6 +19,6 @@ class EarthIT_CMIPREST_UserAction_PatchItemAction extends EarthIT_CMIPREST_UserA
 	public function getItemData() { return $this->itemData; }
 	
 	public function getActionDescription() {
-		return "put ".$this->getResourceClass()->getName()." with ID='".$this->getItemId()."'";
+		return "patch ".$this->getResourceClass()->getName()." with ID='".$this->getItemId()."'";
 	}
 }
