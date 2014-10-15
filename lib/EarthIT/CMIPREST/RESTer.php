@@ -637,9 +637,11 @@ class EarthIT_CMIPREST_RESTer
 		return Nife_Util::httpResponse( $status, new EarthIT_JSON_PrettyPrintedJSONBlob($result), 'application/json' );
 	}
 	
-	protected static function normalResponse( $result ) {
+	protected function normalResponse( $result ) {
 		if( $result === null ) {
 			return Nife_Util::httpResponse( 404, new EarthIT_JSON_PrettyPrintedJSONBlob($result), 'application/json' );
+		} else if( $result instanceof Nife_HTTP_Response ) {
+			return $result;
 		} else if( $result === self::SUCCESS ) {
 			return Nife_Util::httpResponse( 204, '' );
 		} else {
@@ -653,7 +655,7 @@ class EarthIT_CMIPREST_RESTer
 		try {
 			$act = $this->cmipRequestToUserAction($crr);
 			$result = $this->doAction($act);
-			return self::normalResponse($result);
+			return $this->normalResponse($result);
 		} catch( EarthIT_CMIPREST_ActionUnauthorized $un ) {
 			$status = $act->getUserId() === null ? 401 : 403;
 			return self::errorResponse( $status, $un->getAction()->getActionDescription(), $un->getNotes() );
