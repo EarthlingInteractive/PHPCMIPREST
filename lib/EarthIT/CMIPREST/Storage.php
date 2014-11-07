@@ -1,5 +1,8 @@
 <?php
 
+// TODO: In next version, do all updates in terms of search parameters
+// and don't worry about IDs.  Calling code can translate item-by-ID
+// references to searches.
 interface EarthIT_CMIPREST_Storage
 {
 	/**

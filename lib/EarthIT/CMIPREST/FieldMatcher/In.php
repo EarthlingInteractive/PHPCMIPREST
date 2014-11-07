@@ -18,4 +18,8 @@ class EarthIT_CMIPREST_FieldMatcher_In implements EarthIT_CMIPREST_FieldMatcher
 		$params[$paramName] = $values;
 		return "{$fieldValueSql} IN {{$paramName}}";
 	}
+	
+	public function matches( $fieldValue ) {
+		return in_array( $fieldValue, $this->values );
+	}
 }

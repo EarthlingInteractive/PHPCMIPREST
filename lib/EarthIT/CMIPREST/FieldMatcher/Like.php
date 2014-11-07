@@ -15,4 +15,8 @@ class EarthIT_CMIPREST_FieldMatcher_Like implements EarthIT_CMIPREST_FieldMatche
 		$params[$paramName] = $this->percentyPattern;
 		return "{$fieldValueSql} LIKE {{$paramName}}";
 	}
+	
+	public function matches( $fieldValue ) {
+		throw new Exception("Not yet implemented!");
+	}
 }

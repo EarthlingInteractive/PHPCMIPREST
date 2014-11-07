@@ -10,6 +10,8 @@ class EarthIT_CMIPREST_SearchParameters
 	/**
 	 * Array of EarthIT_CMIPREST_FieldMatcher objects,
 	 * keyed by internal field name
+	 *
+	 * TODO: What if we want more than one constraint on a field??
 	 */
 	protected $fieldMatchers;
 	/**
