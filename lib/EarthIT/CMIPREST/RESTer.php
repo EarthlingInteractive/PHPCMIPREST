@@ -418,15 +418,6 @@ class EarthIT_CMIPREST_RESTer
 		}
 	}
 	
-	protected function itemIdToSearchParameters( EarthIT_Schema_ResourceClass $rc, $id ) {
-		$fieldValues = EarthIT_CMIPREST_Util::idToFieldValues( $rc, $id );
-		$fieldMatchers = array();
-		foreach( $fieldValues as $fieldName => $value ) {
-			$fieldMatchers[$fieldName] = new EarthIT_CMIPREST_FieldMatcher_Equal($value);
-		}
-		return new EarthIT_CMIPREST_SearchParameters($fieldMatchers, array(), 0, null);
-	}
-	
 	/**
 	 * Determine if an action is allowed before actually doing it.
 	 * For search actions, this may return null to indicate that
@@ -589,7 +580,7 @@ class EarthIT_CMIPREST_RESTer
 			// Translate to a search action and take the first result
 			$searchAct = new EarthIT_CMIPREST_UserAction_SearchAction(
 				$act->getUserId(), $act->getResourceClass(),
-				$this->itemIdToSearchParameters($act->getResourceClass(), $act->getItemId()),
+				EarthIT_CMIPREST_Util::itemIdToSearchParameters($act->getResourceClass(), $act->getItemId()),
 				$act->getJohnBranches()
 			);
 			$results = $this->doAction($searchAct);

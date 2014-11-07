@@ -118,4 +118,21 @@ class EarthIT_CMIPREST_Util
 		}
 		return $schema->getResourceClass( EarthIT_Schema_WordUtil::depluralize($collectionName) );
 	}
+	
+	public static function itemIdToSearchParameters( EarthIT_Schema_ResourceClass $rc, $id ) {
+		$fieldValues = EarthIT_CMIPREST_Util::idToFieldValues( $rc, $id );
+		$fieldMatchers = array();
+		foreach( $fieldValues as $fieldName => $value ) {
+			$fieldMatchers[$fieldName] = new EarthIT_CMIPREST_FieldMatcher_Equal($value);
+		}
+		return new EarthIT_CMIPREST_SearchParameters($fieldMatchers, array(), 0, null);
+	}
+	
+	public static function getItemById( EarthIT_CMIPREST_Storage $storage, EarthIT_Schema_ResourceClass $rc, $itemId ) {
+		$sp = self::itemIdToSearchParameters($rc, $itemId);
+		$results = $storage->search( $rc, $sp, array() )['root'];
+		if( count($results) == 0 ) return null;
+		if( count($results) == 1 ) return $results[0];
+		throw new Exception("Multiple ".$rc->getName()." records found with ID = '".$itemId."'");
+	}
 }

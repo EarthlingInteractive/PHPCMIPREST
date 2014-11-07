@@ -20,7 +20,7 @@ abstract class EarthIT_CMIPREST_StorageTest extends PHPUnit_Framework_TestCase
 		$this->assertEquals($urn, $item['URN']);
 		$this->assertNotNull($item['ID']);
 		
-		$refetchedItem = $this->storage->getItem($resourceRc, $item['ID']);
+		$refetchedItem = EarthIT_CMIPREST_Util::getItemById($this->storage, $resourceRc, $item['ID']);
 		$this->assertEquals( $item, $refetchedItem );
 	}
 	
@@ -33,7 +33,7 @@ abstract class EarthIT_CMIPREST_StorageTest extends PHPUnit_Framework_TestCase
 		
 		$this->assertEquals( $urn1, $item1['URN'] );
 		
-		$refetchedItem = $this->storage->getItem($resourceRc, $item1['ID']);
+		$refetchedItem = EarthIT_CMIPREST_Util::getItemById($this->storage, $resourceRc, $item1['ID']);
 		$this->assertEquals( $item1, $refetchedItem );
 	}
 	
@@ -47,7 +47,7 @@ abstract class EarthIT_CMIPREST_StorageTest extends PHPUnit_Framework_TestCase
 		$this->assertEquals( -$item0['ID'], $item1['ID'] );
 		$this->assertEquals( $urn1, $item1['URN'] );
 		
-		$refetchedItem = $this->storage->getItem($resourceRc, $item1['ID']);
+		$refetchedItem = EarthIT_CMIPREST_Util::getItemById($this->storage, $resourceRc, $item1['ID']);
 		$this->assertEquals( $item1, $refetchedItem );
 	}
 	
@@ -58,7 +58,7 @@ abstract class EarthIT_CMIPREST_StorageTest extends PHPUnit_Framework_TestCase
 		$id = $item['ID'];
 		
 		// Should still be there for now
-		$item = $this->storage->getItem($resourceRc, $id);
+		$item = EarthIT_CMIPREST_UTil::getItemById($this->storage, $resourceRc, $id);
 		$this->assertNotNull( $item );
 		$this->assertEquals( $urn, $item['URN'] );
 		
@@ -66,21 +66,21 @@ abstract class EarthIT_CMIPREST_StorageTest extends PHPUnit_Framework_TestCase
 		$this->storage->deleteItem( $resourceRc, $id );
 		
 		// Then it should no longer exist
-		$item = $this->storage->getItem($resourceRc, $id);
+		$item = EarthIT_CMIPREST_UTil::getItemById($this->storage, $resourceRc, $id);
 		$this->assertNull( $item );
 		
 		// Deleting it again should not be a problem
 		$this->storage->deleteItem( $resourceRc, $id );
 		
 		// It should still no longer exist
-		$item = $this->storage->getItem($resourceRc, $id);
+		$item = EarthIT_CMIPREST_UTil::getItemById($this->storage, $resourceRc, $id);
 		$this->assertNull( $item );
 		
 		// If we put it back...
 		$this->storage->putItem( $resourceRc, $id, $originalItem ); 
 		
 		// It should exist again
-		$item = $this->storage->getItem($resourceRc, $id);
+		$item = EarthIT_CMIPREST_UTil::getItemById($this->storage, $resourceRc, $id);
 		$this->assertNotNull( $item );
 		$this->assertEquals( $urn, $item['URN'] );
 		
@@ -88,7 +88,7 @@ abstract class EarthIT_CMIPREST_StorageTest extends PHPUnit_Framework_TestCase
 		$this->storage->deleteItem( $resourceRc, $id );
 		
 		// It should be deleted, again
-		$item = $this->storage->getItem($resourceRc, $id);
+		$item = EarthIT_CMIPREST_UTil::getItemById($this->storage, $resourceRc, $id);
 		$this->assertNull( $item );
 	}
 }

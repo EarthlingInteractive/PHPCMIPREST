@@ -280,15 +280,6 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 	
 	////
 	
-	public function getItem( EarthIT_Schema_ResourceClass $rc, $itemId ) {
-		$params = array('table' => $this->rcTableExpression( $rc ));
-		$whereClauses = self::encodeColumnValuePairs($this->itemIdToColumnValues( $rc, $itemId ), $params);
-		$rows = $this->fetchRows( "SELECT ".implode(', ',$this->buildSelects($rc,$params))." FROM {table}\nWHERE ".implode("\n  AND ",$whereClauses), $params );
-		if( count($rows) == 1 ) return $this->dbObjectToInternal($rc, $rows[0]);
-		if( count($rows) == 0 ) return null;
-		throw new Exception("Getting an item by ID returned multiple rows.");
-	}
-	
 	public function search(
 		EarthIT_Schema_ResourceClass $rc,
 		EarthIT_CMIPREST_SearchParameters $sp,

@@ -3,13 +3,6 @@
 interface EarthIT_CMIPREST_Storage
 {
 	/**
-	 * Return a single object (in internal form)
-	 * from the given resource class with the given ID,
-	 * or null if no such object exists
-	 */
-	public function getItem( EarthIT_Schema_ResourceClass $rc, $itemId );
-	
-	/**
 	 * Perform a search, returning an array of join path => list of result objects (in internal form).
 	 * Join path is 'root' for the root object set, and "{$parentPath}.{$branchKey}"
 	 * for objects associated by sub-branches.

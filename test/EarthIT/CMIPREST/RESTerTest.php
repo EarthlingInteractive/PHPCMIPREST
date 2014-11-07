@@ -32,6 +32,10 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 		);
 	}
 	
+	protected function getItem( $rc, $id ) {
+		return EarthIT_CMIPREST_Util::getItemById($this->storage, $rc, $id);
+	}
+	
 	public function testGetItem() {
 		$rc = $this->schema->getResourceClass('resource');
 		
@@ -61,7 +65,7 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 		
 		$urn = 'data:text/plain,'.rand(1000000,9999999);
 		$posted = $this->rester->doAction( new EarthIT_CMIPREST_UserAction_PostItemAction(0, $rc, array('URN'=>$urn)) );
-		$got = $this->storage->getItem($rc, $posted['id']);
+		$got = $this->getItem($rc, $posted['id']);
 		$this->assertEquals($urn, $got['URN']);
 	}
 	
@@ -70,13 +74,13 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 		$urn = 'data:text/plain,'.rand(1000000,9999999);
 		$posted = $this->storage->postItem( $rc, array('URN'=>$urn) );
 		$id = $posted['ID'];
-		$got = $this->storage->getItem($rc, $id);
+		$got = $this->getItem($rc, $id);
 		$this->assertEquals($urn, $got['URN']);
 		
 		// Now baleete it!
 		$this->rester->doAction( new EarthIT_CMIPREST_UserAction_DeleteItemAction(0, $rc, $id) );
 		
 		// Now make sure it's gone!
-		$this->assertNull( $this->storage->getItem($rc, $id) );
+		$this->assertNull( $this->getItem($rc, $id) );
 	}
 }
