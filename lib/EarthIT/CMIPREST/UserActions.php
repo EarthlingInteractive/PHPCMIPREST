@@ -8,11 +8,9 @@ class EarthIT_CMIPREST_UserActions
 	public static function multiPatch($userId, EarthIT_Schema_ResourceClass $rc, $patches) {
 		$itemPatches = array();
 		$resultExpressions = array();
-		$i = 0;
 		foreach( $patches as $itemId=>$patchData ) {
-			$itemPatches[$i] = new EarthIT_CMIPREST_UserAction_PatchItemAction($userId, $rc, $itemId, $patchData);
-			$resultExpressions[$i] = new EarthIT_CMIPREST_UserAction_ActionResultExpression($i);
-			++$i;
+			$itemPatches[$itemId] = new EarthIT_CMIPREST_UserAction_PatchItemAction($userId, $rc, $itemId, $patchData);
+			$resultExpressions[$itemId] = new EarthIT_CMIPREST_UserAction_ActionResultExpression($itemId);
 		}
 		return new EarthIT_CMIPREST_UserAction_CompoundAction(
 			$itemPatches,
@@ -23,11 +21,9 @@ class EarthIT_CMIPREST_UserActions
 	public static function multiPost($userId, EarthIT_Schema_ResourceClass $rc, $posts) {
 		$itemPatches = array();
 		$resultExpressions = array();
-		$i = 0;
-		foreach( $posts as $itemId=>$itemData ) {
+		foreach( $posts as $i => $itemData ) {
 			$itemPosts[$i] = new EarthIT_CMIPREST_UserAction_PostItemAction($userId, $rc, $itemData);
 			$resultExpressions[$i] = new EarthIT_CMIPREST_UserAction_ActionResultExpression($i);
-			++$i;
 		}
 		return new EarthIT_CMIPREST_UserAction_CompoundAction(
 			$itemPosts,

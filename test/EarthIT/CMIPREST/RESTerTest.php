@@ -139,12 +139,12 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 		
 		$rez = $this->rester->doAction($multiPatch);
 		$this->assertEquals( array(
-			array(
+			$personA['ID'] => array(
 				'id' => $personA['ID'],
 				'firstName' => 'Fred',
 				'lastName' => 'Smith',
 			),
-			array(
+			$personB['ID'] => array(
 				'id' => $personB['ID'],
 				'firstName' => 'Frank',
 				'lastName' => 'Smith',
