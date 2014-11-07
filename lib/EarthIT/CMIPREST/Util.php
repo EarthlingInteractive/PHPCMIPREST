@@ -150,7 +150,7 @@ class EarthIT_CMIPREST_Util
 	}
 	
 	public static function jsonResponse( $status, $data ) {
-		Nife_Util::httpResponse( $status, new EarthIT_JSON_PrettyPrintedJSONBlob($data), 'application/json' );
+		return Nife_Util::httpResponse( $status, new EarthIT_JSON_PrettyPrintedJSONBlob($data), 'application/json' );
 	}
 	
 	public static function multiErrorResponse( $status, array $errors ) {

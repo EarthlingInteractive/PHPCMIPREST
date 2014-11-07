@@ -1,5 +1,12 @@
 <?php
 
+class EarthIT_CMIPREST_UserAction_WackAction extends EarthIT_CMIPREST_UserAction
+{
+	public function getActionDescription() {
+		return "This action doesn't mean anything.";
+	}
+}
+
 class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 {
 	protected $storage;
@@ -155,5 +162,30 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 				$this->assertEquals('Frank', $item['first name']);
 			}
 		}
+	}
+	
+	//// Test some errors
+	
+	public function testInvalidActionError() {
+		$errorDetail = array(
+			'class'=>'CientError/ActionInvalid/Test',
+			'message'=>'This action should always fail!'
+		);
+		$act = new EarthIT_CMIPREST_UserAction_InvalidAction( 0, array( $errorDetail ) );
+		$rez = $this->rester->_r78($act);
+		$responseString = (string)$rez->getContent();
+		$responseObject = json_decode($responseString, true);
+		$this->assertEquals( array( 'errors' => array($errorDetail) ), $responseObject );
+	}
+	
+	public function testWackActionError() {
+		$act = new EarthIT_CMIPREST_UserAction_WackAction( 0 );
+		$rez = $this->rester->_r78($act);
+		$responseString = (string)$rez->getContent();
+		$responseObject = json_decode($responseString, true);
+		$this->assertEquals( array( 'errors' => array(array(
+			'class'=>'ClientError/ActionInvalid',
+			'message'=>'Unrecognized action class: EarthIT_CMIPREST_UserAction_WackAction'
+		)) ), $responseObject );
 	}
 }

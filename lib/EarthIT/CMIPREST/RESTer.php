@@ -435,7 +435,15 @@ class EarthIT_CMIPREST_RESTer
 	 * @intended-to-be-overridden-by-application
 	 */
 	protected function validateSimpleAction( EarthIT_CMIPREST_UserAction $act ) {
-		// TODO
+		if( $act instanceof EarthIT_CMIPREST_UserAction_ResourceAction ) {
+		} else if( $act instanceof EarthIT_CMIPREST_UserAction_InvalidAction ) {
+			throw new EarthIT_CMIPREST_ActionInvalid($act, $act->getErrorDetails());
+		} else {
+			throw new EarthIT_CMIPREST_ActionInvalid($act, array(array(
+				'class' => 'ClientError/ActionInvalid',
+				'message' => 'Unrecognized action class: '.get_class($act)
+			)));
+		}
 	}
 	
 	/**
@@ -651,7 +659,7 @@ class EarthIT_CMIPREST_RESTer
 		}
 	}
 	
-	protected function normalResponse( $result ) {
+	protected static function normalResponse( $result ) {
 		if( $result === null ) {
 			return Nife_Util::httpResponse( 404, new EarthIT_JSON_PrettyPrintedJSONBlob($result), 'application/json' );
 		} else if( $result instanceof Nife_HTTP_Response ) {
@@ -663,26 +671,44 @@ class EarthIT_CMIPREST_RESTer
 		}
 	}
 	
+	protected static function exceptionResponse( Exception $e ) {
+		if( $e instanceof EarthIT_CMIPREST_ActionUnauthorized ) {
+			$act = $e->getAction();
+			$status = $act->getUserId() === null ? 401 : 403;
+			return EarthIT_CMIPREST_Util::singleErrorResponse( $status, $act->getActionDescription(), $e->getNotes() );
+		} else if( $e instanceof EarthIT_CMIPREST_ActionInvalid ) {
+			return EarthIT_CMIPREST_Util::multiErrorResponse( 409, $e->getErrorDetails() );
+		} else if( $e instanceof EarthIT_Schema_NoSuchResourceClass ) {
+			return EarthIT_CMIPREST_Util::singleErrorResponse( 404, $e->getMessage() );
+		} else if( $e instanceof EarthIT_CMIPREST_ResourceNotExposedViaService ) {
+			return EarthIT_CMIPREST_Util::singleErrorResponse( 404, $e->getMessage() );
+		} else {
+			throw $e;
+		}
+	}
+	
+	/**
+	 * Does an action and wraps the response.
+	 * Handy for unit testing.
+	 */
+	public function _r78( EarthIT_CMIPREST_UserAction $act ) {
+		try {
+			return $this->normalResponse($this->doAction($act));
+		} catch( Exception $e ) {
+			return self::exceptionResponse($e);
+		}
+	}
+	
 	/**
 	 * @api
 	 * @return Nife_HTTP_Response
 	 */
 	public function handle( EarthIT_CMIPREST_CMIPRESTRequest $crr ) {
-		// TODO: Put exception -> response mapping in its own function
-		
 		try {
 			$act = $this->cmipRequestToUserAction($crr);
-			$result = $this->doAction($act);
-			return $this->normalResponse($result);
-		} catch( EarthIT_CMIPREST_ActionUnauthorized $un ) {
-			$status = $act->getUserId() === null ? 401 : 403;
-			return EarthIT_CMIPREST_Util::singleErrorResponse( $status, $un->getAction()->getActionDescription(), $un->getNotes() );
-		} catch( EarthIT_CMIPREST_ActionInvalid $un ) {
-			return EarthIT_CMIPREST_Util::multiErrorResponse( 409, $un->getErrorDetails() );
-		} catch( EarthIT_Schema_NoSuchResourceClass $un ) {
-			return EarthIT_CMIPREST_Util::singleErrorResponse( 404, $un->getMessage() );
-		} catch( EarthIT_CMIPREST_ResourceNotExposedViaService $un ) {
-			return EarthIT_CMIPREST_Util::singleErrorResponse( 404, $un->getMessage() );
+			return $this->normalResponse($this->doAction($act));
+		} catch( Exception $e ) {
+			return self::exceptionResponse($e);
 		}
 	}
 }
