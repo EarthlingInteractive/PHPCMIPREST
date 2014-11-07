@@ -81,8 +81,41 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 		// Now make sure it's gone!
 		$this->assertNull( $this->getItem($rc, $id) );
 	}
-
-	public function testDoCompositeAction() {
+	
+	public function testMultiPost() {
+		$rc = $this->schema->getResourceClass('person');
+		
+		$multiPost = EarthIT_CMIPREST_UserActions::multiPost(0, $rc, array(
+			array(
+				'first name' => 'Bob',
+				'last name' => 'Hope'
+			),
+			array(
+				'first name' => 'Red',
+				'last name' => 'Skelton'
+			),
+		));
+		
+		$rez = $this->rester->doAction($multiPost);
+		$bobHopeId = $rez[0]['id'];
+		$redSkeltonId = $rez[1]['id'];
+		
+		$items = $this->storage->search($rc, new EarthIT_CMIPREST_SearchParameters(
+			array('ID' => new EarthIT_CMIPREST_FieldMatcher_In(array($bobHopeId, $redSkeltonId))),
+			array(), 0, null ), array())['root'];
+		$this->assertEquals( array(
+			array(
+				'ID' => $bobHopeId,
+				'first name' => 'Bob',
+				'last name' => 'Hope'
+			), array(
+				'ID' => $redSkeltonId,
+				'first name' => 'Red',
+				'last name' => 'Skelton'
+		)), $items);
+	}
+	
+	public function testMultiPatch() {
 		$rc = $this->schema->getResourceClass('person');
 		
 		$personA = $this->storage->postItem( $rc, array('first name'=>'Bob', 'last name'=>'Smith') );
