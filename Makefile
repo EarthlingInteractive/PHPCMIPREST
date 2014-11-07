@@ -4,7 +4,7 @@ generated_files = \
 	test-schema.php \
 	vendor
 
-all: run-tests
+default: run-tests
 
 .DELETE_ON_ERROR:
 
@@ -12,7 +12,7 @@ all: run-tests
 	.database-created
 
 .PHONY: \
-	all \
+	default \
 	clean \
 	run-tests
 
