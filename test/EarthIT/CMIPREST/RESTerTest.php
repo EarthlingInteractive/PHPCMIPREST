@@ -44,14 +44,14 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 		}
 	}
 	
-	public function testPostItems() {
+	public function testMultiPost1() {
 		$rc = $this->schema->getResourceClass('resource');
 		
 		$items = array();
 		for( $i=0; $i<5; ++$i ) {
 			$items[] = array('URN'=>'data:text/plain,'.rand(1000000,9999999));
 		}
-		$posted = $this->rester->doAction( new EarthIT_CMIPREST_UserAction_PostItemsAction(0, $rc, $items) );
+		$posted = $this->rester->doAction( EarthIT_CMIPREST_UserActions::multiPost(0, $rc, $items) );
 		for( $i=0; $i<5; ++$i ) {
 			$this->assertNotNull($posted[$i]['id']);
 			$this->assertEquals($items[$i]['URN'], $posted[$i]['urn']);
@@ -82,7 +82,7 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 		$this->assertNull( $this->getItem($rc, $id) );
 	}
 	
-	public function testMultiPost() {
+	public function testMultiPost2() {
 		$rc = $this->schema->getResourceClass('person');
 		
 		$multiPost = EarthIT_CMIPREST_UserActions::multiPost(0, $rc, array(

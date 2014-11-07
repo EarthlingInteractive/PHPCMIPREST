@@ -388,9 +388,7 @@ class EarthIT_CMIPREST_RESTer
 				foreach( $data as $dat ) {
 					$items[] = $this->restFieldsToInternal($resourceClass, $dat);
 				}
-				return new EarthIT_CMIPREST_UserAction_PostItemsAction(
-					$userId, $resourceClass, $items
-				);
+				return EarthIT_CMIPREST_UserActions::multiPost($userId, $resourceClass, $items);
 			}
 		case 'PUT':
 			if( $crr->getResourceInstanceId() === null ) {
@@ -590,13 +588,6 @@ class EarthIT_CMIPREST_RESTer
 		} else if( $act instanceof EarthIT_CMIPREST_UserAction_PostItemAction ) {
 			$rc = $act->getResourceClass();
 			return $this->internalObjectToRest( $rc, $this->storage->postItem($rc, $act->getItemData()) );
-		} else if( $act instanceof EarthIT_CMIPREST_UserAction_PostItemsAction ) {
-			$rc = $act->getResourceClass();
-			$rez = array();
-			foreach( $act->getItemData() as $item ) {
-				$rez[] = $this->internalObjectToRest( $rc, $this->storage->postItem($rc, $item) );
-			}
-			return $rez;
 		} else if( $act instanceof EarthIT_CMIPREST_UserAction_PutItemAction ) {
 			$rc = $act->getResourceClass();
 			return $this->internalObjectToRest( $rc, $this->storage->putItem($rc, $act->getItemId(), $act->getItemData()) );
