@@ -29,6 +29,10 @@ class 'entity ID' : extends(integer) :
 class 'percentage' : extends(integer) :
 	SQL type @ "SMALLINT"
 
+class property 'collection name' : value type @ string :
+	long name @ "http://ns.earthit.com/CMIPREST/collectionName" :
+	comment @ "Name of the set of members of this class; usually this would be the plural form of the class name"
+
 # Standard Rest Resource
 class modifier 'SRR' = has a database table : has a REST service : members are public
 
@@ -49,7 +53,7 @@ class 'resource' : SRR {
 	URN : string
 }
 
-class 'person' : SRR {
+class 'person' : SRR : collection name @ "people" {
 	ID : EIPK
 	first name : string
 	last name : string
