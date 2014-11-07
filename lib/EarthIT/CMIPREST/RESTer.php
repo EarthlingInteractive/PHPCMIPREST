@@ -409,12 +409,19 @@ class EarthIT_CMIPREST_RESTer
 			);
 		case 'PATCH':
 			if( $crr->getResourceInstanceId() === null ) {
-				throw new Exception("You ust include item ID when PATCHing");
+				$items = array();
+				foreach( $crr->getContent() as $itemId=>$restItem ) {
+					$items[$itemId] = $this->restObjectToInternal($resourceClass, $restItem);
+				}
+				return EarthIT_CMIPREST_UserActions::multiPatch(
+					$userId, $resourceClass, $items
+				);
+			} else {
+				return new EarthIT_CMIPREST_UserAction_PatchItemAction(
+					$userId, $resourceClass, $crr->getResourceInstanceId(),
+					$this->restObjectToInternal($resourceClass, $crr->getContent())
+				);
 			}
-			return new EarthIT_CMIPREST_UserAction_PatchItemAction(
-				$userId, $resourceClass, $crr->getResourceInstanceId(),
-				$this->restObjectToInternal($resourceClass, $crr->getContent())
-			);
 		case 'DELETE':
 			if( $crr->getResourceInstanceId() === null ) {
 				throw new Exception("You ust include item ID when DELETEing");

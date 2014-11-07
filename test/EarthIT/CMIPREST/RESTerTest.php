@@ -164,6 +164,39 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 		}
 	}
 	
+	//// Test CMIPRESTRequest parsing
+	
+	public function testParseMultiPatch() {
+		$crr = EarthIT_CMIPREST_CMIPRESTRequest::parse('PATCH', '/people', array(), array(
+			3 => array(
+				'firstName' => 'Jake',
+				'lastName' => 'Wagner'
+			),
+			7 => array(
+				'firstName' => 'Jeff',
+				'lastName' => 'Glaze'
+			)
+		));
+		$crr->userId = 123;
+		
+		$ua = $this->rester->cmipRequestToUserAction($crr);
+		
+		$this->assertEquals( EarthIT_CMIPREST_UserActions::multiPatch(
+			123,
+			$this->schema->getResourceClass('person'),
+			array(
+				3 => array(
+					'first name' => 'Jake',
+					'last name' => 'Wagner'
+				),
+				7 => array(
+					'first name' => 'Jeff',
+					'last name' => 'Glaze'
+				)
+			)
+		), $ua);
+	}
+	
 	//// Test some errors
 	
 	public function testInvalidActionError() {
