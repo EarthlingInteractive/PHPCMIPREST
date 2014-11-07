@@ -2,7 +2,6 @@
 
 class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 {
-	protected $dbAdapter;
 	protected $storage;
 	protected $rester;
 	protected $schema;
@@ -17,9 +16,8 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 			throw new Exception("Failed to load database config from $dbConfigFile");
 		}
 		$dbConfig = EarthIT_JSON::decode($dbConfigJson);
-		$this->dbAdapter = Doctrine\DBAL\DriverManager::getConnection($dbConfig);
 		$this->schema = require 'test-schema.php';
-		$this->storage = new EarthIT_CMIPREST_PostgresStorage($this->dbAdapter, $this->schema, new EarthIT_DBC_PostgresNamer());
+		$this->storage = new EarthIT_CMIPREST_MemoryStorage();
 		$this->rester = new EarthIT_CMIPREST_RESTer(array(
 			'storage' => $this->storage,
 			'schema' => $this->schema
@@ -82,5 +80,47 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 		
 		// Now make sure it's gone!
 		$this->assertNull( $this->getItem($rc, $id) );
+	}
+
+	public function testDoCompositeAction() {
+		$rc = $this->schema->getResourceClass('person');
+		
+		$personA = $this->storage->postItem( $rc, array('first name'=>'Bob', 'last name'=>'Smith') );
+		$personB = $this->storage->postItem( $rc, array('first name'=>'Ben', 'last name'=>'Smith') );
+		
+		$multiPatch = EarthIT_CMIPREST_UserActions::multiPatch(0, $rc, array(
+			$personA['ID'] => array(
+				'first name' => 'Fred'
+			),
+			$personB['ID'] => array(
+				'first name' => 'Frank'
+			)
+		));
+		
+		$rez = $this->rester->doAction($multiPatch);
+		$this->assertEquals( array(
+			array(
+				'id' => $personA['ID'],
+				'firstName' => 'Fred',
+				'lastName' => 'Smith',
+			),
+			array(
+				'id' => $personB['ID'],
+				'firstName' => 'Frank',
+				'lastName' => 'Smith',
+			)
+		), $rez);
+		
+		$items = $this->storage->search($rc, new EarthIT_CMIPREST_SearchParameters(
+			array('ID' => new EarthIT_CMIPREST_FieldMatcher_In(array($personA['ID'], $personB['ID']))),
+			array(), 0, null ), array())['root'];
+		foreach( $items as $item ) {
+			if( $item['ID'] == $personA['ID'] ) {
+				$this->assertEquals('Fred', $item['first name']);
+			}
+			if( $item['ID'] == $personB['ID'] ) {
+				$this->assertEquals('Frank', $item['first name']);
+			}
+		}
 	}
 }

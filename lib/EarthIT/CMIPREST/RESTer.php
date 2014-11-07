@@ -556,7 +556,7 @@ class EarthIT_CMIPREST_RESTer
 	 * Result will be a JSON array in REST form.
 	 * Errors will be thrown as exceptions.
 	 */
-	public function doAction( EarthIT_CMIPREST_UserAction $act ) {
+	protected function doIndividualAction( EarthIT_CMIPREST_UserAction $act ) {
 		$this->validateAction($act);
 		
 		$authorizationExplanation = array();
@@ -609,6 +609,25 @@ class EarthIT_CMIPREST_RESTer
 		} else {
 			// TODO
 			throw new Exception(get_class($act)." not supported");
+		}
+	}
+	
+	protected function doCompoundAction( EarthIT_CMIPREST_UserAction_CompoundAction $act ) {
+		// For now just doing all actions in order.
+		// If one fails to validate, earlier actions will still have been run.
+		$subActionResults = array();
+		foreach( $act->getActions() as $k=>$subAct ) {
+			$subActionResults[$k] = $this->doAction($subAct);
+		}
+		$context = array('action results'=>$subActionResults);
+		return $act->getResultExpression()->evaluate($context);
+	}
+	
+	public function doAction( EarthIT_CMIPREST_UserAction $act ) {
+		if( $act instanceof EarthIT_CMIPREST_UserAction_CompoundAction ) {
+			return $this->doCompoundAction($act);
+		} else {
+			return $this->doIndividualAction($act);
 		}
 	}
 	

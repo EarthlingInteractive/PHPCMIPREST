@@ -51,7 +51,8 @@ class 'resource' : SRR {
 
 class 'person' : SRR {
 	ID : EIPK
-	name : string
+	first name : string
+	last name : string
 }
 
 class 'rating' : SRR {

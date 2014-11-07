@@ -9,7 +9,8 @@ CREATE TABLE "resource" (
 );
 CREATE TABLE "person" (
 	"id" BIGINT NOT NULL DEFAULT nextval('entityids'),
-	"name" VARCHAR(127) NOT NULL,
+	"firstname" VARCHAR(127) NOT NULL,
+	"lastname" VARCHAR(127) NOT NULL,
 	PRIMARY KEY ("id")
 );
 CREATE TABLE "rating" (
