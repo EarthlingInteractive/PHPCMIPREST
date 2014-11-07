@@ -5,7 +5,7 @@
  */
 class EarthIT_CMIPREST_UserActions
 {
-	public function multiPatch($userId, EarthIT_Schema_ResourceClass $rc, $patches) {
+	public static function multiPatch($userId, EarthIT_Schema_ResourceClass $rc, $patches) {
 		$itemPatches = array();
 		$resultExpressions = array();
 		$i = 0;
@@ -20,7 +20,7 @@ class EarthIT_CMIPREST_UserActions
 		);
 	}
 	
-	public function multiPost($userId, EarthIT_Schema_ResourceClass $rc, $posts) {
+	public static function multiPost($userId, EarthIT_Schema_ResourceClass $rc, $posts) {
 		$itemPatches = array();
 		$resultExpressions = array();
 		$i = 0;
