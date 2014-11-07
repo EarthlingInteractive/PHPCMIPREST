@@ -135,4 +135,33 @@ class EarthIT_CMIPREST_Util
 		if( count($results) == 1 ) return $results[0];
 		throw new Exception("Multiple ".$rc->getName()." records found with ID = '".$itemId."'");
 	}
+	
+	//// Nife_HTTP_Response generation
+	
+	/**
+	 * Create a single error structures
+	 * from a message and list of notes.
+	 */
+	protected static function errorStructure( $message, array $notes=array() ) {
+		return array(
+			'message' => $message,
+			'notes' => $notes
+		);
+	}
+	
+	public static function jsonResponse( $status, $data ) {
+		Nife_Util::httpResponse( $status, new EarthIT_JSON_PrettyPrintedJSONBlob($data), 'application/json' );
+	}
+	
+	public static function multiErrorResponse( $status, array $errors ) {
+		return self::jsonResponse($status, array('errors'=>$errors));
+	}
+	
+	/**
+	 * Create a response to indicate a single error
+	 * from a status code, message, and list of notes.
+	 */
+	public static function singleErrorResponse( $status, $message, array $notes=array() ) {
+		return self::multiErrorResponse($status, array(self::errorStructure( $message, $notes )));
+	}
 }

@@ -14,7 +14,8 @@ class EarthIT_CMIPREST_RESTer
 {
 	/**
 	 * Returned to indicate that an action succeeded but that there is
-	 * no meaningful data to return
+	 * no meaningful data to return.
+	 * These will get translated to HTTP 204 responses.
 	 */
 	const SUCCESS = "You're Winner!";
 	
@@ -65,35 +66,43 @@ class EarthIT_CMIPREST_RESTer
 		// When emitting JSON, format names as the JS does
 		return EarthIT_Schema_WordUtil::toCamelCase($f->getName());
 	}
-		
+	
 	//// Value conversion
 	
 	protected function restValueToInternal( EarthIT_Schema_DataType $dt, $v ) {
 		return $v;
 	}
 	
-	protected function restFieldsToInternal( EarthIT_Schema_ResourceClass $rc, array $restObj ) {
+	protected function internalValueToRest( EarthIT_Schema_DataType $dt, $v ) {
+		return $v;
+	}
+	
+	//// Object conversion
+	
+	protected function restObjectToInternal( EarthIT_Schema_ResourceClass $rc, array $restObj ) {
 		$internal = array();
 		foreach( $rc->getFields() as $field ) {
 			$frn = $this->fieldRestName( $rc, $field );
 			if( array_key_exists($frn, $restObj) ) {
-				$internal[$field->getName()] = $this->restValueToInternal( $field->getType(), $restObj[$frn] );
+				$internal[$field->getName()] =
+					$this->restValueToInternal($field->getType(), $restObj[$frn]);
 			}
 		}
 		return $internal;
 	}
 	
-	//// Object conversion
-	
 	protected function internalObjectToRest( EarthIT_Schema_ResourceClass $rc, array $fieldValues ) {
 		$result = array();
-		foreach( EarthIT_CMIPREST_Util::restReturnableFields($rc) as $f ) {
-			if( array_key_exists($f->getName(), $fieldValues) ) {
-				$result[$this->fieldRestName($rc, $f)] = $fieldValues[$f->getName()];
+		foreach( EarthIT_CMIPREST_Util::restReturnableFields($rc) as $field ) {
+			if( array_key_exists($field->getName(), $fieldValues) ) {
+				$result[$this->fieldRestName($rc, $field)] =
+					$this->internalValueToRest($field->getType(), $fieldValues[$field->getName()]);
 			}
 		}
 		return $result;
 	}
+	
+	////
 	
 	protected function getFieldsByRestName( EarthIT_Schema_ResourceClass $rc ) {
 		$fbrn = array();
@@ -265,7 +274,6 @@ class EarthIT_CMIPREST_RESTer
 		throw new Exception("Can't find '$linkRestName' link from ".$originRc->getName());
 	}
 	
-	// TODO: Delegate to utility class.  Remove for 1.0.0.
 	private function _withsToJohnBranches( array $withs, EarthIT_Schema_ResourceClass $originRc ) {
 		$branches = array();
 		foreach( $withs as $k=>$subWiths ) {
@@ -278,7 +286,9 @@ class EarthIT_CMIPREST_RESTer
 		return $branches;
 	}
 	
-	// TODO: Delegate to utility class.  Remove for 1.0.0.
+	/**
+	 * @api
+	 */
 	public function withsToJohnBranches( EarthIT_Schema_ResourceClass $originRc, $withs ) {
 		if( is_scalar($withs) ) $withs = explode(',',$withs);
 		if( !is_array($withs) ) throw new Exception("withs parameter must be an array or comma-delimited string.");
@@ -287,12 +297,11 @@ class EarthIT_CMIPREST_RESTer
 		return $this->_withsToJohnBranches( $pathTree, $originRc );
 	}
 	
-	// TODO: Delegate to utility class.  Remove for 1.0.0.
-	// Here for compatibility with overriding classes.
-	protected function parseWithsToJohnBranches( EarthIT_Schema_ResourceClass $originRc, $withs ) {
-		return $this->withsToJohnBranches($originRc,$withs);
-	}
-
+	/**
+	 * @return EarthIT_CMIPREST_UserAction
+	 * @api
+	 * @intended-to-be-overridden-by-application
+	 */
 	public function cmipRequestToUserAction( EarthIT_CMIPREST_CMIPRESTRequest $crr ) {
 		if( ($propName = $crr->getResourcePropertyName()) !== null ) {
 			throw new Exception("Unrecognized resource property, '$propName'");
@@ -310,7 +319,7 @@ class EarthIT_CMIPREST_RESTer
 			$johnBranches = array();
 			foreach( $crr->getResultModifiers() as $k=>$v ) {
 				if( $k === 'with' ) {
-					$johnBranches = $this->parseWithsToJohnBranches($resourceClass, $v);
+					$johnBranches = $this->withsToJohnBranches($resourceClass, $v);
 				} else {
 					throw new Exception("Unrecognized result modifier: '$k'");
 				}
@@ -381,12 +390,12 @@ class EarthIT_CMIPREST_RESTer
 			if( $isSingleItemPost ) {
 				return new EarthIT_CMIPREST_UserAction_PostItemAction(
 					$userId, $resourceClass,
-					$this->restFieldsToInternal($resourceClass, $data)
+					$this->restObjectToInternal($resourceClass, $data)
 				);
 			} else {
 				$items = array();
 				foreach( $data as $dat ) {
-					$items[] = $this->restFieldsToInternal($resourceClass, $dat);
+					$items[] = $this->restObjectToInternal($resourceClass, $dat);
 				}
 				return EarthIT_CMIPREST_UserActions::multiPost($userId, $resourceClass, $items);
 			}
@@ -396,7 +405,7 @@ class EarthIT_CMIPREST_RESTer
 			}
 			return new EarthIT_CMIPREST_UserAction_PutItemAction(
 				$userId, $resourceClass, $crr->getResourceInstanceId(),
-				$this->restFieldsToInternal($resourceClass, $crr->getContent())
+				$this->restObjectToInternal($resourceClass, $crr->getContent())
 			);
 		case 'PATCH':
 			if( $crr->getResourceInstanceId() === null ) {
@@ -404,7 +413,7 @@ class EarthIT_CMIPREST_RESTer
 			}
 			return new EarthIT_CMIPREST_UserAction_PatchItemAction(
 				$userId, $resourceClass, $crr->getResourceInstanceId(),
-				$this->restFieldsToInternal($resourceClass, $crr->getContent())
+				$this->restObjectToInternal($resourceClass, $crr->getContent())
 			);
 		case 'DELETE':
 			if( $crr->getResourceInstanceId() === null ) {
@@ -416,13 +425,28 @@ class EarthIT_CMIPREST_RESTer
 		}
 	}
 	
+	//// Action validation/authorization
+	
+	/**
+	 * Ensure that the given action is structurally valid so that
+	 * assumptions made while authorizing hold true.
+	 * Will throw an exception otherwise.
+	 * 
+	 * @intended-to-be-overridden-by-application
+	 */
+	protected function validateSimpleAction( EarthIT_CMIPREST_UserAction $act ) {
+		// TODO
+	}
+	
 	/**
 	 * Determine if an action is allowed before actually doing it.
 	 * For search actions, this may return null to indicate that
 	 * authorization requires the actual search results, which will be passed
 	 * to postAuthorizeSearchResult to determine is they are allowed.
+	 * 
+	 * @intended-to-be-overridden-by-application
 	 */
-	protected function preAuthorizeAction( EarthIT_CMIPREST_UserAction $act, array &$explanation ) {
+	protected function preAuthorizeSimpleAction( EarthIT_CMIPREST_UserAction $act, array &$explanation ) {
 		// TODO: Move implementation to a separate permission checker class
 		$rc = $act->getResourceClass();
 		$rcName = $rc->getName();
@@ -437,11 +461,14 @@ class EarthIT_CMIPREST_RESTer
 		}
 	}
 	
+	/**
+	 * @intended-to-be-overridden-by-application
+	 */
 	protected function postAuthorizeSearchResult( $userId, EarthIT_Schema_ResourceClass $rc, array $itemData, array &$explanation ) {
-		// TODO: Same as above
-		return true;
+		$explanation[] = "Unauthorized by default.";
+		return false;
 	}
-
+	
 	//// Searchy with= support stuff
 
 	protected function collectJohns( $branches, $prefix, array $johns=array(), array &$paths=array() ) {
@@ -533,32 +560,25 @@ class EarthIT_CMIPREST_RESTer
 		
 		return $relevantRestObjects['root'];
 	}
-		
-	/**
-	 * Ensure that the given action is structurally valid so that
-	 * assumptions made while authorizing hold true.
-	 * Will throw an exception otherwise.
-	 */
-	protected function validateAction( EarthIT_CMIPREST_UserAction $act ) {
-		// TODO
-	}
 	
 	// TODO:
 	// Sometimes projects will want to extend
 	// the set of actions and how they are implemented.
 	// It might be nice if doAction were refactored to delegate
-	// to separate validateAction, preAuthorizeAction, actuallyDoAction methods
+	// to separate validateSimpleAction, preAuthorizeSimpleAction, actuallyDoAction methods
 	// (or somesuch) so that they could be more easily overridden.
 	
 	/**
-	 * Result will be a JSON array in REST form.
+	 * Result will be either a Nife_HTTP_Response, RESTer::SUCCESS, or a JSON array in REST form.
 	 * Errors will be thrown as exceptions.
+	 * @client-overridable
+	 * @return Nife_HTTP_Response|RESTer::SUCCESS|array
 	 */
-	protected function doIndividualAction( EarthIT_CMIPREST_UserAction $act ) {
-		$this->validateAction($act);
+	protected function doSimpleAction( EarthIT_CMIPREST_UserAction $act ) {
+		$this->validateSimpleAction($act);
 		
 		$authorizationExplanation = array();
-		$preAuth = $this->preAuthorizeAction($act, $authorizationExplanation);
+		$preAuth = $this->preAuthorizeSimpleAction($act, $authorizationExplanation);
 		
 		if( $preAuth === false ) {
 			throw new EarthIT_CMIPREST_ActionUnauthorized($act, $authorizationExplanation);
@@ -569,7 +589,7 @@ class EarthIT_CMIPREST_RESTer
 		}
 		
 		if( $preAuth !== true ) {
-			throw new Exception("preAuthorizeAction should only return true or false for non-search actions, but it returned ".var_export($auth,true));
+			throw new Exception("preAuthorizeSimpleAction should only return true or false for non-search actions, but it returned ".var_export($auth,true));
 		}
 		
 		// Otherwise it's A-Okay!
@@ -603,6 +623,9 @@ class EarthIT_CMIPREST_RESTer
 		}
 	}
 	
+	/**
+	 * @return Nife_HTTP_Response|RESTer::SUCCESS|array
+	 */
 	protected function doCompoundAction( EarthIT_CMIPREST_UserAction_CompoundAction $act ) {
 		// For now just doing all actions in order.
 		// If one fails to validate, earlier actions will still have been run.
@@ -614,28 +637,18 @@ class EarthIT_CMIPREST_RESTer
 		return $act->getResultExpression()->evaluate($context);
 	}
 	
+	/**
+	 * @api
+	 * @return Nife_HTTP_Response|RESTer::SUCCESS|array
+	 */
 	public function doAction( EarthIT_CMIPREST_UserAction $act ) {
+		// TODO: Validate and preAuthorize before doing anything
+		// instead of validating/authorizing each action as it is run.
 		if( $act instanceof EarthIT_CMIPREST_UserAction_CompoundAction ) {
 			return $this->doCompoundAction($act);
 		} else {
-			return $this->doIndividualAction($act);
+			return $this->doSimpleAction($act);
 		}
-	}
-	
-	public static function errorStructure( $message, array $notes=array() ) {
-		return array(
-			'errors' => array(
-				array(
-					'message' => $message,
-					'notes' => $notes
-				)
-			)
-		);
-	}
-	
-	public static function errorResponse( $status, $message, array $notes=array() ) {
-		$result = self::errorStructure( $message, $notes );
-		return Nife_Util::httpResponse( $status, new EarthIT_JSON_PrettyPrintedJSONBlob($result), 'application/json' );
 	}
 	
 	protected function normalResponse( $result ) {
@@ -649,7 +662,11 @@ class EarthIT_CMIPREST_RESTer
 			return Nife_Util::httpResponse( 200, new EarthIT_JSON_PrettyPrintedJSONBlob($result), 'application/json' );
 		}
 	}
-
+	
+	/**
+	 * @api
+	 * @return Nife_HTTP_Response
+	 */
 	public function handle( EarthIT_CMIPREST_CMIPRESTRequest $crr ) {
 		// TODO: Put exception -> response mapping in its own function
 		
@@ -659,15 +676,13 @@ class EarthIT_CMIPREST_RESTer
 			return $this->normalResponse($result);
 		} catch( EarthIT_CMIPREST_ActionUnauthorized $un ) {
 			$status = $act->getUserId() === null ? 401 : 403;
-			return self::errorResponse( $status, $un->getAction()->getActionDescription(), $un->getNotes() );
+			return EarthIT_CMIPREST_Util::singleErrorResponse( $status, $un->getAction()->getActionDescription(), $un->getNotes() );
 		} catch( EarthIT_CMIPREST_ActionInvalid $un ) {
-			return Nife_Util::httpResponse( 409,
-				new EarthIT_JSON_PrettyPrintedJSONBlob(array("errors"=>$un->getErrorDetails())),
-				"application/json" );
+			return EarthIT_CMIPREST_Util::multiErrorResponse( 409, $un->getErrorDetails() );
 		} catch( EarthIT_Schema_NoSuchResourceClass $un ) {
-			return self::errorResponse( 404, $un->getMessage() );
+			return EarthIT_CMIPREST_Util::singleErrorResponse( 404, $un->getMessage() );
 		} catch( EarthIT_CMIPREST_ResourceNotExposedViaService $un ) {
-			return self::errorResponse( 404, $un->getMessage() );
+			return EarthIT_CMIPREST_Util::singleErrorResponse( 404, $un->getMessage() );
 		}
 	}
 }
