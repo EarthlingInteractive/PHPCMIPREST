@@ -58,7 +58,7 @@ class EarthIT_CMIPREST_CMIPRESTRequest
 			}
 			
 			return new static( $requestMethod, $collectionSeg, $instanceSeg, $propertySeg, $params, $resultModifiers, $content );
-		} else if( $requestMethod == 'POST' and $path == ';compound' ) {
+		} else if( $requestMethod == 'POST' and $path == ';compound' and is_array($content) ) {
 			/*$content = array(
 				'actions' => array(
 					'a' => array(
