@@ -30,4 +30,15 @@ class EarthIT_CMIPREST_UserActions
 			new EarthIT_CMIPREST_UserAction_ArrayExpression($resultExpressions)
 		);
 	}
+	
+	public static function compoundAction( array $subActions, EarthIT_CMIPREST_UserAction_Expression $resultExpression=null ) {
+		if( $resultExpression === null ) {
+			$resultItems = array();
+			foreach( $subActions as $k=>$act ) {
+				$resultItems[$k] = new EarthIT_CMIPREST_UserAction_ActionResultExpression($k);
+			}
+			$resultExpression = new EarthIT_CMIPREST_UserAction_ArrayExpression($resultItems);
+		}
+		return new EarthIT_CMIPREST_UserAction_CompoundAction( $subActions, $resultExpression );
+	}
 }

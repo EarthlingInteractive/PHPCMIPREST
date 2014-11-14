@@ -308,6 +308,22 @@ class EarthIT_CMIPREST_RESTer
 		}
 		
 		$userId = $crr->getUserId();
+		
+		if( $crr->getMethod() == 'DO-COMPOUND-ACTION' ) {
+			$subActions = array();
+			foreach( $crr->getContent()['actions'] as $k=>$subReq ) {
+				$subCrr = EarthIT_CMIPREST_CMIPRESTRequest::parse(
+					$subReq['method'], $subReq['path'],
+					isset($subReq['params'] ) ? $subReq['params']  : array(),
+					isset($subReq['content']) ? $subReq['content'] : array()
+				);
+				$subCrr->userId = $userId;
+				$subActions[$k] = $this->cmipRequestToUserAction($subCrr);
+			}
+			// TODO: Allow specification of response somehow
+			return EarthIT_CMIPREST_UserActions::compoundAction($subActions);
+		}
+		
 		$resourceClass = EarthIT_CMIPREST_Util::getResourceClassByCollectionName($this->schema, $crr->getResourceCollectionName());
 		
 		if( !$resourceClass->hasRestService() ) {

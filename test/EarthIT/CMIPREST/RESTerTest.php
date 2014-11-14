@@ -197,6 +197,55 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 		), $ua);
 	}
 	
+	public function testParseCompoundAction() {
+		$lastName = 'Shaque'.rand(1000000,9999999).rand(1000000,9999999);
+		$crr = EarthIT_CMIPREST_CMIPRESTRequest::parse('POST', ';compound', array(), array(
+			'actions' => array(
+				'a' => array(
+					'method' => 'POST',
+					'path' => '/people',
+					'params' => array(),
+					'content' => array(
+						array(
+							'firstName' => 'Jaque',
+							'lastName' => 'Shaque'
+						),
+						array(
+							'firstName' => 'Jaque',
+							'lastName' => $lastName
+						)
+					)
+				),
+				'b' => array(
+					'method' => 'GET',
+					'path' => '/people',
+					'params' => array('lastName'=>'eq:'.$lastName)
+				)
+			)
+		));
+		$ua = $this->rester->cmipRequestToUserAction($crr);
+		$this->assertEquals( 'EarthIT_CMIPREST_UserAction_CompoundAction', get_class($ua) );
+		$this->assertEquals( array('a','b'), array_keys($ua->getActions()) );
+		$this->assertEquals( 'EarthIT_CMIPREST_UserAction_ArrayExpression', get_class($ua->getResultExpression()) );
+		
+		// For good measure, let's see if it works
+		$rez = $this->rester->doAction($ua);
+		$this->assertEquals( array('a','b'), array_keys($rez) );
+		$this->assertEquals( 2, count($rez['a']) );
+		$this->assertEquals( 1, count($rez['b']) );
+		$zux = null;
+		foreach( $rez['b'] as $prsn ) {
+			$this->assertNotNull($prsn['id']);
+			$this->assertNotNull($prsn['firstName']);
+			$this->assertNotNull($prsn['lastName']);
+		}
+		foreach( $rez['a'] as $prsn ) {
+			$this->assertNotNull($prsn['id']);
+			$this->assertNotNull($prsn['firstName']);
+			$this->assertNotNull($prsn['lastName']);
+		}
+	}
+	
 	//// Test some errors
 	
 	public function testInvalidActionError() {
