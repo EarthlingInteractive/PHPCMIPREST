@@ -3,10 +3,10 @@
 	"description": "Collection-Modifiers-ID-Property REST framework",
 	"license": "MIT",
 	"require": {
-		"php": ">=5.2.0",
-		"ryprop/nife": "~0.0.1",
+		"php": "~5.2",
+		"ryprop/nife": "~0.2",
 		"earthit/php-common": "~0.0.10",
-		"earthit/schema": "~0.1.0",
+		"earthit/schema": "~0.1",
 		"earthit/dbc": "~0.0.5"
 	},
 	"require-dev": {

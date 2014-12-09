@@ -1,6 +1,7 @@
 generated_files = \
 	.create-database.sql \
 	.database-created \
+	composer.lock \
 	test-schema.php \
 	vendor
 
