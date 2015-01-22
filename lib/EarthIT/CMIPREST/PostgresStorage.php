@@ -44,6 +44,10 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 	
 	//// Conversion
 	
+	protected static function valuesOfTypeShouldBeSelectedAsJson( EarthIT_Schema_DataType $t ) {
+		return $t->getSqlTypeName() == 'JSON' and $t->getPhpTypeName() == 'JSON value';
+	}
+	
 	protected static function valuesOfTypeShouldBeSelectedAsGeoJson( EarthIT_Schema_DataType $t ) {
 		return
 			preg_match('/^(GEOMETRY|GEOGRAPHY)(\(|$)/', $t->getSqlTypeName()) &&
@@ -51,7 +55,7 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 	}
 	
 	protected static function dbToPhpValue( EarthIT_Schema_DataType $t, $value ) {
-		if( self::valuesOfTypeShouldBeSelectedAsGeoJson($t) ) {
+		if( self::valuesOfTypeShouldBeSelectedAsGeoJson($t) || self::valuesOfTypeShouldBeSelectedAsJson($t) ) {
 			return $value === null ? null : EarthIT_JSON::decode($value);
 		}
 		// Various special rules may end up here
@@ -65,10 +69,13 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 			$fieldName = $f->getName();
 			if( array_key_exists($fieldName, $obj) ) {
 				$value = $obj[$fieldName];
+				
 				if( self::valuesOfTypeShouldBeSelectedAsGeoJson($f->getType()) and $value !== null ) {
 					$paramName = EarthIT_DBC_ParameterUtil::newParamName('geojson');
 					$params[$paramName] = json_encode($value);
 					$dbValue = new EarthIT_DBC_BaseSQLExpression("ST_GeomFromGeoJSON({{$paramName}})");
+				} else if( self::valuesOfTypeShouldBeSelectedAsJson($f->getType()) and $value !== null ) {
+					$dbValue = EarthIT_JSON::prettyEncode($value);
 				} else {
 					$dbValue = $value;
 				}
