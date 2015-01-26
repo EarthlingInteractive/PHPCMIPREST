@@ -38,6 +38,18 @@ class EarthIT_CMIPREST_Util
 		return implode("-", $parts);
 	}
 	
+	public static function itemId( EarthIT_Schema_ResourceClass $rc, array $item ) {
+		$pk = $rc->getPrimaryKey();
+		if( $pk === null or count($pk->getFieldNames()) == 0 ) return null;
+		
+		$fields = $rc->getFields();
+		$parts = array();
+		foreach( $pk->getFieldNames() as $fn ) {
+			$parts[] = $item[$fn];
+		}
+		return implode("-", $parts);
+	}
+	
 	/**
 	 * return array of field name => field value for the primary key fields encoded in $id
 	 */

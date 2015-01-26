@@ -23,6 +23,7 @@ class EarthIT_CMIPREST_RESTer
 	
 	protected $storage;
 	protected $schema;
+	protected $keyByIds = false;
 	
 	public function __construct( $params ) {
 		if( $params instanceof EarthIT_Registry ) {
@@ -57,6 +58,8 @@ class EarthIT_CMIPREST_RESTer
 		} else {
 			throw new Exception("No schema specified.");
 		}
+		
+		$this->keyByIds = isset($params['keyByIds']) && $params['keyByIds'];
 	}
 		
 	//// Field conversion
@@ -525,7 +528,13 @@ class EarthIT_CMIPREST_RESTer
 					throw new EarthIT_CMIPREST_ActionUnauthorized($act, $authorizationExplanation);
 				}					
 			}
-			$restObjects[] = $this->internalObjectToRest($rc, $item);
+			
+			$restItem = $this->internalObjectToRest($rc, $item);
+			if( $this->keyByIds and ($itemId = EarthIT_CMIPREST_Util::itemId($rc, $item)) !== null ) {
+				$restObjects[$itemId] = $restItem;
+			} else {
+				$restObjects[] = $restItem;
+			}
 		}
 		return $restObjects;
 	}
@@ -575,7 +584,11 @@ class EarthIT_CMIPREST_RESTer
 							if( $tv[$trf] != $ov[$orf] ) $matches = false;
 						}
 						if( $matches ) {
-							$relations[] =& $relevantRestObjects[$path][$tk];
+							if( $this->keyByIds ) {
+								$relations[$k] =& $relevantRestObjects[$path][$tk];
+							} else {
+								$relations[] =& $relevantRestObjects[$path][$tk];
+							}
 						}
 					}
 					if( $plural ) {
