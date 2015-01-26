@@ -33,12 +33,14 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 		foreach( $rc->getDbNamespacePath() as $ns ) {
 			$components[] = new EarthIT_DBC_SQLIdentifier($ns);
 		}
+		// TODO for breaking release: Remove getTableNameOverride; the namer should do that.
 		$components[] = new EarthIT_DBC_SQLIdentifier($rc->getTableNameOverride() ?: $this->dbNamer->getTableName($rc));
 		return new EarthIT_DBC_SQLNamespacePath($components);
 	}
 	
 	/** i.e. 'name of column corresponding to field' */
 	protected function fieldDbName( EarthIT_Schema_ResourceClass $rc, EarthIT_Schema_Field $f ) {
+		// TODO for breaking release: Remove getTableNameOverride; the namer should do that.
 		return $f->getColumnNameOverride() ?: $this->dbNamer->getColumnName( $rc, $f );
 	}
 	
