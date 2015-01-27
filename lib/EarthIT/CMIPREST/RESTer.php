@@ -593,10 +593,12 @@ class EarthIT_CMIPREST_RESTer
 					}
 					if( $plural ) {
 						$relevantRestObjects[$originPath][$ok][$lastPathPart] = $relations;
-					} else if( count($relations) == 0 ) {
-						$relevantRestObjects[$originPath][$ok][$lastPathPart] = null;
 					} else {
-						$relevantRestObjects[$originPath][$ok][$lastPathPart] =& $relations[0];
+						$relevantRestObjects[$originPath][$ok][$lastPathPart] = null;
+						foreach( $relations as $k=>$_ ) {
+							$relevantRestObjects[$originPath][$ok][$lastPathPart] =& $relations[$k];
+							break;
+						}
 					}
 				}
 			}
