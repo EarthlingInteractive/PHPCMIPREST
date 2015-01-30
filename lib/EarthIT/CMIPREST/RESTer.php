@@ -257,7 +257,7 @@ class EarthIT_CMIPREST_RESTer
 			}
 		}
 		if( count($inverseJohns) == 1 ) {
-			return $inverseJohns[0];
+			return EarthIT_CMIPREST_Util::first($inverseJohns);
 		} else if( count($inverseJohns) > 1 ) {
 			$list = array();
 			foreach( $inverseJohns as $ij ) {
@@ -649,7 +649,7 @@ class EarthIT_CMIPREST_RESTer
 			);
 			$results = $this->doAction($searchAct);
 			if( count($results) == 0 ) return null;
-			if( count($results) == 1 ) return $results[0];
+			if( count($results) == 1 ) return EarthIT_CMIPREST_Util::first($results);
 			throw new Exception("Multiple records found with ID = '".$act->getItemId()."'");
 		} else if( $act instanceof EarthIT_CMIPREST_UserAction_PostItemAction ) {
 			$rc = $act->getResourceClass();

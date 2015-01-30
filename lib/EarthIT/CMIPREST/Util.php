@@ -176,4 +176,9 @@ class EarthIT_CMIPREST_Util
 	public static function singleErrorResponse( $status, $message, array $notes=array() ) {
 		return self::multiErrorResponse($status, array(self::errorStructure( $message, $notes )));
 	}
+	
+	public static function first(array $things, $default=null) {
+		foreach($things as $thing) return $thing;
+		return $default;
+	}
 }
