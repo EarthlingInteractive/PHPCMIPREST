@@ -585,7 +585,7 @@ class EarthIT_CMIPREST_RESTer
 						}
 						if( $matches ) {
 							if( $this->keyByIds ) {
-								$relations[$k] =& $relevantRestObjects[$path][$tk];
+								$relations[$tk] =& $relevantRestObjects[$path][$tk];
 							} else {
 								$relations[] =& $relevantRestObjects[$path][$tk];
 							}
