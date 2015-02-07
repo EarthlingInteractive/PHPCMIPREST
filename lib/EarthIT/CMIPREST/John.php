@@ -18,4 +18,16 @@ class EarthIT_CMIPREST_John {
 	}
 	
 	public function targetIsPlural() { return $this->targetIsPlural; }
+	
+	public function __toString() {
+		$originFieldNames = [];
+		foreach( $this->originLinkFields as $f ) $originFieldNames[] = $f->getName();
+		$targetFieldNames = [];
+		foreach( $this->targetLinkFields as $f ) $targetFieldNames[] = $f->getName();
+		$targetArity = $this->targetIsPlural ? '*' : '1';
+		
+		return
+			$this->originResourceClass->getName()." (".implode(', ',$originFieldNames).") [1] to [$targetArity] ".
+			$this->targetResourceClass->getName()." (".implode(', ',$targetFieldNames).")";
+	}
 }
