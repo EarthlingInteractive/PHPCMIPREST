@@ -97,7 +97,7 @@ class EarthIT_CMIPREST_Util
 		$v = $f->getFirstPropertyValue($propUri);
 		if( $v !== null ) return $v;
 		
-		$isFake = $f->getFirstPropertyValue('http://ns.nuke24.net/Schema/Application/isFakeField');
+		$isFake = $f->getFirstPropertyValue(EarthIT_CMIPREST_NS::IS_FAKE_FIELD);
 		return $isFake ? $fakeDefault : $nonFakeDefault;
 	}
 	
@@ -112,18 +112,18 @@ class EarthIT_CMIPREST_Util
 	}
 	
 	public static function restReturnableFields( EarthIT_Schema_ResourceClass $rc ) {
-		return self::fieldsWithProperty($rc->getFields(), 'http://ns.nuke24.net/Schema/Application/isReturnedByRestServices');
+		return self::fieldsWithProperty($rc->getFields(), EarthIT_CMIPREST_NS::IS_RETURNED_BY_REST_SERVICES);
 	}
 	
 	public static function storableFields( EarthIT_Schema_ResourceClass $rc ) {
-		return self::fieldsWithProperty($rc->getFields(), 'http://ns.nuke24.net/Schema/Application/hasADatabaseColumn');
+		return self::fieldsWithProperty($rc->getFields(), EarthIT_CMIPREST_NS::HAS_A_DATABASE_COLUMN);
 	}
 	
 	public static function getResourceClassByCollectionName( $schema, $collectionName ) {
 		$minCollectionName = EarthIT_Schema_WordUtil::minimize($collectionName);
 		foreach( $schema->getResourceClasses() as $rc ) {
 			if( $minCollectionName == EarthIT_Schema_WordUtil::minimize(
-				$rc->getFirstPropertyValue("http://ns.earthit.com/CMIPREST/collectionName")
+				$rc->getFirstPropertyValue(EarthIT_CMIPREST_NS::COLLECTION_NAME)
 			) ) {
 				return $rc;
 			}

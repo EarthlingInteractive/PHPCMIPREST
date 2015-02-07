@@ -240,13 +240,23 @@ class EarthIT_CMIPREST_RESTer
 		 */
 		$inverseJohns = array();
 		foreach( $this->schema->getResourceClasses() as $targetRc ) {
-			$pluralRestName = EarthIT_Schema_WordUtil::toCamelCase(
-				$targetRc->getFirstPropertyValue("http://ns.earthit.com/CMIPREST/collectionName") ?:
+			$targetRcPluralRestName = EarthIT_Schema_WordUtil::toCamelCase(
+				$targetRc->getFirstPropertyValue(EarthIT_CMIPREST_NS::COLLECTION_NAME) ?:
 				EarthIT_Schema_WordUtil::pluralize($targetRc->getName())
 			);
-			if( $pluralRestName == $linkRestName ) {
-				foreach( $targetRc->getReferences() as $inverseRef ) {
-					if( $inverseRef->getTargetClassName() == $originRc->getName() ) {
+			foreach( $targetRc->getReferences() as $inverseRef ) {
+				if( $inverseRef->getTargetClassName() == $originRc->getName() ) {
+					$refInverseName = $inverseRef->getFirstPropertyValue(EarthIT_CMIPREST_NS::INVERSE_NAME);
+					$refPluralInverseName = $inverseRef->getFirstPropertyValue(EarthIT_CMIPREST_NS::INVERSE_COLLECTION_NAME);
+					if( $refPluralInverseName === null and $refInverseName ) {
+						$refPluralInverseName = EarthIT_Schema_WordUtil::pluralize($refInverseName);
+					}
+					$refPluralInversRestName = $refPluralInverseName === null ? null :
+						EarthIT_Schema_WordUtil::toCamelCase($refPluralInverseName);
+					$pluralRestName = $refPluralInversRestName ?: $targetRcPluralRestName;
+					// If an inverse name is specified for the reference,
+					// it must be used instead of the class name.
+					if( $pluralRestName == $linkRestName ) {
 						$inverseJohns[] = new EarthIT_CMIPREST_John(
 							$originRc, self::getFields($originRc, $inverseRef->getTargetFieldNames()),
 							$targetRc, self::getFields($targetRc, $inverseRef->getOriginFieldNames()),
