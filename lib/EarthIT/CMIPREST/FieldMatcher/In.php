@@ -5,6 +5,8 @@ class EarthIT_CMIPREST_FieldMatcher_In implements EarthIT_CMIPREST_FieldMatcher
 	protected $values;
 	
 	public function __construct( array $values ) {
+		// TODO: allow values (or its components) to be SQLExpressions,
+		// similar to how BaseComparison does.
 		$this->values = $values;
 	}
 	

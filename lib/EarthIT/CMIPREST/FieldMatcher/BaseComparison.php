@@ -16,7 +16,12 @@ abstract class EarthIT_CMIPREST_FieldMatcher_BaseComparison implements EarthIT_C
 	
 	public function toSql( $fieldValueSql, $fieldType, &$params ) {
 		$paramName = EarthIT_DBC_ParameterUtil::newParamName('exactMatchValue');
-		$params[$paramName] = EarthIT_CMIPREST_Util::cast($this->value, $fieldType);
+		if( $this->value instanceof EarthIT_DBC_SQLExpression ) {
+			$params[$paramName] = $this->value;
+		} else {
+			// Otherwise it's a literal value
+			$params[$paramName] = EarthIT_CMIPREST_Util::cast($this->value, $fieldType);
+		}
 		$op = $this->getSqlComparisonOp();
 		return "{$fieldValueSql} $op {{$paramName}}";
 	}
