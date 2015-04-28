@@ -6,8 +6,9 @@
  *   or make it part of the action
  * - Comment functions better
  * - Split into 2 or 3 independent objects
- *   CMIPRESTRequest -> UserAction translator
- *   UserAction -> I/O
+ *   CMIPRESTRequest -> UserAction translator (move to CMIPRESTRequest class?)
+ *   UserAction -> I/O (action invoker)
+ * - and then rename to, like, ActionInvoker or somesuch.
  */
 
 class EarthIT_CMIPREST_RESTer
@@ -633,7 +634,8 @@ class EarthIT_CMIPREST_RESTer
 		if( $act instanceof EarthIT_CMIPREST_UserAction_GetItemAction ) {
 			// Translate to a search action!
 			$searchAct = new EarthIT_CMIPREST_UserAction_SearchAction(
-				$act->getUserId(), $act->getResourceClass(),
+				$act->getUserId(),
+				$act->getResourceClass(),
 				EarthIT_CMIPREST_Util::itemIdToSearchParameters($act->getResourceClass(), $act->getItemId()),
 				$act->getJohnBranches(),
 				$act->getOptions()

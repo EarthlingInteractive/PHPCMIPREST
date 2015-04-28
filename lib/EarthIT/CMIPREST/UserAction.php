@@ -1,6 +1,8 @@
 <?php
 
 // TODO: Refactor to NOT include user ID.
+// TODO: Get rid of options; just make assembler an additional
+// parameter of applicable action constructors
 abstract class EarthIT_CMIPREST_UserAction
 {
 	// Keys for options arrays

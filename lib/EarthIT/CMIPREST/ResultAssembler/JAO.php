@@ -1,13 +1,12 @@
 <?php
 
-class EarthIT_CMIPREST_ResultAssembler_JSONAPIDotOrg implements EarthIT_CMIPREST_ResultAssembler
+/** The JSONAPI.org format */
+class EarthIT_CMIPREST_ResultAssembler_JAO implements EarthIT_CMIPREST_ResultAssembler
 {
 	protected $schema;
-	protected $keyByIds;
 	
-	public function __construct(EarthIT_Schema $schema, $keyByIds=true) {
+	public function __construct(EarthIT_Schema $schema) {
 		$this->schema = $schema;
-		$this->keyByIds = $keyByIds;
 	}
 	
 	// TODO: Make configurable
@@ -51,13 +50,14 @@ class EarthIT_CMIPREST_ResultAssembler_JSONAPIDotOrg implements EarthIT_CMIPREST
 					$this->internalValueToRest($field->getType(), $fieldValues[$field->getName()]);
 			}
 		}
+		$result['type'] = $this->jaoTypeName($rc);
 		foreach( $rc->getReferences() as $ref ) {
 			$targetRc = $this->schema->getResourceClass($ref->getTargetClassName());
 			$match = array();
 			$originFieldNames = $ref->getOriginFieldNames();
 			$targetFieldNames = $ref->getTargetFieldNames();
 			for( $i=0; $i<count($originFieldNames); ++$i ) {
-				if( !isset($fieldValues[$originFieldNames[$i]]) ) break 2;
+				if( !isset($fieldValues[$originFieldNames[$i]]) ) continue 2;
 				
 				$match[self::jaoFieldName($targetRc->getField($targetFieldNames[$i]), $targetRc)] = $fieldValues[$originFieldNames[$i]];
 			}
@@ -80,7 +80,15 @@ class EarthIT_CMIPREST_ResultAssembler_JSONAPIDotOrg implements EarthIT_CMIPREST
 		return $restObjects;
 	}
 	
-	public function assembleSearchResult( EarthIT_Schema_ResourceClass $rootRc, array $johnCollections, array $relevantObjects ) {
+	public function needsResult() {
+		return true;
+	}
+	
+	public function __invoke( EarthIT_CMIPREST_StorageResult $result ) {
+		$rootRc = $result->getRootResourceClass();
+		$johnCollections = $result->getJohnCollections();
+		$relevantObjects = $result->getItemCollections();
+		
 		$relevantRestObjects = array();
 		foreach( $johnCollections as $path => $johns ) {
 			// Figure out what resource class of items we got, here
@@ -95,15 +103,5 @@ class EarthIT_CMIPREST_ResultAssembler_JSONAPIDotOrg implements EarthIT_CMIPREST
 			if( $path != 'root' ) foreach( $objects as $obj ) $rez['included'][] = $obj;
 		}
 		return $rez;
-	}
-	
-	public function assembleSingleResult( EarthIT_Schema_ResourceClass $rootRc, array $johnCollections, array $relevantObjects ) {
-		return $this->assembleSearchResult($rootRc, $johnCollections, $relevantObjects);
-	}
-	public function assemblePostResult( EarthIT_Schema_ResourceClass $rootRc, array $johnCollections, array $relevantObjects ) {
-		return $this->assembleSearchResult($rootRc, $johnCollections, $relevantObjects);
-	}
-	public function assemblePutResult( EarthIT_Schema_ResourceClass $rootRc, array $johnCollections, array $relevantObjects ) {
-		return $this->assembleSearchResult($rootRc, $johnCollections, $relevantObjects);
 	}
 }

@@ -15,29 +15,38 @@ class EarthIT_CMIPREST_JAORequest
 	public $sort = array();
 	
 	public static function parse( $method, $path, $params, $content ) {
-		if( !preg_match( '#^/([^/]+)(?:/(.*))$#', $path, $bif ) ) {
+		if( !preg_match( '#^/([^/]+)(?:/(.*))?$#', $path, $bif ) ) {
 			throw new Exception("Failed to parse '$path' as a JAO request");
 		}
-		$collectionName = $bif[1];
-		$instanceId     = $bif[2];
+
+		$req = new EarthIT_CMIPREST_JAORequest();
+		$req->method         = $method;
+		$req->collectionName = $bif[1];
+		$req->instanceId     = isset($bif[2]) ? $bif[2] : null;
 		
-		return EarthIT_CMIPREST_JAORequest::__set_state(array(
-			'method' => $method,
-			'collectionName' => $collectionName,
-			'instanceId' => $instanceId
-		));
+		return $req;
 	}
 	
 	public static function jaoRequestToUserAction( EarthIT_CMIPREST_JAORequest $req, EarthIT_Schema $schema ) {
 		$rc = EarthIT_CMIPREST_Util::getResourceClassByCollectionName($schema, $req->collectionName);
 		
-		if( $req->
+		// TODO: Implement all the stuffs
 		
-		foreach( $schema->getResourceClasses() as $rc ) {
-			$collectionName =
-				$rc->getFirstPropertyValue(EarthIT_CMIPREST_NS::COLLECTION_NAME) ?:
-				EarthIT_Schema_WordUtil::pluralize($rc->getName());
-			if( $dsCollectionName = 
+		if( $req->method == 'GET' ) {
+			if( $req->instanceId === null ) {
+				$sp = new EarthIT_CMIPREST_SearchParameters( array(), array(), 0, null );
+				return new EarthIT_CMIPREST_UserAction_SearchAction( null, $rc, $sp, array(), array(
+					EarthIT_CMIPREST_UserAction::OPT_RESULT_ASSEMBLER =>
+						new EarthIT_CMIPREST_ResultAssembler_JAO($schema)
+				));
+			} else {
+				return new EarthIT_CMIPREST_UserAction_GetItemAction( null, $rc, $req->instanceId, array(), array(
+					EarthIT_CMIPREST_UserAction::OPT_RESULT_ASSEMBLER =>
+						new EarthIT_CMIPREST_ResultAssembler_JAO($schema)
+				));
+			}
 		}
+		
+		throw new Exception( "Unsupported JAORequest: ".print_r($req,true));
 	}
 }

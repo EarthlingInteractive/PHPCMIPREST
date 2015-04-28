@@ -8,7 +8,9 @@ class EarthIT_CMIPREST_StorageResult
 	protected $rootRc;
 	protected $johnCollections;
 	protected $itemCollections;
-
+	
+	// TODO: Include range info ('this is items 10-19 of 0-3999')
+	
 	/**
 	 * @param $johnCollections array with keys of form 'root.x.y.z' and
 	 *  values are lists of Johns from the root to the named
