@@ -3,6 +3,8 @@
 // TODO: In next version, do all updates in terms of search parameters
 // and don't worry about IDs.  Calling code can translate item-by-ID
 // references to searches.
+// TODO: Refactor so that functions return StorageResults
+// TODO: Build a StorageHelper class that wraps a storage to provide a more human-friendly API
 interface EarthIT_CMIPREST_Storage
 {
 	/**

@@ -162,6 +162,7 @@ class EarthIT_CMIPREST_MSSQLStorage implements EarthIT_CMIPREST_Storage
 	/** Same as fetchRows; just doesn't return anything. */
 	protected function doQuery( $sql, array $params=array() ) {
 		try {
+			//echo $this->sqlRunner->quoteParams($sql, $params);
 			return $this->sqlRunner->doQuery($sql, $params);
 		} catch( PDOException $e ) {
 			$debugSql = $this->sqlRunner->quoteParams($sql, $params);

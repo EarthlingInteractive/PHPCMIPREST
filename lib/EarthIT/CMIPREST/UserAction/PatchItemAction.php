@@ -5,8 +5,8 @@ class EarthIT_CMIPREST_UserAction_PatchItemAction extends EarthIT_CMIPREST_UserA
 	protected $itemData;
 	protected $itemId;
 	
-	public function __construct( $userId, EarthIT_Schema_ResourceClass $resourceClass, $itemId, array $itemData ) {
-		parent::__construct( $userId, $resourceClass );
+	public function __construct( $userId, EarthIT_Schema_ResourceClass $resourceClass, $itemId, array $itemData, array $opts=array() ) {
+		parent::__construct( $userId, $resourceClass, $opts );
 		$this->itemId = $itemId;
 		$this->itemData = $itemData;
 	}

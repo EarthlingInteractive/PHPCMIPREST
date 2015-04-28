@@ -1,13 +1,15 @@
 <?php
 
+// TODO: Refactor to NOT include user ID.
 abstract class EarthIT_CMIPREST_UserAction
 {
 	// Keys for options arrays
-	/** Indicate which ResultAssemblr to use */
+	/**
+	 * Indicate which ResultAssembler to use.
+	 * If null, results will not be returned.
+	 */
 	const OPT_RESULT_ASSEMBLER = 'result-assembler';
-	/** Indicate which method of the ResultAssembler, e.g. to use assembleSingleResult instead of assembleSearchResult */
-	const OPT_RESULT_ASSEMBLER_METHOD = 'result-assembler-method';
-		
+	
 	protected $userId;
 	/**
 	 * Array of options; see above constants

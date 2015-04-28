@@ -82,6 +82,7 @@ class EarthIT_CMIPREST_RESTer
 	
 	//// Object conversion
 	
+	/** @deprecated, as there may be multiple REST forms.  The reuest parser should do this */
 	protected function restObjectToInternal( EarthIT_Schema_ResourceClass $rc, array $restObj ) {
 		$internal = array();
 		foreach( $rc->getFields() as $field ) {
@@ -316,7 +317,7 @@ class EarthIT_CMIPREST_RESTer
 	 * @api
 	 * @overridable
 	 */
-	public function cmipRequestToUserAction( EarthIT_CMIPREST_CMIPRESTRequest $crr, array $opts=array() ) {
+	public function cmipRequestToUserAction( EarthIT_CMIPREST_CMIPRESTRequest $crr ) {
 		if( ($propName = $crr->getResourcePropertyName()) !== null ) {
 			throw new Exception("Unrecognized resource property, '$propName'");
 		}
@@ -332,7 +333,7 @@ class EarthIT_CMIPREST_RESTer
 					isset($subReq['content']) ? $subReq['content'] : array()
 				);
 				$subCrr->userId = $userId;
-				$subActions[$k] = $this->cmipRequestToUserAction($subCrr, $opts);
+				$subActions[$k] = $this->cmipRequestToUserAction($subCrr);
 			}
 			// TODO: Allow specification of response somehow
 			return EarthIT_CMIPREST_UserActions::compoundAction($subActions);
@@ -356,7 +357,10 @@ class EarthIT_CMIPREST_RESTer
 			}
 			
 			if( $itemId = $crr->getResourceInstanceId() ) {
-				return new EarthIT_CMIPREST_UserAction_GetItemAction( $userId, $resourceClass, $itemId, $johnBranches, $opts ); 
+				return new EarthIT_CMIPREST_UserAction_GetItemAction( $userId, $resourceClass, $itemId, $johnBranches, array(
+					EarthIT_CMIPREST_UserAction::OPT_RESULT_ASSEMBLER =>
+						new EarthIT_CMIPREST_ResultAssembler_NestedObviousJSON('assembleSingleResult', $this->keyByIds)
+				)); 
 			} else {
 				$fields = $resourceClass->getFields();
 				$fieldRestToInternalNames = array();
@@ -393,7 +397,10 @@ class EarthIT_CMIPREST_RESTer
 					}
 				}
 				$sp = new EarthIT_CMIPREST_SearchParameters( $fieldMatchers, $orderBy, $skip, $limit );
-				return new EarthIT_CMIPREST_UserAction_SearchAction( $userId, $resourceClass, $sp, $johnBranches, $opts );
+				return new EarthIT_CMIPREST_UserAction_SearchAction( $userId, $resourceClass, $sp, $johnBranches, array(
+					EarthIT_CMIPREST_UserAction::OPT_RESULT_ASSEMBLER =>
+						new EarthIT_CMIPREST_ResultAssembler_NestedObviousJSON('assembleSearchResult', $this->keyByIds)
+				));
 			}
 		case 'POST':
 			if( $crr->getResourceInstanceId() !== null ) {
@@ -421,14 +428,20 @@ class EarthIT_CMIPREST_RESTer
 				return new EarthIT_CMIPREST_UserAction_PostItemAction(
 					$userId, $resourceClass,
 					$this->restObjectToInternal($resourceClass, $data),
-					$opts
+					array(
+						EarthIT_CMIPREST_UserAction::OPT_RESULT_ASSEMBLER =>
+						new EarthIT_CMIPREST_ResultAssembler_NestedObviousJSON('assembleSingleResult', $this->keyByIds)
+					)
 				);
 			} else {
 				$items = array();
 				foreach( $data as $dat ) {
 					$items[] = $this->restObjectToInternal($resourceClass, $dat);
 				}
-				return EarthIT_CMIPREST_UserActions::multiPost($userId, $resourceClass, $items, $opts);
+				return EarthIT_CMIPREST_UserActions::multiPost($userId, $resourceClass, $items, array(
+					EarthIT_CMIPREST_UserAction::OPT_RESULT_ASSEMBLER =>
+						new EarthIT_CMIPREST_ResultAssembler_NestedObviousJSON('assembleSingleResult', $this->keyByIds)
+				));
 			}
 		case 'PUT':
 			if( $crr->getResourceInstanceId() === null ) {
@@ -437,7 +450,10 @@ class EarthIT_CMIPREST_RESTer
 			return new EarthIT_CMIPREST_UserAction_PutItemAction(
 				$userId, $resourceClass, $crr->getResourceInstanceId(),
 				$this->restObjectToInternal($resourceClass, $crr->getContent()),
-				$opts
+				array(
+					EarthIT_CMIPREST_UserAction::OPT_RESULT_ASSEMBLER =>
+						new EarthIT_CMIPREST_ResultAssembler_NestedObviousJSON('assembleSingleResult', $this->keyByIds)
+				)
 			);
 		case 'PATCH':
 			if( $crr->getResourceInstanceId() === null ) {
@@ -446,20 +462,28 @@ class EarthIT_CMIPREST_RESTer
 					$items[$itemId] = $this->restObjectToInternal($resourceClass, $restItem);
 				}
 				return EarthIT_CMIPREST_UserActions::multiPatch(
-					$userId, $resourceClass, $items, $opts
-				);
+					$userId, $resourceClass, $items, array(
+						EarthIT_CMIPREST_UserAction::OPT_RESULT_ASSEMBLER =>
+							new EarthIT_CMIPREST_ResultAssembler_NestedObviousJSON('assembleSingleResult', $this->keyByIds)
+				));
 			} else {
 				return new EarthIT_CMIPREST_UserAction_PatchItemAction(
 					$userId, $resourceClass, $crr->getResourceInstanceId(),
 					$this->restObjectToInternal($resourceClass, $crr->getContent()),
-					$opts
-				);
+					array(
+						EarthIT_CMIPREST_UserAction::OPT_RESULT_ASSEMBLER =>
+							new EarthIT_CMIPREST_ResultAssembler_NestedObviousJSON('assembleSingleResult', $this->keyByIds)
+				));
 			}
 		case 'DELETE':
 			if( $crr->getResourceInstanceId() === null ) {
 				throw new Exception("You ust include item ID when DELETEing");
 			}
-			return new EarthIT_CMIPREST_UserAction_DeleteItemAction( $userId, $resourceClass, $crr->getResourceInstanceId(), $opts );
+			return new EarthIT_CMIPREST_UserAction_DeleteItemAction(
+				$userId, $resourceClass, $crr->getResourceInstanceId(), array(
+					EarthIT_CMIPREST_UserAction::OPT_RESULT_ASSEMBLER =>
+						new EarthIT_CMIPREST_ResultAssembler_Constant(self::SUCCESS)
+			));
 		default:
 			throw new Exception("Unrecognized method, '".$crr->getMethod()."'");
 		}
@@ -556,30 +580,21 @@ class EarthIT_CMIPREST_RESTer
 		}
 		
 		return call_user_func(
-			$this->getResultAssemblerFunction($act, 'assembleSearchResult'),
-			$rc, $johnCollections, $relevantObjects );
+			$act->getOption(EarthIT_CMIPREST_UserAction::OPT_RESULT_ASSEMBLER),
+			new EarthIT_CMIPREST_StorageResult($rc, $johnCollections, $relevantObjects));
 	}
 	
 	/**
-	 * @overridable
+	 * Assemble results with no johns.  i.e. a simple collection of one type of objects
 	 */
-	protected function getDefaultResultAssembler() {
-		return new EarthIT_CMIPREST_ResultAssembler_NestedObviousJSON(true);
-	}
-	
-	protected function getResultAssembler(EarthIT_CMIPREST_UserAction $act) {
-		return $act->getOption(EarthIT_CMIPREST_UserAction::OPT_RESULT_ASSEMBLER) ?: $this->getDefaultResultAssembler();
-	}
-	
-	protected function getResultAssemblerFunction(EarthIT_CMIPREST_UserAction $act, $defaultMethod) {
-		return array($this->getResultAssembler($act), $act->getOption(EarthIT_CMIPREST_UserAction::OPT_RESULT_ASSEMBLER_METHOD, $defaultMethod));
-	}
-	
-	protected function assembleSimpleResult($defaultMethod, $act, $rc, $items) {
-		return call_user_func(
-			$this->getResultAssemblerFunction($act, $defaultMethod),
-			$rc, array('root'=>null), $items );
+	protected function assembleSimpleResult($act, $rc, array $items) {
+		$assembler = $act->getOption(EarthIT_CMIPREST_UserAction::OPT_RESULT_ASSEMBLER);
+		if( $assembler === null ) {
+			throw new Exception("No result assembler specified by ".get_class($act));
+		}
 		
+		return call_user_func( $assembler,
+			new EarthIT_CMIPREST_StorageResult($rc, array('root'=>array()), array('root'=>$items)) );
 	}
 
 	// TODO:
@@ -616,24 +631,24 @@ class EarthIT_CMIPREST_RESTer
 		// Otherwise it's A-Okay!
 		
 		if( $act instanceof EarthIT_CMIPREST_UserAction_GetItemAction ) {
-			// Translate to a search action and take the first result
+			// Translate to a search action!
 			$searchAct = new EarthIT_CMIPREST_UserAction_SearchAction(
 				$act->getUserId(), $act->getResourceClass(),
 				EarthIT_CMIPREST_Util::itemIdToSearchParameters($act->getResourceClass(), $act->getItemId()),
 				$act->getJohnBranches(),
-				array(EarthIT_CMIPREST_UserAction::OPT_RESULT_ASSEMBLER_METHOD=>'assembleSingleResult') + $act->getOptions()
+				$act->getOptions()
 			);
 			
 			return $this->doAction($searchAct);
 		} else if( $act instanceof EarthIT_CMIPREST_UserAction_PostItemAction ) {
 			$rc = $act->getResourceClass();
-			return $this->assembleSimpleResult('assemblePostResult', $act, $rc, array('root'=>array($this->storage->postItem($rc, $act->getItemData()))));
+			return $this->assembleSimpleResult($act, $rc, array($this->storage->postItem($rc, $act->getItemData())));
 		} else if( $act instanceof EarthIT_CMIPREST_UserAction_PutItemAction ) {
 			$rc = $act->getResourceClass();
-			return $this->assembleSimpleResult('assemblePutResult', $act, $rc, array('root'=>array($this->storage->putItem($rc, $act->getItemId(), $act->getItemData()))));
+			return $this->assembleSimpleResult($act, $rc, array($this->storage->putItem($rc, $act->getItemId(), $act->getItemData())));
 		} else if( $act instanceof EarthIT_CMIPREST_UserAction_PatchItemAction ) {
 			$rc = $act->getResourceClass();
-			return $this->assembleSimpleResult('assemblePatchResult', $act, $rc, array('root'=>array($this->storage->patchItem($rc, $act->getItemId(), $act->getItemData()))));
+			return $this->assembleSimpleResult($act, $rc, array($this->storage->patchItem($rc, $act->getItemId(), $act->getItemData())));
 		} else if( $act instanceof EarthIT_CMIPREST_UserAction_DeleteItemAction ) {
 			$this->storage->deleteItem($act->getResourceClass(), $act->getItemId());
 			return self::SUCCESS;

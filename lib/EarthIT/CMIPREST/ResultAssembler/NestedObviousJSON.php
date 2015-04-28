@@ -2,9 +2,11 @@
 
 class EarthIT_CMIPREST_ResultAssembler_NestedObviousJSON implements EarthIT_CMIPREST_ResultAssembler
 {
+	protected $method;
 	protected $keyByIds;
 	
-	public function __construct($keyByIds=true) {
+	public function __construct($method, $keyByIds=true) {
+		$this->method = $method;
 		$this->keyByIds = $keyByIds;
 	}
 	
@@ -46,7 +48,7 @@ class EarthIT_CMIPREST_ResultAssembler_NestedObviousJSON implements EarthIT_CMIP
 		return $restObjects;
 	}
 	
-	public function assembleSearchResult( EarthIT_Schema_ResourceClass $rootRc, array $johnCollections, array $relevantObjects ) {
+	protected function assembleSearchResult( EarthIT_Schema_ResourceClass $rootRc, array $johnCollections, array $relevantObjects ) {
 		$relevantRestObjects = array();
 		foreach( $johnCollections as $path => $johns ) {
 			// Figure out what resource class of items we got, here
@@ -107,14 +109,25 @@ class EarthIT_CMIPREST_ResultAssembler_NestedObviousJSON implements EarthIT_CMIP
 		return $relevantRestObjects['root'];
 	}
 	
-	public function assembleSingleResult( EarthIT_Schema_ResourceClass $rootRc, array $johnCollections, array $relevantObjects ) {
+	protected function assembleSingleResult( EarthIT_Schema_ResourceClass $rootRc, array $johnCollections, array $relevantObjects ) {
 		foreach( $this->assembleSearchResult($rootRc, $johnCollections, $relevantObjects) as $item ) return $item;
 		return null;
 	}
-	public function assemblePostResult( EarthIT_Schema_ResourceClass $rootRc, array $johnCollections, array $relevantObjects ) {
+	protected function assemblePostResult( EarthIT_Schema_ResourceClass $rootRc, array $johnCollections, array $relevantObjects ) {
 		return $this->assembleSearchResult($rootRc, $johnCollections, $relevantObjects);
 	}
-	public function assemblePutResult( EarthIT_Schema_ResourceClass $rootRc, array $johnCollections, array $relevantObjects ) {
+	protected function assemblePutResult( EarthIT_Schema_ResourceClass $rootRc, array $johnCollections, array $relevantObjects ) {
 		return $this->assembleSingleResult($rootRc, $johnCollections, $relevantObjects);
+	}
+
+	/** @override */
+	public function needsResult() {
+		return true;
+	}
+
+	/** @override */
+	public function __invoke( EarthIT_CMIPREST_StorageResult $result ) {
+		$meth = $this->method;
+		return $this->$meth( $result->getRootResourceClass(), $result->getJohnCollections(), $result->getItemCollections() );
 	}
 }
