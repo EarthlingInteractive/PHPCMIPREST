@@ -104,6 +104,6 @@ class EarthIT_CMIPREST_ResultAssembler_JAO implements EarthIT_CMIPREST_ResultAss
 		foreach( $relevantRestObjects as $path => $objects ) {
 			if( $path != 'root' ) foreach( $objects as $obj ) $rez['included'][] = $obj;
 		}
-		return $rez;
+		return Nife_Util::httpResponse(200, new EarthIT_JSON_PrettyPrintedJSONBlob($rez), array('content-type'=>'application/vnd.api+json'));
 	}
 }
