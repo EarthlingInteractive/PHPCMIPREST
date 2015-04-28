@@ -9,9 +9,10 @@ class EarthIT_CMIPREST_UserAction_SearchAction extends EarthIT_CMIPREST_UserActi
 		$userId,
 		EarthIT_Schema_ResourceClass $resourceClass,
 		EarthIT_CMIPREST_SearchParameters $searchParameters,
-		array $johnBranches
+		array $johnBranches,
+		array $opts=array()
 	) {
-		parent::__construct( $userId, $resourceClass );
+		parent::__construct( $userId, $resourceClass, $opts );
 		$this->searchParameters = $searchParameters;
 		$this->johnBranches = $johnBranches;
 	}

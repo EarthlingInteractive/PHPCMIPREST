@@ -5,8 +5,8 @@ class EarthIT_CMIPREST_UserAction_GetItemAction extends EarthIT_CMIPREST_UserAct
 	protected $itemId;
 	protected $johnBranches;
 	
-	public function __construct( $userId, EarthIT_Schema_ResourceClass $resourceClass, $itemId, array $johnBranches ) {
-		parent::__construct( $userId, $resourceClass );
+	public function __construct( $userId, EarthIT_Schema_ResourceClass $resourceClass, $itemId, array $johnBranches, array $opts=array() ) {
+		parent::__construct( $userId, $resourceClass, $opts );
 		$this->itemId = $itemId;
 		$this->johnBranches = $johnBranches;
 	}
