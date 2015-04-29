@@ -28,6 +28,7 @@ class EarthIT_CMIPREST_JAORequest
 		$req->collectionName = $bif[1];
 		$req->instanceId     = isset($bif[2]) ? $bif[2] : null;
 		$req->content        = $content;
+		$req->pageParams     = isset($params['page']) ? $params['page'] : array();
 		
 		return $req;
 	}
@@ -141,7 +142,13 @@ class EarthIT_CMIPREST_JAORequest
 		switch( $req->method ) {
 		case 'GET':
 			if( $req->instanceId === null ) {
-				$sp = new EarthIT_CMIPREST_SearchParameters(array(), array(), 0, null);
+				$offset = 0;
+				$limit = null;
+				if( isset($req->pageParams['number']) and isset($req->pageParams['size']) ) {
+					$limit = $req->pageParams['size'];
+					$offset = $limit * ($req->pageParams['number']-1);
+				}
+				$sp = new EarthIT_CMIPREST_SearchParameters(array(), array(), $offset, $limit);
 				return new EarthIT_CMIPREST_UserAction_SearchAction($req->userId, $rc, $sp, array(), $opts);
 			} else {
 				return new EarthIT_CMIPREST_UserAction_GetItemAction($req->userId, $rc, $req->instanceId, array(), $opts);
