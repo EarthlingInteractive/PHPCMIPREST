@@ -314,6 +314,7 @@ class EarthIT_CMIPREST_RESTer
 	}
 	
 	/**
+	 * TODO: Move to CMIPRESTRequest::cmipRestRequestToUserAction
 	 * @return EarthIT_CMIPREST_UserAction
 	 * @api
 	 * @overridable
