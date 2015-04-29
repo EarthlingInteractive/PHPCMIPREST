@@ -12,7 +12,17 @@ class EarthIT_CMIPREST_Util
 		case 'string': return (string)$value;
 		case 'float': return (float)$value;
 		case 'int': return (int)$value;
-		case 'bool': return (bool)$value;
+		case 'bool':
+			if( is_bool($value) ) return $value;
+			if( is_numeric($value) ) {
+				if( $value == 1 ) return true;
+				if( $value == 0 ) return false;
+			}
+			if( is_string($value) ) {
+				if( in_array($value, array('yes','true','on')) ) return true;
+				if( in_array($value, array('no','false','off','')) ) return false;
+			}
+			throw new Exception("Invalid boolean representation: ".var_export($value,true));
 		default:
 			throw new Exception("Don't know how to cast to PHP type '$phpType'.");
 		}
