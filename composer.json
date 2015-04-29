@@ -5,9 +5,9 @@
 	"require": {
 		"php": ">=5.2",
 		"ryprop/nife": "^0.2",
-		"earthit/php-common": "^0.0.14",
-		"earthit/schema": "^0.1.9",
-		"earthit/dbc": "^0.0.16"
+		"earthit/php-common": "^1.0.0",
+		"earthit/schema": "^1.0.0",
+		"earthit/dbc": "^1.0.0"
 	},
 	"require-dev": {
 		"doctrine/dbal": "~2.4"
