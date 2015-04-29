@@ -27,22 +27,22 @@ class EarthIT_CMIPREST_JAORequest
 		return $req;
 	}
 	
-	public static function jaoRequestToUserAction( EarthIT_CMIPREST_JAORequest $req, EarthIT_Schema $schema ) {
+	public static function jaoRequestToUserAction( EarthIT_CMIPREST_JAORequest $req, EarthIT_Schema $schema, callable $nameFormatter ) {
 		$rc = EarthIT_CMIPREST_Util::getResourceClassByCollectionName($schema, $req->collectionName);
 		
 		// TODO: Implement all the stuffs
+		
+		$raz = new EarthIT_CMIPREST_ResultAssembler_JAO($schema, $nameFormatter);
 		
 		if( $req->method == 'GET' ) {
 			if( $req->instanceId === null ) {
 				$sp = new EarthIT_CMIPREST_SearchParameters( array(), array(), 0, null );
 				return new EarthIT_CMIPREST_UserAction_SearchAction( null, $rc, $sp, array(), array(
-					EarthIT_CMIPREST_UserAction::OPT_RESULT_ASSEMBLER =>
-						new EarthIT_CMIPREST_ResultAssembler_JAO($schema)
+					EarthIT_CMIPREST_UserAction::OPT_RESULT_ASSEMBLER => $raz
 				));
 			} else {
 				return new EarthIT_CMIPREST_UserAction_GetItemAction( null, $rc, $req->instanceId, array(), array(
-					EarthIT_CMIPREST_UserAction::OPT_RESULT_ASSEMBLER =>
-						new EarthIT_CMIPREST_ResultAssembler_JAO($schema)
+					EarthIT_CMIPREST_UserAction::OPT_RESULT_ASSEMBLER => $raz
 				));
 			}
 		}

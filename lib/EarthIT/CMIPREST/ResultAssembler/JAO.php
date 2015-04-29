@@ -4,9 +4,11 @@
 class EarthIT_CMIPREST_ResultAssembler_JAO implements EarthIT_CMIPREST_ResultAssembler
 {
 	protected $schema;
+	protected $nameFormatter;
 	
-	public function __construct(EarthIT_Schema $schema) {
+	public function __construct(EarthIT_Schema $schema, callable $nameFormatter) {
 		$this->schema = $schema;
+		$this->nameFormatter = $nameFormatter;
 	}
 	
 	// TODO: Make configurable
@@ -33,13 +35,13 @@ class EarthIT_CMIPREST_ResultAssembler_JAO implements EarthIT_CMIPREST_ResultAss
 	}
 	
 	protected function jaoTypeName( EarthIT_Schema_ResourceClass $rc ) {
-		return EarthIT_Schema_WordUtil::toCamelCase(
+		return call_user_func( $this->nameFormatter,
 			$rc->getFirstPropertyValue(EarthIT_CMIPREST_NS::COLLECTION_NAME) ?:
 			EarthIT_Schema_WordUtil::pluralize($rc->getName())
 		);
 	}
 	protected function jaoFieldName( EarthIT_Schema_Field $f, EarthIT_Schema_ResourceClass $rc ) {
-		return EarthIT_Schema_WordUtil::toCamelCase($f->getName());
+		return call_user_func( $this->nameFormatter, $f->getName() );
 	}
 	
 	protected function internalObjectToRest( EarthIT_Schema_ResourceClass $rc, array $fieldValues ) {
