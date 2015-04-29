@@ -131,7 +131,10 @@ class EarthIT_CMIPREST_Util
 
 	/**
 	 * Finds a resource class in the given schema based on the given
-	 * collection name, using the minimized form of the name for comparison.
+	 * collection name, using a fuzzy name comparison so that e.g.
+	 * either 'some things', 'someThings', or 'some-things' should
+	 * match the 'some thing' type, or a type with "some things" as its
+	 * collection name.
 	 */
 	public static function getResourceClassByCollectionName( $schema, $collectionName ) {
 		$minCollectionName = EarthIT_Schema_WordUtil::minimize($collectionName);
