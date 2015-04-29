@@ -128,7 +128,14 @@ class EarthIT_CMIPREST_Util
 	public static function storableFields( EarthIT_Schema_ResourceClass $rc ) {
 		return self::fieldsWithProperty($rc->getFields(), EarthIT_CMIPREST_NS::HAS_A_DATABASE_COLUMN);
 	}
-	
+
+	/**
+	 * Finds a resource class in the given schema based on the given
+	 * collection name, using a fuzzy name comparison so that e.g.
+	 * either 'some things', 'someThings', or 'some-things' should
+	 * match the 'some thing' type, or a type with "some things" as its
+	 * collection name.
+	 */
 	public static function getResourceClassByCollectionName( $schema, $collectionName ) {
 		$minCollectionName = EarthIT_Schema_WordUtil::minimize($collectionName);
 		foreach( $schema->getResourceClasses() as $rc ) {
