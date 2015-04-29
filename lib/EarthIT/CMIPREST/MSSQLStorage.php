@@ -213,28 +213,46 @@ class EarthIT_CMIPREST_MSSQLStorage implements EarthIT_CMIPREST_Storage
 			$whereClauses[] = $matcherSql;
 		}
 		
-		if( count($orderByComponents = $sp->getOrderByComponents()) > 0 ) {
+		$orderByComponents = $sp->getOrderByComponents();
+		$limit = $sp->getLimit();
+		$skip = $sp->getSkip();
+		if( $limit !== null or $skip != 0 ) {
+			// Since offset/skip is part of the order by clause,
+			// we need to make up something to order by if not already specified.
+			if( count($orderByComponents) == 0 ) {
+				// Use the PK
+				foreach( $rc->getPrimaryKey()->getFieldNames() as $fn ) {
+					$orderByComponents[] = new EarthIT_CMIPREST_OrderByComponent( $rc->getField($fn) );
+				}
+			}
+			if( count($orderByComponents) == 0 ) {
+				throw new Exception("Failed to make up order by components, which are required for doing limit/skip");
+			}
+		}
+		
+		if( count($orderByComponents) > 0 ) {
 			$orderBySqlComponents = array();
 			foreach( $orderByComponents as $oc ) {
 				$orderBySqlComponents[] = $this->fieldDbName($rc, $oc->getField()).($oc->isAscending() ? " ASC" : " DESC");
 			}
-			$orderBySection = "ORDER BY ".implode(', ',$orderBySqlComponents)."\n";
+			$offsetFetchStr = '';
+			/*
+			 * Not available in our old SQL Server >:\
+			if( $limit !== null or $skip != 0 ) $offsetFetchStr .= " OFFET {$skip} ROWS";
+			if( $limit !== null ) $offsetFetchStr .= " FETCH FIRST {$limit} ROWS";
+			*/
+			$orderBySection = "ORDER BY ".implode(', ',$orderBySqlComponents).$offsetFetchStr."\n";
 		} else $orderBySection = '';
-
-		$limitClauseParts = array();
-		if( $sp->getLimit() !== null ) $limitClauseParts[] = "LIMIT ".$sp->getLimit();
-		if( $sp->getSkip() != 0 ) $limitClauseParts[] = "OFFSET ".$sp->getSkip();
-		$limitSection = $limitClauseParts ? implode(' ',$limitClauseParts)."\n" : '';
 		
 		return array(
 			'emptyResultSetGuaranteed' => false,
 			'fromSection' => "FROM {table} AS {$tableAlias}\n",
 			'whereSection' => $whereClauses ? "WHERE ".implode("\n  AND ",$whereClauses)."\n" : '',
-			'orderBySection' => $orderBySection,
-			'limitSection' => $limitSection
+			'orderBySection' => $orderBySection
 		);
 	}
 	
+	/* Dead code?
 	protected function fieldSelects( $rc, $tableAlias, array &$params ) {
 		$selectedThings = array();
 		foreach( EarthIT_CMIPREST_Util::storableFields($rc) as $f ) {
@@ -246,6 +264,7 @@ class EarthIT_CMIPREST_MSSQLStorage implements EarthIT_CMIPREST_Storage
 		}
 		return $selectedThings;
 	}
+	*/
 	
 	protected function evaluateJohnTree(
 		EarthIT_Schema_ResourceClass $rc,
@@ -299,16 +318,27 @@ class EarthIT_CMIPREST_MSSQLStorage implements EarthIT_CMIPREST_Storage
 		// We want the order and limit clauses to apply only to the root
 		// table, not the things we join to!
 		
+		// This hokeyness is required because our SQL server doesn't
+		// support OFFSET-FETCH or doing ORDER BY in an inner query.
+		$rowCountSql = ", ROW_NUMBER() OVER (".trim($searchQuery['orderBySection']).") AS __ROWNUM";
+		if( $sp->getLimit() !== null or $sp->getSkip() != 0 ) {
+			$whereClause = "WHERE {$alias0}.__ROWNUM >= ".(1+$sp->getSkip()).
+				($sp->getLimit() !== null ? " AND {$alias0}.__ROWNUM < ".(1+$sp->getSkip()+$sp->getLimit()) : '').
+				"\n";
+		} else {
+			$whereClause = '';
+		}
+		
 		$sql =
 			"SELECT ".implode(', ', $this->buildSelects($targetRc, $params, $targetAlias))."\n".
 			"FROM (\n\t".str_replace("\n","\n\t",
-				"SELECT *\n".
+				"SELECT *{$rowCountSql}\n".
 				$searchQuery['fromSection'].
-				$searchQuery['whereSection'].
-				$searchQuery['orderBySection'].
-				$searchQuery['limitSection']
-			).") AS $alias0\n".
-			(count($joins) ? implode("\n",$joins)."\n" : '');
+				$searchQuery['whereSection']
+			).") AS {$alias0}\n".
+			(count($joins) ? implode("\n",$joins)."\n" : '').
+			$whereClause.
+			"ORDER BY {$alias0}.__ROWNUM\n";
 
 		foreach( $this->fetchRows($sql, $params) AS $dbObj ) {
 			$results[$path][] = $this->dbObjectToInternal($targetRc, $dbObj);
