@@ -2,6 +2,8 @@
 
 /**
  * JSONAPI.org-style request
+ * 
+ * TODO: Move functionality to, like, RequestParser/JAORequestParser
  */
 class EarthIT_CMIPREST_JAORequest
 {

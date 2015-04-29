@@ -1,5 +1,6 @@
 <?php
 
+// TODO: Rename to JAOResultAssembler
 /** The JSONAPI.org format */
 class EarthIT_CMIPREST_ResultAssembler_JAO implements EarthIT_CMIPREST_ResultAssembler
 {
