@@ -1,5 +1,6 @@
 <?php
 
+// TODO: Replace with generic SQL-backed storage, taking a separate object to generate queries
 class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 {
 	protected $dbAdapter;

@@ -5,6 +5,9 @@
 // references to searches.
 // TODO: Refactor so that functions return StorageResults
 // TODO: Build a StorageHelper class that wraps a storage to provide a more human-friendly API
+// TODO: Refactor put/post/patch into a single 'save' function with options for
+// - allow/disallow/require ID to be generated
+// - on duplicate replace/patch/error/undefined
 interface EarthIT_CMIPREST_Storage
 {
 	/**
@@ -27,7 +30,9 @@ interface EarthIT_CMIPREST_Storage
 	 *
 	 * @param EarthIT_Schema_ResourceClass $rc
 	 * @param EarthIT_CMIPREST_SearchParameters $sp
-	 * @param array $johnBranches array of EarthIT_CMIPREST_JohnTreeNode
+	 * @param array $johnBranches array of path component =>
+	 *   EarthIT_CMIPREST_JohnTreeNode (each JohnTreeNode has its own
+	 *   branches)
 	 * @return array of result object lists, keyed by branch path
 	 */
 	public function search(

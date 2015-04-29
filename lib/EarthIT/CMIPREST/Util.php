@@ -195,4 +195,11 @@ class EarthIT_CMIPREST_Util
 		foreach($things as $thing) return $thing;
 		return $default;
 	}
+	
+	public static function encodeItem( array $item, EarthIT_Schema_ResourceClass $rc, EarthIT_CMIPREST_ItemCodec $codec ) {
+		return self::first($codec->encodeItems(array($item), $rc));
+	}
+	public static function decodeItem( array $item, EarthIT_Schema_ResourceClass $rc, EarthIT_CMIPREST_ItemCodec $codec ) {
+		return self::first($codec->decodeItems(array($item), $rc));
+	}
 }

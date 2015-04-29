@@ -24,7 +24,7 @@ class EarthIT_CMIPREST_RESTer
 	
 	protected $storage;
 	protected $schema;
-	protected $keyByIds = false;
+	protected $keyByIds;
 	
 	public function __construct( $params ) {
 		if( $params instanceof EarthIT_Registry ) {
@@ -34,17 +34,17 @@ class EarthIT_CMIPREST_RESTer
 				'dbNamer' => $registry->getDbNamer(),
 				'schema' => $registry->getSchema(),
 			);
-		}
-		if( is_array($params) ) {
-			$params = array_merge(array(
-				'storage' => null,
-				'dbAdapter' => null,
-				'dbNamer' => null,
-				'schema' => null,
-			), $params);
-		} else {
+		} else if( !is_array($params) ) {
 			throw new Exception("Parameters to RESTer constructor must be an array or an EarthIT_Registry");
 		}
+		
+		$params += array(
+			'storage' => null,
+			'dbAdapter' => null,
+			'dbNamer' => null,
+			'schema' => null,
+			'keyByIds' => false
+		);
 		
 		if( ($this->storage = $params['storage']) ) {
 			// Okay!
@@ -60,7 +60,7 @@ class EarthIT_CMIPREST_RESTer
 			throw new Exception("No schema specified.");
 		}
 		
-		$this->keyByIds = isset($params['keyByIds']) && $params['keyByIds'];
+		$this->keyByIds = $params['keyByIds'];
 	}
 		
 	//// Field conversion
