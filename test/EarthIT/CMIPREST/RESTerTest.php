@@ -12,10 +12,17 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 	protected $storage;
 	protected $rester;
 	protected $schema;
+
+	protected $standardSaveActionOpts;
 	
 	protected $savedItems;
 	
 	public function setUp() {
+		$this->standardSaveActionOpts = array(
+			EarthIT_CMIPREST_UserAction::OPT_RESULT_ASSEMBLER =>
+				new EarthIT_CMIPREST_ResultAssembler_NestedObviousJSON('assembleSingleResult', false)
+		);
+		
 		// Relative to the pwd, yes.
 		$dbConfigFile = 'config/test-dbc.json';
 		$dbConfigJson = file_get_contents($dbConfigFile);
@@ -45,7 +52,8 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 		$rc = $this->schema->getResourceClass('resource');
 		
 		foreach( $this->savedItems as $savedItem ) {
-			$getItemResult = $this->rester->doAction( new EarthIT_CMIPREST_UserAction_GetItemAction(0, $rc, $savedItem['ID'], array() ) );
+			$getItemResult = $this->rester->doAction( new EarthIT_CMIPREST_UserAction_GetItemAction(
+				0, $rc, $savedItem['ID'], array(), $this->standardSaveActionOpts ) );
 			$this->assertEquals($savedItem['ID'], $getItemResult['id']);
 			$this->assertEquals($savedItem['URN'], $getItemResult['urn']);
 		}
@@ -58,7 +66,8 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 		for( $i=0; $i<5; ++$i ) {
 			$items[] = array('URN'=>'data:text/plain,'.rand(1000000,9999999));
 		}
-		$posted = $this->rester->doAction( EarthIT_CMIPREST_UserActions::multiPost(0, $rc, $items) );
+		$posted = $this->rester->doAction( EarthIT_CMIPREST_UserActions::multiPost(
+			0, $rc, $items, $this->standardSaveActionOpts) );
 		for( $i=0; $i<5; ++$i ) {
 			$this->assertNotNull($posted[$i]['id']);
 			$this->assertEquals($items[$i]['URN'], $posted[$i]['urn']);
@@ -69,7 +78,8 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 		$rc = $this->schema->getResourceClass('resource');
 		
 		$urn = 'data:text/plain,'.rand(1000000,9999999);
-		$posted = $this->rester->doAction( new EarthIT_CMIPREST_UserAction_PostItemAction(0, $rc, array('URN'=>$urn)) );
+		$posted = $this->rester->doAction( new EarthIT_CMIPREST_UserAction_PostItemAction(
+			0, $rc, array('URN'=>$urn), $this->standardSaveActionOpts ));
 		$got = $this->getItem($rc, $posted['id']);
 		$this->assertEquals($urn, $got['URN']);
 	}
@@ -101,7 +111,7 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 				'first name' => 'Red',
 				'last name' => 'Skelton'
 			),
-		));
+		), $this->standardSaveActionOpts);
 		
 		$rez = $this->rester->doAction($multiPost);
 		$bobHopeId = $rez[0]['id'];
@@ -135,7 +145,7 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 			$personB['ID'] => array(
 				'first name' => 'Frank'
 			)
-		));
+		), $this->standardSaveActionOpts );
 		
 		$rez = $this->rester->doAction($multiPatch);
 		$this->assertEquals( array(
@@ -193,7 +203,8 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 					'first name' => 'Jeff',
 					'last name' => 'Glaze'
 				)
-			)
+			),
+			$this->standardSaveActionOpts
 		), $ua);
 	}
 	
