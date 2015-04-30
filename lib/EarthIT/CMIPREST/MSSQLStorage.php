@@ -216,7 +216,7 @@ class EarthIT_CMIPREST_MSSQLStorage implements EarthIT_CMIPREST_Storage
 		$orderByComponents = $sp->getOrderByComponents();
 		$limit = $sp->getLimit();
 		$skip = $sp->getSkip();
-		if( $limit !== null or $skip != 0 ) {
+		if( true /*$limit !== null or $skip != 0*/ ) { // Always order by!
 			// Since offset/skip is part of the order by clause,
 			// we need to make up something to order by if not already specified.
 			if( count($orderByComponents) == 0 ) {
