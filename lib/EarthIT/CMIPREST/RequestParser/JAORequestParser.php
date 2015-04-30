@@ -1,71 +1,64 @@
 <?php
 
-/**
- * JSONAPI.org-style request
- * 
- * TODO: Move functionality to, like, RequestParser/JAORequestParser
- * @deprecated in favor of JAORequestParser
- */
-class EarthIT_CMIPREST_JAORequest
+use EarthIT_CMIPREST_RequestParser_Util AS RPU;
+
+class EarthIT_CMIPREST_RequestParser_JAORequestParser implements EarthIT_CMIPREST_RequestParser
 {
-	public $userId;
-	public $method;
-	public $collectionName;
-	public $instanceId;
-	public $pageParams = array();
-	public $filterParams = array();
-	public $include = array();
-	public $fields = array();
-	public $sort = array();
-	public $content;
+	protected $schema;
+	protected $nameFormatter;
+
+	public function __construct( EarthIT_Schema $schema, callable $nameFormatter ) {
+		$this->schema = $schema;
+		$this->nameFormatter = $nameFormatter;
+	}
 	
-	public static function parse( $method, $path, $params, $content ) {
+	public function parse( $method, $path, $queryString, Nife_Blob $content=null ) {
 		if( !preg_match( '#^/([^/]+)(?:/(.*))?$#', $path, $bif ) ) {
 			throw new Exception("Failed to parse '$path' as a JAO request");
 		}
-
-		$req = new EarthIT_CMIPREST_JAORequest();
-		$req->method         = $method;
-		$req->collectionName = $bif[1];
-		$req->instanceId     = isset($bif[2]) ? $bif[2] : null;
-		$req->content        = $content;
-		$req->pageParams     = isset($params['page']) ? $params['page'] : array();
 		
-		return $req;
+		$params = RPU::parseQueryString($queryString);
+		
+		return array(
+			'method' => $method,
+			'collectionName' => $bif[1],
+			'instanceId' => isset($bif[2]) ? $bif[2] : null,
+			'contentObject' => RPU::parseJsonContent($content),
+			'pageParams' => isset($params['page']) ? $params['page'] : array()
+		);
 	}
 	
-	protected static function parseValue( $v, EarthIT_Schema_DataType $dt ) {
+	protected function parseValue( $v, EarthIT_Schema_DataType $dt ) {
 		return EarthIT_CMIPREST_Util::cast($v, $dt->getPhpTypeName());
 	}
 	
-	protected static function jaoTypeName( EarthIT_Schema_ResourceClass $rc, callable $nameFormatter ) {
-		return call_user_func( $nameFormatter,
+	protected function jaoTypeName( EarthIT_Schema_ResourceClass $rc ) {
+		return call_user_func( $this->nameFormatter,
 			$rc->getFirstPropertyValue(EarthIT_CMIPREST_NS::COLLECTION_NAME) ?:
 			EarthIT_Schema_WordUtil::pluralize($rc->getName())
 		);
 	}
 	
-	protected static function parseContentData(
-		array $bod, EarthIT_Schema_ResourceClass $rc,
-		EarthIT_Schema $schema, callable $nameFormatter
+	protected function parseContentData(
+		array $bod, EarthIT_Schema_ResourceClass $rc
 	) {
 		$fieldsByJsonApiName = array();
 		foreach( $rc->getFields() as $f ) {
-			$fieldsByJsonApiName[call_user_func($nameFormatter, $f->getName())] = $f;
+			$fieldsByJsonApiName[call_user_func($this->nameFormatter, $f->getName())] = $f;
 		}
 		
 		$refInfoByJsonApiName = array();
 		foreach( $rc->getReferences() as $ref ) {
-			$jaoName = call_user_func($nameFormatter, $ref->getName());
+			$jaoName = call_user_func($this->nameFormatter, $ref->getName());
 			$tfn = $ref->getTargetFieldNames();
 			$ofn = $ref->getOriginFieldNames();
 			/** field name to be found in 'linkages' => our (schema-form) field name */
 			$fmap = array();
 			for( $i=0; $i<count($tfn); ++$i ) {
-				$fmap[call_user_func($nameFormatter, $tfn)] = $ofn[$i];
+				$fmap[call_user_func($this->nameFormatter, $tfn)] = $ofn[$i];
 			}
 			$refInfoByJsonApiName[$jaoName] = array(
-				'targetJsonApiTypeName' => self::jaoTypeName($schema->getResourceClass($ref->getTargetClassName()), $nameFormatter),
+				'targetJsonApiTypeName' => self::jaoTypeName($this->schema->getResourceClass($ref->getTargetClassName()), $this->nameFormatter),
 				'33fmap' => $fmap,
 			);
 		
@@ -95,7 +88,7 @@ class EarthIT_CMIPREST_JAORequest
 					$item[$f->getName()] = self::parseValue($v, $f->getType());
 				} else switch($k) {
 				case 'type':
-					$expectedTypeName = self::jaoTypeName($rc, $nameFormatter);
+					$expectedTypeName = self::jaoTypeName($rc, $this->nameFormatter);
 					if( $expectedTypeName != $v ) {
 						throw new Exception("Type specified in data ('$v') does not match that expected for this URL ('$expectedTypeName')");
 					}
@@ -127,46 +120,47 @@ class EarthIT_CMIPREST_JAORequest
 		return $items;
 	}
 	
-	protected static function firstAndOnly( array $stuff ) {
+	protected function firstAndOnly( array $stuff ) {
 		if( count($stuff) != 1 ) throw new Exception("Not exactly one thing in the stuff, here: ".var_export($stuff,true));
 		foreach( $stuff as $thing ) return $thing;
 	}
 	
-	public static function jaoRequestToUserAction( EarthIT_CMIPREST_JAORequest $req, EarthIT_Schema $schema, callable $nameFormatter ) {
-		$rc = EarthIT_CMIPREST_Util::getResourceClassByCollectionName($schema, $req->collectionName);
+	public function toAction( array $req ) {
+		$req['userId'] = null; // Blah
+		$rc = EarthIT_CMIPREST_Util::getResourceClassByCollectionName($this->schema, $req['collectionName']);
 		
 		// TODO: Implement all the stuffs
 		
-		$raz = new EarthIT_CMIPREST_ResultAssembler_JAO($schema, $nameFormatter);
+		$raz = new EarthIT_CMIPREST_ResultAssembler_JAO($this->schema, $this->nameFormatter);
 		$opts = array( EarthIT_CMIPREST_UserAction::OPT_RESULT_ASSEMBLER => $raz );
 		
-		switch( $req->method ) {
+		switch( $req['method'] ) {
 		case 'GET':
-			if( $req->instanceId === null ) {
+			if( $req['instanceId'] === null ) {
 				$offset = 0;
 				$limit = null;
-				if( isset($req->pageParams['number']) and isset($req->pageParams['size']) ) {
-					$limit = $req->pageParams['size'];
-					$offset = $limit * ($req->pageParams['number']-1);
+				if( isset($req['pageParams']['number']) and isset($req['pageParams']['size']) ) {
+					$limit = $req['pageParams']['size'];
+					$offset = $limit * ($req['pageParams']['number']-1);
 				}
 				$sp = new EarthIT_CMIPREST_SearchParameters(array(), array(), $offset, $limit);
-				return new EarthIT_CMIPREST_UserAction_SearchAction($req->userId, $rc, $sp, array(), $opts);
+				return new EarthIT_CMIPREST_UserAction_SearchAction($req['userId'], $rc, $sp, array(), $opts);
 			} else {
-				return new EarthIT_CMIPREST_UserAction_GetItemAction($req->userId, $rc, $req->instanceId, array(), $opts);
+				return new EarthIT_CMIPREST_UserAction_GetItemAction($req['userId'], $rc, $req['instanceId'], array(), $opts);
 			}
 		case 'POST':
-			$items = self::parseContentData($req->content['data'], $rc, $schema, $nameFormatter);
+			$items = self::parseContentData($req['contentObject']['data'], $rc, $this->schema, $this->nameFormatter);
 			$item = self::firstAndOnly($items);
 			// TODO: Allow multi-posts
-			return new EarthIT_CMIPREST_UserAction_PostItemAction($req->userId, $rc, $item, $opts);
+			return new EarthIT_CMIPREST_UserAction_PostItemAction($req['userId'], $rc, $item, $opts);
 		case 'PUT':
-			$items = self::parseContentData($req->content['data'], $rc, $schema, $nameFormatter);
+			$items = self::parseContentData($req['contentObject']['data'], $rc, $this->schema, $this->nameFormatter);
 			$item = self::firstAndOnly($items);
-			return new EarthIT_CMIPREST_UserAction_PutItemAction($req->userId, $rc, $req->instanceId, $item, $opts);
+			return new EarthIT_CMIPREST_UserAction_PutItemAction($req['userId'], $rc, $req['instanceId'], $item, $opts);
 		case 'PATCH':
-			$items = self::parseContentData($req->content['data'], $rc, $schema, $nameFormatter);
+			$items = self::parseContentData($req['contentObject']['data'], $rc, $this->schema, $this->nameFormatter);
 			$item = self::firstAndOnly($items);
-			return new EarthIT_CMIPREST_UserAction_PatchItemAction($req->userId, $rc, $req->instanceId, $item, $opts);
+			return new EarthIT_CMIPREST_UserAction_PatchItemAction($req['userId'], $rc, $req['instanceId'], $item, $opts);
 		}
 		
 		throw new Exception( "Unsupported JAORequest: ".print_r($req,true));

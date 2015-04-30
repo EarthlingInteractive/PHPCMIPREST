@@ -3,7 +3,10 @@
 // TODO: Refactor to NOT include user ID.
 // TODO: Get rid of options; just make assembler an additional
 // parameter of applicable action constructors
-abstract class EarthIT_CMIPREST_UserAction
+/**
+ * An action that knows what user is doing it.
+ */
+abstract class EarthIT_CMIPREST_UserAction extends EarthIT_CMIPREST_Action
 {
 	// Keys for options arrays
 	/**
