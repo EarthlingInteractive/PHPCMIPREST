@@ -10,12 +10,14 @@ class EarthIT_CMIPREST_RequestParser_FancyRequestParser implements EarthIT_CMIPR
 		$this->parsers = $parsers;
 	}
 	
-	public static function buildStandardParsers( EarthIT_Schema $schema, callable $nameFormatter ) {
-		return array(
+	public static function buildStandardParsers( EarthIT_Schema $schema, callable $nameFormatter, $default='cmip' ) {
+		$parsers = array(
 			'jao' => new EarthIT_CMIPREST_RequestParser_JAORequestParser( $schema, $nameFormatter ),
-			'default' => new EarthIT_CMIPREST_RequestParser_CMIPRequestParser(),
+			'cmip' => new EarthIT_CMIPREST_RequestParser_CMIPRequestParser(),
 			'compound' => new EarthIT_CMIPREST_RequestParser_CompoundRequestParser($this)
 		);
+		if( $default !== null ) $parsers['default'] = $parsers[$default];
+		return $parsers;
 	}
 		
 	/** Pre-modified path */
