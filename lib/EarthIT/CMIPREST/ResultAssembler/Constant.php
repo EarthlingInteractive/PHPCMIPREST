@@ -1,5 +1,9 @@
 <?php
 
+/**
+ * A result assembler that just returns a constant predefined value no
+ * matter what the result was.
+ */
 class EarthIT_CMIPREST_ResultAssembler_Constant implements EarthIT_CMIPREST_ResultAssembler
 {
 	protected $value;

@@ -141,6 +141,7 @@ class EarthIT_CMIPREST_RequestParser_JAORequestParser implements EarthIT_CMIPRES
 		
 		switch( $req['method'] ) {
 		case 'GET':
+			// TODO: Support ?include
 			if( $req['instanceId'] === null ) {
 				$offset = 0;
 				$limit = null;
