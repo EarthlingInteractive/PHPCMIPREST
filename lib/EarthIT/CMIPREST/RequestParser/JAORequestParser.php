@@ -87,6 +87,11 @@ class EarthIT_CMIPREST_RequestParser_JAORequestParser implements EarthIT_CMIPRES
 					$f = $fieldsByJsonApiName[$k];
 					$item[$f->getName()] = self::parseValue($v, $f->getType());
 				} else switch($k) {
+				case 'id':
+					foreach( EarthIT_CMIPREST_Util::idToFieldValues($rc, $v) as $k2=>$v2 ) {
+						$item[$k2] = $v2;
+					}
+					break;
 				case 'type':
 					$expectedTypeName = self::jaoTypeName($rc, $this->nameFormatter);
 					if( $expectedTypeName != $v ) {

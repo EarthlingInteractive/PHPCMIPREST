@@ -13,16 +13,16 @@ class EarthIT_CMIPREST_ResultAssembler_JAO implements EarthIT_CMIPREST_ResultAss
 	}
 	
 	// TODO: Make configurable
-	protected function fieldRestName( EarthIT_Schema_ResourceClass $rc, EarthIT_Schema_Field $f ) {
+	protected function fieldJaoName( EarthIT_Schema_ResourceClass $rc, EarthIT_Schema_Field $f ) {
 		// When emitting JSON, format names as the JS does
 		return EarthIT_Schema_WordUtil::toCamelCase($f->getName());
 	}
 	
-	protected function internalValueToRest( EarthIT_Schema_DataType $dt, $v ) {
+	protected function internalValueToJao( EarthIT_Schema_DataType $dt, $v ) {
 		return $v;
 	}
 	
-	protected static function nonLinkFields( EarthIT_Schema_ResourceClass $rc ) {
+	protected static function nonLinkNonPkFields( EarthIT_Schema_ResourceClass $rc ) {
 		$pk = $rc->getPrimaryKey();
 		$pkFieldNames = array();
 		$fkFieldNames = array();
@@ -30,7 +30,7 @@ class EarthIT_CMIPREST_ResultAssembler_JAO implements EarthIT_CMIPREST_ResultAss
 		if( $pk !== null ) foreach( $pk->getFieldNames() as $fn ) $pkFieldNames[$fn] = $fn;
 		foreach( $rc->getReferences() as $fk ) foreach( $fk->getOriginFieldNames() as $fn ) $fkFieldNames[$fn] = $fn;
 		foreach( $rc->getFields() as $k=>$f ) {
-			if( isset($pkFieldNames[$k]) or !isset($fkFieldNames[$k]) ) $normalFields[$k] = $f;
+			if( !isset($pkFieldNames[$k]) and !isset($fkFieldNames[$k]) ) $normalFields[$k] = $f;
 		}
 		return $normalFields;
 	}
@@ -45,15 +45,30 @@ class EarthIT_CMIPREST_ResultAssembler_JAO implements EarthIT_CMIPREST_ResultAss
 		return call_user_func( $this->nameFormatter, $f->getName() );
 	}
 	
-	protected function internalObjectToRest( EarthIT_Schema_ResourceClass $rc, array $fieldValues ) {
+	protected function internalObjectToJao( EarthIT_Schema_ResourceClass $rc, array $fieldValues ) {
 		$result = array();
-		foreach( self::nonLinkFields($rc) as $k=>$field ) {
+		
+		// Assemble 'id' field, if there is one:
+		$pkValues = array();
+		foreach( $rc->getPrimaryKey()->getFieldNames() as $pkFn ) {
+			$pkValues[] = $fieldValues[$pkFn];
+		}
+		if( count($pkValues) > 0 ) {
+			$result['id'] = implode('-', $pkValues);
+		}
+		
+		// Assemble normal, non-key, non-link fields:
+		foreach( self::nonLinkNonPkFields($rc) as $k=>$field ) {
 			if( array_key_exists($k, $fieldValues) ) {
-				$result[$this->fieldRestName($rc, $field)] =
-					$this->internalValueToRest($field->getType(), $fieldValues[$field->getName()]);
+				$result[$this->fieldJaoName($rc, $field)] =
+					$this->internalValueToJao($field->getType(), $fieldValues[$field->getName()]);
 			}
 		}
+		
+		// Add the JAO 'type' field
 		$result['type'] = $this->jaoTypeName($rc);
+		
+		// Add links
 		foreach( $rc->getReferences() as $ref ) {
 			$targetRc = $this->schema->getResourceClass($ref->getTargetClassName());
 			$match = array();
@@ -78,7 +93,7 @@ class EarthIT_CMIPREST_ResultAssembler_JAO implements EarthIT_CMIPREST_ResultAss
 	protected function _q45( EarthIT_Schema_ResourceClass $rc, array $items ) {
 		$restObjects = array();
 		foreach( $items as $item ) {
-			$restObjects[] = $this->internalObjectToRest($rc, $item);
+			$restObjects[] = $this->internalObjectToJao($rc, $item);
 		}
 		return $restObjects;
 	}
