@@ -148,6 +148,8 @@ class EarthIT_CMIPREST_RequestParser_JAORequestParser implements EarthIT_CMIPRES
 					$limit = $req['pageParams']['size'];
 					$offset = $limit * ($req['pageParams']['number']-1);
 				}
+				// Hey look, our search doesn't actually filter anything!
+				// TODO: Filtering
 				$sp = new EarthIT_CMIPREST_SearchParameters(array(), array(), $offset, $limit);
 				return new EarthIT_CMIPREST_UserAction_SearchAction($req['userId'], $rc, $sp, array(), $opts);
 			} else {
