@@ -136,7 +136,7 @@ class EarthIT_CMIPREST_RequestParser_JAORequestParser implements EarthIT_CMIPRES
 		
 		// TODO: Implement all the stuffs
 		
-		$raz = new EarthIT_CMIPREST_ResultAssembler_JAO($this->schema, $this->nameFormatter);
+		$raz = new EarthIT_CMIPREST_ResultAssembler_JAO($this->schema, $this->nameFormatter, $req['instanceId'] === null);
 		$opts = array( EarthIT_CMIPREST_UserAction::OPT_RESULT_ASSEMBLER => $raz );
 		
 		switch( $req['method'] ) {

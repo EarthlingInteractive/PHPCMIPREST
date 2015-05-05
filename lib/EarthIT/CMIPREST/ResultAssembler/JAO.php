@@ -6,10 +6,12 @@ class EarthIT_CMIPREST_ResultAssembler_JAO implements EarthIT_CMIPREST_ResultAss
 {
 	protected $schema;
 	protected $nameFormatter;
+	protected $plural;
 	
-	public function __construct(EarthIT_Schema $schema, callable $nameFormatter) {
+	public function __construct(EarthIT_Schema $schema, callable $nameFormatter, $plural) {
 		$this->schema = $schema;
 		$this->nameFormatter = $nameFormatter;
+		$this->plural = $plural;
 	}
 	
 	// TODO: Make configurable
@@ -114,9 +116,14 @@ class EarthIT_CMIPREST_ResultAssembler_JAO implements EarthIT_CMIPREST_ResultAss
 			$relevantRestObjects[$path] = $this->_q45( $targetRc, $relevantObjects[$path] );
 		}
 		
-		$rez = array(
-			'data' => $relevantRestObjects['root']
-		);
+		if( $this->plural ) {
+			$rezData = $relevantRestObjects['root'];
+		} else {
+			$rezData = null;
+			foreach( $relevantRestObjects['root'] as $rezData ) break;
+		}
+		
+		$rez = array( 'data' => $rezData );
 		foreach( $relevantRestObjects as $path => $objects ) {
 			if( $path != 'root' ) foreach( $objects as $obj ) $rez['included'][] = $obj;
 		}
