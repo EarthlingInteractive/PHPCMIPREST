@@ -22,14 +22,29 @@ class EarthIT_CMIPREST_RequestParser_JAORequestParser implements EarthIT_CMIPRES
 		}
 		
 		$params = RPU::parseQueryString($queryString);
+		$filterParams = array();
+		$pageParams = array();
+		$includes = array();
+		foreach( $params as $k=>$v ) {
+			switch( $k ) {
+			case 'page': $pageParams = $v; break;
+			case 'include': $includes = explode(',', $v); break;
+			case 'filter':
+				foreach( $v as $k2=>$v2 ) $filterParams[$k2] = $v2;
+				break;
+			default:
+				$filterParams[$k] = $v;
+			}
+		}
 		
 		return array(
 			'method' => $method,
 			'collectionName' => $bif[1],
 			'instanceId' => isset($bif[2]) ? $bif[2] : null,
 			'contentObject' => RPU::parseJsonContent($content),
-			'pageParams' => isset($params['page']) ? $params['page'] : array(),
-			'includes' => isset($params['include']) ? explode(',',$params['include']) : array(),
+			'pageParams' => $pageParams,
+			'includes' => $includes,
+			'filterParams' => $filterParams
 		);
 	}
 	
@@ -139,8 +154,6 @@ class EarthIT_CMIPREST_RequestParser_JAORequestParser implements EarthIT_CMIPRES
 		$req['userId'] = null; // Blah
 		$rc = EarthIT_CMIPREST_Util::getResourceClassByCollectionName($this->schema, $req['collectionName']);
 		
-		// TODO: Implement all the stuffs
-		
 		$raz = new EarthIT_CMIPREST_ResultAssembler_JAO($this->schema, $this->nameFormatter, $req['instanceId'] === null);
 		$opts = array( EarthIT_CMIPREST_UserAction::OPT_RESULT_ASSEMBLER => $raz );
 		
@@ -155,9 +168,23 @@ class EarthIT_CMIPREST_RequestParser_JAORequestParser implements EarthIT_CMIPRES
 					$limit = $req['pageParams']['size'];
 					$offset = $limit * ($req['pageParams']['number']-1);
 				}
-				// Hey look, our search doesn't actually filter anything!
-				// TODO: Filtering
-				$sp = new EarthIT_CMIPREST_SearchParameters(array(), array(), $offset, $limit);
+				
+				$fieldMatchers = array();
+				if( $req['filterParams'] ) {
+					$fieldsByJaoName = array();
+					foreach( $rc->getFields() as $field ) {
+						$fieldsByJaoName[call_user_func($this->schemaObjectNamer, $field, $rc, $this->schema)] = $field;
+					}
+					foreach( $req['filterParams'] as $fn=>$v ) {
+						if( !isset($fieldsByJaoName[$fn]) ) {
+							throw new Exception("No field found on '".$rc->getName()."' matching the name '$fn' (specified by filters)");
+						}
+						$field = $fieldsByJaoName[$fn];
+						$fieldMatchers[$field->getName()] = new EarthIT_CMIPREST_FieldMatcher_Equal($v);
+					}
+				}
+				
+				$sp = new EarthIT_CMIPREST_SearchParameters($fieldMatchers, array(), $offset, $limit);
 				return new EarthIT_CMIPREST_UserAction_SearchAction($req['userId'], $rc, $sp, $johnBranches, $opts);
 			} else {
 				return new EarthIT_CMIPREST_UserAction_GetItemAction($req['userId'], $rc, $req['instanceId'], $johnBranches, $opts);

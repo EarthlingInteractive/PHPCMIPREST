@@ -4,6 +4,8 @@
  * Represents a search with field value constraints, ordering, and result index range.
  * It would be appropriate to subclass this in cases where additional constraints may be specified,
  * e.g. to search within a hierarchy, or by visibility to a certain user.
+ *
+ * TODO for v1: Replace fieldMatchers with a more general list of filters
  */
 class EarthIT_CMIPREST_SearchParameters
 {
