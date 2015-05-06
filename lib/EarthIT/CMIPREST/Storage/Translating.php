@@ -26,8 +26,8 @@ class EarthIT_CMIPREST_Storage_Translating implements EarthIT_CMIPREST_Storage
 			array_shift($pathComponents); // 'root'
 			$rc = $rootRc;
 			foreach( $pathComponents as $pc ) {
-				$john = $johnBranches[$pc];
-				$rc = $john->targetResourceClass;
+				$johnTreeNode = $johnBranches[$pc];
+				$rc = $johnTreeNode->john->targetResourceClass;
 			}
 			$translatedResults[$path] = $this->itemCodec->decodeItems($items, $rc);
 		}
