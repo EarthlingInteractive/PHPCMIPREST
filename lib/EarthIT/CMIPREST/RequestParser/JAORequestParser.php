@@ -6,10 +6,14 @@ class EarthIT_CMIPREST_RequestParser_JAORequestParser implements EarthIT_CMIPRES
 {
 	protected $schema;
 	protected $nameFormatter;
+	protected $schemaObjectNamer;
 
 	public function __construct( EarthIT_Schema $schema, callable $nameFormatter ) {
 		$this->schema = $schema;
 		$this->nameFormatter = $nameFormatter;
+		$this->schemaObjectNamer = function($thing) use ($nameFormatter) {
+			return $nameFormatter($thing->getName());
+		};
 	}
 	
 	public function parse( $method, $path, $queryString, Nife_Blob $content=null ) {
@@ -24,7 +28,8 @@ class EarthIT_CMIPREST_RequestParser_JAORequestParser implements EarthIT_CMIPRES
 			'collectionName' => $bif[1],
 			'instanceId' => isset($bif[2]) ? $bif[2] : null,
 			'contentObject' => RPU::parseJsonContent($content),
-			'pageParams' => isset($params['page']) ? $params['page'] : array()
+			'pageParams' => isset($params['page']) ? $params['page'] : array(),
+			'includes' => isset($params['include']) ? explode(',',$params['include']) : array(),
 		);
 	}
 	
@@ -141,7 +146,8 @@ class EarthIT_CMIPREST_RequestParser_JAORequestParser implements EarthIT_CMIPRES
 		
 		switch( $req['method'] ) {
 		case 'GET':
-			// TODO: Support ?include
+			$johnBranches = RPU::withsToJohnBranches( $this->schema, $rc, $req['includes'], $this->schemaObjectNamer );
+			
 			if( $req['instanceId'] === null ) {
 				$offset = 0;
 				$limit = null;
@@ -152,9 +158,9 @@ class EarthIT_CMIPREST_RequestParser_JAORequestParser implements EarthIT_CMIPRES
 				// Hey look, our search doesn't actually filter anything!
 				// TODO: Filtering
 				$sp = new EarthIT_CMIPREST_SearchParameters(array(), array(), $offset, $limit);
-				return new EarthIT_CMIPREST_UserAction_SearchAction($req['userId'], $rc, $sp, array(), $opts);
+				return new EarthIT_CMIPREST_UserAction_SearchAction($req['userId'], $rc, $sp, $johnBranches, $opts);
 			} else {
-				return new EarthIT_CMIPREST_UserAction_GetItemAction($req['userId'], $rc, $req['instanceId'], array(), $opts);
+				return new EarthIT_CMIPREST_UserAction_GetItemAction($req['userId'], $rc, $req['instanceId'], $johnBranches, $opts);
 			}
 		case 'POST':
 			$items = self::parseContentData($req['contentObject']['data'], $rc, $this->schema, $this->nameFormatter);
