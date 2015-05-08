@@ -1,9 +1,26 @@
 <?php
 
-class EarthIT_CMIPREST_UserAction_WackAction extends EarthIT_CMIPREST_UserAction
+class EarthIT_CMIPREST_RESTerTest_Context
 {
+	public $userId;
+	
+	public function __construct($userId) { $this->userId = $userId; }
+}
+
+class EarthIT_CMIPREST_RESTAction_WackAction extends EarthIT_CMIPREST_RESTAction
+{
+	protected $resultAssembler;
+	
+	public function __construct(EarthIT_CMIPREST_ResultAssembler $rasm) {
+		$this->resultAssembler = $rasm;
+	}
+	
 	public function getActionDescription() {
 		return "This action doesn't mean anything.";
+	}
+	
+	public function getResultAssembler() {
+		return $this->resultAssembler;
 	}
 }
 
@@ -13,16 +30,21 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 	protected $rester;
 	protected $schema;
 
-	protected $standardSaveActionOpts;
+	protected $standardSaveActionResultAssembler;
+	protected $standardSuccessActionResultAssembler;
+	protected $standardDeleteActionResultAssembler;
 	
 	protected $savedItems;
 	
 	public function setUp() {
-		$this->standardSaveActionOpts = array(
-			EarthIT_CMIPREST_UserAction::OPT_RESULT_ASSEMBLER =>
-				new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler('assembleSingleResult', false)
-		);
-		
+		$this->standardSaveActionResultAssembler =
+			new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler('assembleSingleResult', false);
+		$this->standardSuccessActionResultAssembler =
+			new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler('assembleSuccessResult', false);
+		$this->standardDeleteActionResultAssembler =
+			new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler('assembleDeleteResult', false);
+		$this->standardActionContext = new EarthIT_CMIPREST_RESTerTest_Context(1337);
+
 		// Relative to the pwd, yes.
 		$dbConfigFile = 'config/test-dbc.json';
 		$dbConfigJson = file_get_contents($dbConfigFile);
@@ -52,8 +74,10 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 		$rc = $this->schema->getResourceClass('resource');
 		
 		foreach( $this->savedItems as $savedItem ) {
-			$getItemResult = $this->rester->doAction( new EarthIT_CMIPREST_UserAction_GetItemAction(
-				0, $rc, $savedItem['ID'], array(), $this->standardSaveActionOpts ) );
+			$getItemResult = $this->rester->doAction(
+				new EarthIT_CMIPREST_RESTAction_GetItemAction(
+					$rc, $savedItem['ID'], array(), $this->standardSaveActionResultAssembler ),
+				$this->standardActionContext);
 			$this->assertEquals($savedItem['ID'], $getItemResult['id']);
 			$this->assertEquals($savedItem['URN'], $getItemResult['urn']);
 		}
@@ -66,8 +90,10 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 		for( $i=0; $i<5; ++$i ) {
 			$items[] = array('URN'=>'data:text/plain,'.rand(1000000,9999999));
 		}
-		$posted = $this->rester->doAction( EarthIT_CMIPREST_UserActions::multiPost(
-			0, $rc, $items, $this->standardSaveActionOpts) );
+		$posted = $this->rester->doAction(
+			EarthIT_CMIPREST_RESTActions::multiPost(
+				$rc, $items, $this->standardSaveActionResultAssembler),
+			$this->standardActionContext);
 		for( $i=0; $i<5; ++$i ) {
 			$this->assertNotNull($posted[$i]['id']);
 			$this->assertEquals($items[$i]['URN'], $posted[$i]['urn']);
@@ -78,8 +104,10 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 		$rc = $this->schema->getResourceClass('resource');
 		
 		$urn = 'data:text/plain,'.rand(1000000,9999999);
-		$posted = $this->rester->doAction( new EarthIT_CMIPREST_UserAction_PostItemAction(
-			0, $rc, array('URN'=>$urn), $this->standardSaveActionOpts ));
+		$posted = $this->rester->doAction(
+			new EarthIT_CMIPREST_RESTAction_PostItemAction(
+				$rc, array('URN'=>$urn), $this->standardSaveActionResultAssembler ),
+			$this->standardActionContext);
 		$got = $this->getItem($rc, $posted['id']);
 		$this->assertEquals($urn, $got['URN']);
 	}
@@ -93,7 +121,9 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 		$this->assertEquals($urn, $got['URN']);
 		
 		// Now baleete it!
-		$this->rester->doAction( new EarthIT_CMIPREST_UserAction_DeleteItemAction(0, $rc, $id) );
+		$this->rester->doAction(
+			new EarthIT_CMIPREST_RESTAction_DeleteItemAction($rc, $id, $this->standardDeleteActionResultAssembler),
+			$this->standardActionContext );
 		
 		// Now make sure it's gone!
 		$this->assertNull( $this->getItem($rc, $id) );
@@ -102,7 +132,7 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 	public function testMultiPost2() {
 		$rc = $this->schema->getResourceClass('person');
 		
-		$multiPost = EarthIT_CMIPREST_UserActions::multiPost(0, $rc, array(
+		$multiPost = EarthIT_CMIPREST_RESTActions::multiPost($rc, array(
 			array(
 				'first name' => 'Bob',
 				'last name' => 'Hope'
@@ -111,9 +141,9 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 				'first name' => 'Red',
 				'last name' => 'Skelton'
 			),
-		), $this->standardSaveActionOpts);
+		), $this->standardSaveActionResultAssembler);
 		
-		$rez = $this->rester->doAction($multiPost);
+		$rez = $this->rester->doAction($multiPost, $this->standardActionContext);
 		$bobHopeId = $rez[0]['id'];
 		$redSkeltonId = $rez[1]['id'];
 		
@@ -138,16 +168,16 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 		$personA = $this->storage->postItem( $rc, array('first name'=>'Bob', 'last name'=>'Smith') );
 		$personB = $this->storage->postItem( $rc, array('first name'=>'Ben', 'last name'=>'Smith') );
 		
-		$multiPatch = EarthIT_CMIPREST_UserActions::multiPatch(0, $rc, array(
+		$multiPatch = EarthIT_CMIPREST_RESTActions::multiPatch($rc, array(
 			$personA['ID'] => array(
 				'first name' => 'Fred'
 			),
 			$personB['ID'] => array(
 				'first name' => 'Frank'
 			)
-		), $this->standardSaveActionOpts );
+		), $this->standardSaveActionResultAssembler );
 		
-		$rez = $this->rester->doAction($multiPatch);
+		$rez = $this->rester->doAction($multiPatch, $this->standardActionContext);
 		$this->assertEquals( array(
 			$personA['ID'] => array(
 				'id' => $personA['ID'],
@@ -189,10 +219,9 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 		));
 		$crr->userId = 123;
 		
-		$ua = $this->rester->cmipRequestToUserAction($crr);
+		$ra = $this->rester->cmipRequestToResourceAction($crr);
 		
-		$this->assertEquals( EarthIT_CMIPREST_UserActions::multiPatch(
-			123,
+		$this->assertEquals( EarthIT_CMIPREST_RESTActions::multiPatch(
 			$this->schema->getResourceClass('person'),
 			array(
 				3 => array(
@@ -204,8 +233,8 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 					'last name' => 'Glaze'
 				)
 			),
-			$this->standardSaveActionOpts
-		), $ua);
+			$this->standardSaveActionResultAssembler
+		), $ra);
 	}
 	
 	public function testParseCompoundAction() {
@@ -234,13 +263,13 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 				)
 			)
 		));
-		$ua = $this->rester->cmipRequestToUserAction($crr);
-		$this->assertEquals( 'EarthIT_CMIPREST_UserAction_CompoundAction', get_class($ua) );
-		$this->assertEquals( array('a','b'), array_keys($ua->getActions()) );
-		$this->assertEquals( 'EarthIT_CMIPREST_UserAction_ArrayExpression', get_class($ua->getResultExpression()) );
+		$compoundAction = $this->rester->cmipRequestToResourceAction($crr);
+		$this->assertEquals( 'EarthIT_CMIPREST_RESTAction_CompoundAction', get_class($compoundAction) );
+		$this->assertEquals( array('a','b'), array_keys($compoundAction->getActions()) );
+		$this->assertEquals( 'EarthIT_CMIPREST_RESTAction_ArrayExpression', get_class($compoundAction->getResultExpression()) );
 		
 		// For good measure, let's see if it works
-		$rez = $this->rester->doAction($ua);
+		$rez = $this->rester->doAction($compoundAction, $this->standardActionContext);
 		$this->assertEquals( array('a','b'), array_keys($rez) );
 		$this->assertEquals( 2, count($rez['a']) );
 		$this->assertEquals( 1, count($rez['b']) );
@@ -261,24 +290,25 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 	
 	public function testInvalidActionError() {
 		$errorDetail = array(
-			'class'=>'CientError/ActionInvalid/Test',
+			'class'=>'ClientError/ActionInvalid/ThisRandomStringIsExpected',
 			'message'=>'This action should always fail!'
 		);
-		$act = new EarthIT_CMIPREST_UserAction_InvalidAction( 0, array( $errorDetail ) );
-		$rez = $this->rester->_r78($act);
+		$act = new EarthIT_CMIPREST_RESTAction_InvalidAction( array( $errorDetail ), $this->standardSuccessActionResultAssembler );
+		$rez = $this->rester->doActionAndGetHttpResponse($act, $this->standardActionContext);
 		$responseString = (string)$rez->getContent();
 		$responseObject = json_decode($responseString, true);
 		$this->assertEquals( array( 'errors' => array($errorDetail) ), $responseObject );
 	}
 	
 	public function testWackActionError() {
-		$act = new EarthIT_CMIPREST_UserAction_WackAction( 0 );
-		$rez = $this->rester->_r78($act);
+		$errorDetail = array(
+			'class'=>'ClientError/ActionInvalid',
+			'message'=>'Unrecognized action class: EarthIT_CMIPREST_RESTAction_WackAction'
+		);
+		$act = new EarthIT_CMIPREST_RESTAction_WackAction( $this->standardSuccessActionResultAssembler );
+		$rez = $this->rester->doActionAndGetHttpResponse($act, $this->standardActionContext);
 		$responseString = (string)$rez->getContent();
 		$responseObject = json_decode($responseString, true);
-		$this->assertEquals( array( 'errors' => array(array(
-			'class'=>'ClientError/ActionInvalid',
-			'message'=>'Unrecognized action class: EarthIT_CMIPREST_UserAction_WackAction'
-		)) ), $responseObject );
+		$this->assertEquals( array( 'errors' => array($errorDetail) ), $responseObject );
 	}
 }

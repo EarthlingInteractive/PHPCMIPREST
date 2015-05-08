@@ -1,6 +1,6 @@
 <?php
 
-class EarthIT_CMIPREST_UserAction_ArrayExpression implements EarthIT_CMIPREST_UserAction_Expression
+class EarthIT_CMIPREST_RESTAction_ArrayExpression implements EarthIT_CMIPREST_RESTAction_Expression
 {
 	protected $itemExpressions;
 	public function __construct( array $itemExpressions ) {

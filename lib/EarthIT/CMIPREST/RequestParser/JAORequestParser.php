@@ -151,11 +151,9 @@ class EarthIT_CMIPREST_RequestParser_JAORequestParser implements EarthIT_CMIPRES
 	}
 	
 	public function toAction( array $req ) {
-		$req['userId'] = null; // Blah
 		$rc = EarthIT_CMIPREST_Util::getResourceClassByCollectionName($this->schema, $req['collectionName']);
 		
-		$raz = new EarthIT_CMIPREST_ResultAssembler_JAOResultAssembler($this->schema, $this->nameFormatter, $req['instanceId'] === null);
-		$opts = array( EarthIT_CMIPREST_UserAction::OPT_RESULT_ASSEMBLER => $raz );
+		$rasm = new EarthIT_CMIPREST_ResultAssembler_JAOResultAssembler($this->schema, $this->nameFormatter, $req['instanceId'] === null);
 		
 		switch( $req['method'] ) {
 		case 'GET':
@@ -185,23 +183,23 @@ class EarthIT_CMIPREST_RequestParser_JAORequestParser implements EarthIT_CMIPRES
 				}
 				
 				$sp = new EarthIT_CMIPREST_SearchParameters($fieldMatchers, array(), $offset, $limit);
-				return new EarthIT_CMIPREST_UserAction_SearchAction($req['userId'], $rc, $sp, $johnBranches, $opts);
+				return new EarthIT_CMIPREST_RESTAction_SearchAction($rc, $sp, $johnBranches, $rasm);
 			} else {
-				return new EarthIT_CMIPREST_UserAction_GetItemAction($req['userId'], $rc, $req['instanceId'], $johnBranches, $opts);
+				return new EarthIT_CMIPREST_RESTAction_GetItemAction($rc, $req['instanceId'], $johnBranches, $rasm);
 			}
 		case 'POST':
 			$items = self::parseContentData($req['contentObject']['data'], $rc, $this->schema, $this->nameFormatter);
 			$item = self::firstAndOnly($items);
 			// TODO: Allow multi-posts
-			return new EarthIT_CMIPREST_UserAction_PostItemAction($req['userId'], $rc, $item, $opts);
+			return new EarthIT_CMIPREST_RESTAction_PostItemAction($rc, $item, $rasm);
 		case 'PUT':
 			$items = self::parseContentData($req['contentObject']['data'], $rc, $this->schema, $this->nameFormatter);
 			$item = self::firstAndOnly($items);
-			return new EarthIT_CMIPREST_UserAction_PutItemAction($req['userId'], $rc, $req['instanceId'], $item, $opts);
+			return new EarthIT_CMIPREST_RESTAction_PutItemAction($rc, $req['instanceId'], $item, $rasm);
 		case 'PATCH':
 			$items = self::parseContentData($req['contentObject']['data'], $rc, $this->schema, $this->nameFormatter);
 			$item = self::firstAndOnly($items);
-			return new EarthIT_CMIPREST_UserAction_PatchItemAction($req['userId'], $rc, $req['instanceId'], $item, $opts);
+			return new EarthIT_CMIPREST_RESTAction_PatchItemAction($rc, $req['instanceId'], $item, $rasm);
 		}
 		
 		throw new Exception( "Unsupported JAORequest: ".print_r($req,true));

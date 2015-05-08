@@ -1,11 +1,11 @@
 <?php
 
-class EarthIT_CMIPREST_UserAction_PostItemAction extends EarthIT_CMIPREST_UserAction_ResourceAction
+class EarthIT_CMIPREST_RESTAction_PostItemAction extends EarthIT_CMIPREST_RESTAction_ResourceAction
 {
 	protected $itemData;
 	
-	public function __construct( $userId, EarthIT_Schema_ResourceClass $resourceClass, array $itemData, array $opts=array() ) {
-		parent::__construct( $userId, $resourceClass, $opts );
+	public function __construct( EarthIT_Schema_ResourceClass $resourceClass, array $itemData, EarthIT_CMIPREST_ResultAssembler $rasm ) {
+		parent::__construct( $resourceClass, $rasm );
 		$this->itemData = $itemData;
 	}
 

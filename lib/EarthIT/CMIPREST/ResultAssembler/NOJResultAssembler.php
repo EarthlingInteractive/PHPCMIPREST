@@ -1,7 +1,12 @@
 <?php
 
+/**
+ * NOJ = 'nested obvious JSON'
+ */
 class EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler implements EarthIT_CMIPREST_ResultAssembler
 {
+	const SUCCESS = "You're Winner!";
+	const DELETED = "BALEETED!";
 	protected $method;
 	protected $keyByIds;
 	
@@ -119,15 +124,41 @@ class EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler implements EarthIT_CMI
 	protected function assemblePutResult( EarthIT_Schema_ResourceClass $rootRc, array $johnCollections, array $relevantObjects ) {
 		return $this->assembleSingleResult($rootRc, $johnCollections, $relevantObjects);
 	}
-
+	protected function assembleSuccessResult( EarthIT_Schema_ResourceClass $rootRc, array $johnCollections, array $relevantObjects ) {
+		return self::SUCCESS;
+	}
+	protected function assembleDeletedResult( EarthIT_Schema_ResourceClass $rootRc, array $johnCollections, array $relevantObjects ) {
+		return self::BALEETED;
+	}
+	
 	/** @override */
 	public function needsResult() {
-		return true;
+		switch( $this->method ) {
+		case 'assembleSuccessResult': return false;
+		case 'assembleDeletedResult': return false;
+		default: return true;
+		}
 	}
 
 	/** @override */
-	public function __invoke( EarthIT_CMIPREST_StorageResult $result ) {
+	public function assembleResult( EarthIT_CMIPREST_StorageResult $result ) {
 		$meth = $this->method;
-		return $this->$meth( $result->getRootResourceClass(), $result->getJohnCollections(), $result->getItemCollections() );
+		return $this->$meth( $result->getRootResourceClass(), $result->getJohnCollections(), $result->getItemCollections());
+	}
+	
+	/** @override */
+	public function assembledResultToHttpResponse( $rez ) {
+		if( $rez === self::SUCCESS or $rez === self::DELETED ) {
+			return Nife_Util::httpResponse("204 Okay");
+		} else if( $rez === null ) {
+			return Nife_Util::httpResponse(404, new EarthIT_JSON_PrettyPrintedJSONBlob(null), array('content-type'=>'application/json'));
+		} else {
+			return Nife_Util::httpResponse(200, new EarthIT_JSON_PrettyPrintedJSONBlob($rez), array('content-type'=>'application/json'));
+		}
+	}
+
+	/** @override */
+	public static function exceptionToHttpResponse( Exception $e ) {
+		return EarthIT_CMIPREST_Util::exceptionalNormalJsonHttpResponse($e);
 	}
 }

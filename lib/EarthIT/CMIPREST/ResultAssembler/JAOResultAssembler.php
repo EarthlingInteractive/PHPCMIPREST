@@ -4,6 +4,9 @@
 /** The JSONAPI.org format */
 class EarthIT_CMIPREST_ResultAssembler_JAOResultAssembler implements EarthIT_CMIPREST_ResultAssembler
 {
+	const SUCCESS = "You're Winner!";
+	const DELETED = "BALEETED!";
+	
 	protected $schema;
 	protected $nameFormatter;
 	protected $plural;
@@ -100,11 +103,13 @@ class EarthIT_CMIPREST_ResultAssembler_JAOResultAssembler implements EarthIT_CMI
 		return $restObjects;
 	}
 	
+	/** @override */
 	public function needsResult() {
 		return true;
 	}
 	
-	public function __invoke( EarthIT_CMIPREST_StorageResult $result ) {
+	/** @override */
+	public function assembleResult( EarthIT_CMIPREST_StorageResult $result ) {
 		$rootRc = $result->getRootResourceClass();
 		$johnCollections = $result->getJohnCollections();
 		$relevantObjects = $result->getItemCollections();
@@ -127,6 +132,22 @@ class EarthIT_CMIPREST_ResultAssembler_JAOResultAssembler implements EarthIT_CMI
 		foreach( $relevantRestObjects as $path => $objects ) {
 			if( $path != 'root' ) foreach( $objects as $obj ) $rez['included'][] = $obj;
 		}
-		return Nife_Util::httpResponse(200, new EarthIT_JSON_PrettyPrintedJSONBlob($rez), array('content-type'=>'application/vnd.api+json'));
+		return $rez;
+	}
+	
+	/** @override */
+	public function assembledResultToHttpResponse( $rez ) {
+		if( $rez === self::SUCCESS or $rez === self::DELETED ) {
+			return Nife_Util::httpResponse("204 Okay");
+		} else if( $rez === null ) {
+			return Nife_Util::httpResponse(404, new EarthIT_JSON_PrettyPrintedJSONBlob(null), array('content-type'=>'application/json'));
+		} else {
+			return Nife_Util::httpResponse(200, new EarthIT_JSON_PrettyPrintedJSONBlob($rez), array('content-type'=>'application/vnd.api+json'));
+		}
+	}
+
+	/** @override */
+	public static function exceptionToHttpResponse( Exception $e ) {
+		return EarthIT_CMIPREST_Util::exceptionalNormalJsonHttpResponse($e);
 	}
 }

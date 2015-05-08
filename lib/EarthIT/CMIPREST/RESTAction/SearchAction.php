@@ -1,18 +1,17 @@
 <?php
 
-class EarthIT_CMIPREST_UserAction_SearchAction extends EarthIT_CMIPREST_UserAction_ResourceAction
+class EarthIT_CMIPREST_RESTAction_SearchAction extends EarthIT_CMIPREST_RESTAction_ResourceAction
 {
 	protected $searchParameters;
 	protected $johnBranches;
 	
 	public function __construct(
-		$userId,
 		EarthIT_Schema_ResourceClass $resourceClass,
 		EarthIT_CMIPREST_SearchParameters $searchParameters,
 		array $johnBranches,
-		array $opts=array()
+		EarthIT_CMIPREST_ResultAssembler $rasm
 	) {
-		parent::__construct( $userId, $resourceClass, $opts );
+		parent::__construct( $resourceClass, $rasm );
 		$this->searchParameters = $searchParameters;
 		$this->johnBranches = $johnBranches;
 	}

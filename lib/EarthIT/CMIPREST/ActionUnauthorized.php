@@ -5,7 +5,7 @@ class EarthIT_CMIPREST_ActionUnauthorized extends Exception
 	protected $action;
 	protected $notes;
 	
-	public function __construct( EarthIT_CMIPREST_UserAction $action, array $notes=array() ) {
+	public function __construct( EarthIT_CMIPREST_RESTAction $action, array $notes=array() ) {
 		$this->action = $action;
 		$this->notes = $notes;
 		$message = "You are not authorized to ".$action->getActionDescription();

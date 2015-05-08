@@ -2,6 +2,11 @@
 
 class EarthIT_CMIPREST_Util
 {
+	public static function first(array $things, $default=null) {
+		foreach($things as $thing) return $thing;
+		return $default;
+	}
+	
 	/**
 	 * Convert a value to the named PHP scalar type using PHP's default conversion.
 	 */
@@ -193,11 +198,24 @@ class EarthIT_CMIPREST_Util
 	public static function singleErrorResponse( $status, $message, array $notes=array() ) {
 		return self::multiErrorResponse($status, array(self::errorStructure( $message, $notes )));
 	}
-	
-	public static function first(array $things, $default=null) {
-		foreach($things as $thing) return $thing;
-		return $default;
+
+	public static function exceptionalNormalJsonHttpResponse( Exception $e ) {
+		if( $e instanceof EarthIT_CMIPREST_ActionUnauthorized ) {
+			$act = $e->getAction();
+			$status = $act->getUserId() === null ? 401 : 403;
+			return EarthIT_CMIPREST_Util::singleErrorResponse( $status, $act->getActionDescription(), $e->getNotes() );
+		} else if( $e instanceof EarthIT_CMIPREST_ActionInvalid ) {
+			return EarthIT_CMIPREST_Util::multiErrorResponse( 409, $e->getErrorDetails() );
+		} else if( $e instanceof EarthIT_Schema_NoSuchResourceClass ) {
+			return EarthIT_CMIPREST_Util::singleErrorResponse( 404, $e->getMessage() );
+		} else if( $e instanceof EarthIT_CMIPREST_ResourceNotExposedViaService ) {
+			return EarthIT_CMIPREST_Util::singleErrorResponse( 404, $e->getMessage() );
+		} else {
+			throw $e;
+		}
 	}
+	
+	////
 	
 	public static function encodeItem( array $item, EarthIT_Schema_ResourceClass $rc, EarthIT_CMIPREST_ItemCodec $codec ) {
 		return self::first($codec->encodeItems(array($item), $rc));
