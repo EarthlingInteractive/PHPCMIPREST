@@ -5,6 +5,7 @@
 	"require": {
 		"php": ">=5.2",
 		"ryprop/nife": "^0.2",
+		"togos/action": "^1.0.0",
 		"earthit/php-common": "^1.0.0",
 		"earthit/schema": "^1.0.0",
 		"earthit/dbc": "^1.0.0"
