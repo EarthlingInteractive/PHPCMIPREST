@@ -154,7 +154,7 @@ class EarthIT_CMIPREST_RequestParser_JAORequestParser implements EarthIT_CMIPRES
 		$req['userId'] = null; // Blah
 		$rc = EarthIT_CMIPREST_Util::getResourceClassByCollectionName($this->schema, $req['collectionName']);
 		
-		$raz = new EarthIT_CMIPREST_ResultAssembler_JAO($this->schema, $this->nameFormatter, $req['instanceId'] === null);
+		$raz = new EarthIT_CMIPREST_ResultAssembler_JAOResultAssembler($this->schema, $this->nameFormatter, $req['instanceId'] === null);
 		$opts = array( EarthIT_CMIPREST_UserAction::OPT_RESULT_ASSEMBLER => $raz );
 		
 		switch( $req['method'] ) {

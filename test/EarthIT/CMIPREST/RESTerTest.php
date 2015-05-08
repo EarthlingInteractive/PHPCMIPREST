@@ -20,7 +20,7 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 	public function setUp() {
 		$this->standardSaveActionOpts = array(
 			EarthIT_CMIPREST_UserAction::OPT_RESULT_ASSEMBLER =>
-				new EarthIT_CMIPREST_ResultAssembler_NestedObviousJSON('assembleSingleResult', false)
+				new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler('assembleSingleResult', false)
 		);
 		
 		// Relative to the pwd, yes.

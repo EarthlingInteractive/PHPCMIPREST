@@ -1,6 +1,6 @@
 <?php
 
-class EarthIT_CMIPREST_ResultAssembler_NestedObviousJSON implements EarthIT_CMIPREST_ResultAssembler
+class EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler implements EarthIT_CMIPREST_ResultAssembler
 {
 	protected $method;
 	protected $keyByIds;
