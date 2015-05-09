@@ -14,4 +14,6 @@ class EarthIT_CMIPREST_RESTAction_DeleteItemAction extends EarthIT_CMIPREST_REST
 	public function getActionDescription() {
 		return "delete ".$this->getResourceClass()->getName().' with ID="'.$this->getItemId().'"';
 	}
+
+	public function mayBeDestructive() { return true; }
 }

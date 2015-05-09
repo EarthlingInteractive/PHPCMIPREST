@@ -22,4 +22,6 @@ class EarthIT_CMIPREST_RESTAction_SearchAction extends EarthIT_CMIPREST_RESTActi
 	public function getActionDescription() {
 		return "search for ".EarthIT_Schema_WordUtil::pluralize($this->getResourceClass()->getName());
 	}
+
+	public function mayBeDestructive() { return false; }
 }

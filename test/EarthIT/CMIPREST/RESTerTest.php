@@ -56,7 +56,8 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 		$this->storage = new EarthIT_CMIPREST_MemoryStorage();
 		$this->rester = new EarthIT_CMIPREST_RESTer(array(
 			'storage' => $this->storage,
-			'schema' => $this->schema
+			'schema' => $this->schema,
+			'authorizer' => new EarthIT_CMIPREST_RESTActionAuthorizer_Doormat()
 		));
 		
 		$rc = $this->schema->getResourceClass('resource');

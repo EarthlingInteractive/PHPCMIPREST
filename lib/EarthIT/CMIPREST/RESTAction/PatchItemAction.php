@@ -21,4 +21,6 @@ class EarthIT_CMIPREST_RESTAction_PatchItemAction extends EarthIT_CMIPREST_RESTA
 	public function getActionDescription() {
 		return "patch ".$this->getResourceClass()->getName()." with ID='".$this->getItemId()."'";
 	}
+
+	public function mayBeDestructive() { return true; }
 }

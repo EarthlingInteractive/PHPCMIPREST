@@ -18,4 +18,6 @@ class EarthIT_CMIPREST_RESTAction_PostItemAction extends EarthIT_CMIPREST_RESTAc
 	public function getActionDescription() {
 		return "post to ".$this->getResourceClass()->getName();
 	}
+	
+	public function mayBeDestructive() { return true; }
 }

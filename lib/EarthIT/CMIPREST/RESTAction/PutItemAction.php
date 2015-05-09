@@ -21,4 +21,6 @@ class EarthIT_CMIPREST_RESTAction_PutItemAction extends EarthIT_CMIPREST_RESTAct
 	public function getActionDescription() {
 		return "put ".$this->getResourceClass()->getName()." with ID='".$this->getItemId()."'";
 	}
+
+	public function mayBeDestructive() { return true; }
 }

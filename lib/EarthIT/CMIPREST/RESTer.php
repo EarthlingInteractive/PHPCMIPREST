@@ -2,15 +2,9 @@
 
 /*
  * TODO:
- * - Make REST field namer configurable
- *   or make it part of the action
+ * - Remove cmiRequestToResourceAction
  * - Comment functions better
- * - Split into 2 or 3 independent objects
- *   CMIPRESTRequest -> ResourceAction translator (move to CMIPRESTRequest class?)
- *   RESTAction -> I/O (action invoker)
- * - and then rename to, like, ActionInvoker or somesuch.
  */
-
 class EarthIT_CMIPREST_RESTer
 {
 	/**
@@ -24,18 +18,12 @@ class EarthIT_CMIPREST_RESTer
 	
 	protected $storage;
 	protected $schema;
-	protected $keyByIds;
+	protected $keyByIds; // TODO: Remove when CMIP request parsing extracted
+	protected $authorizer;
 	
 	public function __construct( $params ) {
-		if( $params instanceof EarthIT_Registry ) {
-			$registry = $params;
-			$params = array(
-				'dbAdapter' => $registry->getDbAdapter(),
-				'dbNamer' => $registry->getDbNamer(),
-				'schema' => $registry->getSchema(),
-			);
-		} else if( !is_array($params) ) {
-			throw new Exception("Parameters to RESTer constructor must be an array or an EarthIT_Registry");
+		if( !is_array($params) ) {
+			throw new Exception("Parameters to RESTer constructor must be an array");
 		}
 		
 		$params += array(
@@ -43,7 +31,8 @@ class EarthIT_CMIPREST_RESTer
 			'dbAdapter' => null,
 			'dbNamer' => null,
 			'schema' => null,
-			'keyByIds' => false
+			'keyByIds' => false,
+			'authorizer' => new EarthIT_CMIPREST_RESTActionAuthorizer_DefaultRESTActionAuthorizer()
 		);
 		
 		if( ($this->storage = $params['storage']) ) {
@@ -61,6 +50,7 @@ class EarthIT_CMIPREST_RESTer
 		}
 		
 		$this->keyByIds = $params['keyByIds'];
+		$this->authorizer = $params['authorizer'];
 	}
 		
 	//// Field conversion
@@ -501,46 +491,7 @@ class EarthIT_CMIPREST_RESTer
 			)));
 		}
 	}
-	
-	/**
-	 * Determine if an action is allowed before actually doing it.
-	 * For search actions, this may return null to indicate that
-	 * authorization requires the actual search results, which will be passed
-	 * to postAuthorizeSearchResult to determine is they are allowed.
-	 * 
-	 * @overridable
-	 */
-	protected function preAuthorizeSimpleAction( EarthIT_CMIPREST_RESTAction $act, $ctx, array &$explanation ) {
-		$this->validateSimpleAction($act);
 		
-		// TODO: Move implementation to a separate permission checker class
-		$rc = $act->getResourceClass();
-		$rcName = $rc->getName();
-		if( $rc->membersArePublic() ) {
-			// TODO: this only means visible.
-			// It shouldn't allow them to do anything besides searching and getting
-			$explanation[] = "{$rcName} records are public";
-			return true;
-		} else {
-			$explanation[] = "{$rcName} records are NOT public";
-			return false;
-		}
-	}
-	
-	/**
-	 * @overridable
-	 */
-	protected function postAuthorizeSearchResult( EarthIT_Schema_ResourceClass $rc, array $itemData, $ctx, array &$explanation ) {
-		$explanation[] = "Unauthorized by default.";
-		return false;
-	}
-
-	protected function postAuthorizeSearchResults( EarthIT_Schema_ResourceClass $rc, array $itemData, $ctx, array &$explanation ) {
-		$okay = true;
-		foreach( $itemData as $itemDat ) $okay &= $this->postAuthorizeSearchResult( $rc, $itemDat, $ctx, $explanation );
-		return $okay;
-	}
-	
 	//// Searchy with= support stuff
 
 	protected function collectJohns( $branches, $prefix, array $johns=array(), array &$paths=array() ) {
@@ -553,23 +504,23 @@ class EarthIT_CMIPREST_RESTer
 		return $paths;
 	}
 	
-	protected function doSearchAction( EarthIT_CMIPREST_RESTAction_SearchAction $act, $preAuth, $preAuthExplanation ) {
+	protected function doSearchAction( EarthIT_CMIPREST_RESTAction_SearchAction $act, $ctx, $preAuth, $authorizationExplanation ) {
 		$rc = $act->getResourceClass();
 		$sp = $act->getSearchParameters();
 		$queryParams = array();
 		$relevantObjects = $this->storage->search( $rc, $sp, $act->getJohnBranches() );
 		$johnCollections = $this->collectJohns( $act->getJohnBranches(), 'root' );
 		
-		$postAuthUserId = $preAuth ? null : $act->getUserId();
-		
 		// If we need to post-authorize, do it.
-		if( $postAuthUserId !== null ) foreach( $johnCollections as $path => $johns ) {
-			// Figure out what resource class of items we got, here
-			$targetRc = count($johns) == 0 ? $rc : $johns[count($johns)-1]->targetResourceClass;
-			
-			// Ensure that they're visisble
-			if( !$this->postAuthorizeSearchResults($targetRc, $relevantObjects[$path], $ctx, $authorizationExplanation) ) {
-				throw new EarthIT_CMIPREST_ActionUnauthorized($act, $ctx, $authorizationExplanation);
+		if( $preAuth === EarthIT_CMIPREST_RESTActionAuthorizer::AUTHORIZED_IF_RESULTS_VISIBLE ) {
+			foreach( $johnCollections as $path => $johns ) {
+				// Figure out what resource class of items we got, here
+				$targetRc = count($johns) == 0 ? $rc : $johns[count($johns)-1]->targetResourceClass;
+				
+				// Ensure that they're visisble
+				if( !$this->authorizer->itemsVisible($relevantObjects[$path], $targetRc, $ctx, $authorizationExplanation) ) {
+					throw new EarthIT_CMIPREST_ActionUnauthorized($act, $ctx, $authorizationExplanation);
+				}
 			}
 		}
 		
@@ -605,16 +556,26 @@ class EarthIT_CMIPREST_RESTer
 	 */
 	protected function doSimpleAction( EarthIT_CMIPREST_RESTAction $act, $ctx ) {
 		$this->validateSimpleAction($act);
+
+		if( $act instanceof EarthIT_CMIPREST_RESTAction_GetItemAction ) {
+			// Translate to a search action!
+			$act = new EarthIT_CMIPREST_RESTAction_SearchAction(
+				$act->getResourceClass(),
+				EarthIT_CMIPREST_Util::itemIdToSearchParameters($act->getResourceClass(), $act->getItemId()),
+				$act->getJohnBranches(),
+				$act->getResultAssembler()
+			);
+		}
 		
 		$authorizationExplanation = array();
-		$preAuth = $this->preAuthorizeSimpleAction($act, $ctx, $authorizationExplanation);
+		$preAuth = $this->authorizer->preAuthorizeSimpleAction($act, $ctx, $authorizationExplanation);
 		
 		if( $preAuth === false ) {
 			throw new EarthIT_CMIPREST_ActionUnauthorized($act, $authorizationExplanation);
 		}
 		
 		if( $act instanceof EarthIT_CMIPREST_RESTAction_SearchAction ) {
-			return $this->doSearchAction($act, $preAuth, $authorizationExplanation);
+			return $this->doSearchAction($act, $ctx, $preAuth, $authorizationExplanation);
 		}
 		
 		if( $preAuth !== true ) {
@@ -623,17 +584,7 @@ class EarthIT_CMIPREST_RESTer
 		
 		// Otherwise it's A-Okay!
 		
-		if( $act instanceof EarthIT_CMIPREST_RESTAction_GetItemAction ) {
-			// Translate to a search action!
-			$searchAct = new EarthIT_CMIPREST_RESTAction_SearchAction(
-				$act->getResourceClass(),
-				EarthIT_CMIPREST_Util::itemIdToSearchParameters($act->getResourceClass(), $act->getItemId()),
-				$act->getJohnBranches(),
-				$act->getResultAssembler()
-			);
-			
-			return $this->doAction($searchAct, $ctx);
-		} else if( $act instanceof EarthIT_CMIPREST_RESTAction_PostItemAction ) {
+		if( $act instanceof EarthIT_CMIPREST_RESTAction_PostItemAction ) {
 			$rc = $act->getResourceClass();
 			return $this->assembleSimpleResult($act, $rc, array($this->storage->postItem($rc, $act->getItemData())));
 		} else if( $act instanceof EarthIT_CMIPREST_RESTAction_PutItemAction ) {
@@ -681,6 +632,7 @@ class EarthIT_CMIPREST_RESTer
 	//// Create Nife responses from action results
 		
 	/**
+	 * @api
 	 * Does an action and wraps the response.
 	 * Handy for unit testing.
 	 */

@@ -199,10 +199,10 @@ class EarthIT_CMIPREST_Util
 		return self::multiErrorResponse($status, array(self::errorStructure( $message, $notes )));
 	}
 
-	public static function exceptionalNormalJsonHttpResponse( Exception $e ) {
+	public static function exceptionalNormalJsonHttpResponse( Exception $e, $userIsAuthenticated=false ) {
 		if( $e instanceof EarthIT_CMIPREST_ActionUnauthorized ) {
 			$act = $e->getAction();
-			$status = $act->getUserId() === null ? 401 : 403;
+			$status = $userIsAuthenticated ? 403 : 401;
 			return EarthIT_CMIPREST_Util::singleErrorResponse( $status, $act->getActionDescription(), $e->getNotes() );
 		} else if( $e instanceof EarthIT_CMIPREST_ActionInvalid ) {
 			return EarthIT_CMIPREST_Util::multiErrorResponse( 409, $e->getErrorDetails() );

@@ -17,4 +17,6 @@ class EarthIT_CMIPREST_RESTAction_GetItemAction extends EarthIT_CMIPREST_RESTAct
 	public function getActionDescription() {
 		return "get ".$this->getResourceClass()->getName().' with ID="'.$this->getItemId().'"';
 	}
+	
+	public function mayBeDestructive() { return false; }
 }

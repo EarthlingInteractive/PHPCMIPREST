@@ -12,4 +12,7 @@ abstract class EarthIT_CMIPREST_RESTAction_ResourceAction extends EarthIT_CMIPRE
 	
 	public function getResourceClass() { return $this->resourceClass; }
 	public function getResultAssembler() { return $this->resultAssembler; }
+	
+	/** Return true if this action may alter data */
+	public abstract function mayBeDestructive();
 }
