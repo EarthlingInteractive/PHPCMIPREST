@@ -407,18 +407,24 @@ class EarthIT_CMIPREST_MSSQLStorage implements EarthIT_CMIPREST_Storage
 	}
 	
 	protected function doPatchLikeAction( EarthIT_Schema_ResourceClass $rc, $itemId, array $itemData, $merge ) {
-		// TODO: Make it work even if the record does not already exist
-		
 		$idFieldValues = EarthIT_CMIPREST_Util::idToFieldValues( $rc, $itemId );
 		$internalValues = EarthIT_CMIPREST_Util::mergeEnsuringNoContradictions( $idFieldValues, $itemData );
+		$erroneouslyNullFieldNames = [];
 		if( !$merge ) {
 			// Set other field values to their defaults.
 			// Assuming null for now...
 			foreach( $rc->getFields() as $fieldName => $field ) {
 				if( !isset($internalValues[$fieldName]) ) {
 					$internalValues[$fieldName] = null;
+					if( !$field->isNullable() ) $erroneouslyNullFieldNames[] = $fieldName;
 				}
 			}
+		}
+		// This check is especially important because for some reason
+		// this particular error doesn't result in an exception being
+		// thrown when we doQuery:
+		if( $erroneouslyNullFieldNames ) {
+			throw new Exception("The following fields were given null values: ".implode(', ',$erroneouslyNullFieldNames));
 		}
 		
 		$nonIdInternalValues = $internalValues;
