@@ -7,7 +7,9 @@ class EarthIT_CMIPREST_RequestParser_JAORequestParser implements EarthIT_CMIPRES
 	protected $schema;
 	protected $nameFormatter;
 	protected $schemaObjectNamer;
-
+	
+	// TODO: Make an interface for name formatter
+	
 	public function __construct( EarthIT_Schema $schema, callable $nameFormatter ) {
 		$this->schema = $schema;
 		$this->nameFormatter = $nameFormatter;
