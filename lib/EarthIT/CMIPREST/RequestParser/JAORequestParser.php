@@ -171,7 +171,7 @@ class EarthIT_CMIPREST_RequestParser_JAORequestParser implements EarthIT_CMIPRES
 				if( $req['filterParams'] ) {
 					$fieldsByJaoName = array();
 					foreach( $rc->getFields() as $field ) {
-						$fieldsByJaoName[call_user_func($this->schemaObjectNamer, $field, $rc, $this->schema)] = $field;
+						$fieldsByJaoName[call_user_func($this->schemaObjectNamer, $field)] = $field;
 					}
 					foreach( $req['filterParams'] as $fn=>$v ) {
 						if( !isset($fieldsByJaoName[$fn]) ) {
