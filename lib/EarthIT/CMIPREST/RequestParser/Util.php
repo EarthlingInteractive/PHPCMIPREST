@@ -12,6 +12,14 @@ class EarthIT_CMIPREST_RequestParser_Util
 		return $params;
 	}
 	
+	public static function buildQueryString( array $stuff ) {
+		$p = array();
+		foreach( $stuff as $k=>$v ) {
+			$p[] = urlencode($k).'='.urlencode($v);
+		}
+		return implode('&',$p);
+	}
+	
 	public static function parseJsonContent( Nife_Blob $content=null ) {
 		if( $content === null ) return null;
 		if( $content->getLength() == 0 ) return null;
@@ -47,39 +55,46 @@ class EarthIT_CMIPREST_RequestParser_Util
 			throw new Exception("Don't know how to parse \"$v\" as a ".$fieldType->getName());
 		}
 	}
-		
-	public static function parseFieldMatcher( $v, EarthIT_Schema_DataType $fieldType ) {
-		$colonIdx = strpos($v, ':');
-		if( $colonIdx === false ) {
-			return (strpos($v, '*') === false) ?
-				new EarthIT_CMIPREST_FieldMatcher_Equal(self::parseValue($v, $fieldType)) :
-				new EarthIT_CMIPREST_FieldMatcher_Like($v);
-		} else {
-			$scheme = substr($v, 0, $colonIdx);
-			$pattern = substr($v, $colonIdx+1) ?: ''; // Because substr('xyz',3) returns false. #phpwtf
-			if( $scheme == 'in' ) {
-				$vals = array();
-				if( $pattern !== '' ) foreach( explode(',',$pattern) as $p ) {
+	
+	public static function fieldMatcher( $scheme, $pattern, EarthIT_Schema_DataType $fieldType ) {
+		if( $scheme == 'in' ) {
+			$vals = array();
+			if( $pattern !== '' ) foreach( explode(',',$pattern) as $p ) {
 					$vals[] = self::parseValue($p, $fieldType);
 				}
-				return new EarthIT_CMIPREST_FieldMatcher_In($vals);
-			} else if( $scheme == 'like' ) {
-				return new EarthIT_CMIPREST_FieldMatcher_Like($pattern);
-			}
-			$value = self::parseValue($pattern, $fieldType);
-			switch( $scheme ) {
-			case 'eq': return new EarthIT_CMIPREST_FieldMatcher_Equal($value);
-			case 'ne': return new EarthIT_CMIPREST_FieldMatcher_NotEqual($value);
-			case 'gt': return new EarthIT_CMIPREST_FieldMatcher_Greater($value);
-			case 'ge': return new EarthIT_CMIPREST_FieldMatcher_GreaterOrEqual($value);
-			case 'lt': return new EarthIT_CMIPREST_FieldMatcher_Lesser($value);
-			case 'le': return new EarthIT_CMIPREST_FieldMatcher_LesserOrEqual($value);
-			default:
-				throw new Exception("Unrecognized field match scheme: '$scheme'");
-			}
+			return new EarthIT_CMIPREST_FieldMatcher_In($vals);
+		} else if( $scheme == 'like' ) {
+			return new EarthIT_CMIPREST_FieldMatcher_Like($pattern);
+		}
+		$value = self::parseValue($pattern, $fieldType);
+		switch( $scheme ) {
+		case 'eq': return new EarthIT_CMIPREST_FieldMatcher_Equal($value);
+		case 'ne': return new EarthIT_CMIPREST_FieldMatcher_NotEqual($value);
+		case 'gt': return new EarthIT_CMIPREST_FieldMatcher_Greater($value);
+		case 'ge': return new EarthIT_CMIPREST_FieldMatcher_GreaterOrEqual($value);
+		case 'lt': return new EarthIT_CMIPREST_FieldMatcher_Lesser($value);
+		case 'le': return new EarthIT_CMIPREST_FieldMatcher_LesserOrEqual($value);
+		default:
+			throw new Exception("Unrecognized field match scheme: '$scheme'");
 		}
 	}
 	
+	public static function parseFieldMatcher( $v, EarthIT_Schema_DataType $fieldType ) {
+		$colonIdx = strpos($v, ':');
+		if( $colonIdx === false ) {
+			if( strpos($v, '*') === false ) {
+				$scheme = 'eq';
+			} else {
+				$scheme = 'like';
+			}
+		} else {
+			$scheme = substr($v, 0, $colonIdx);
+			$v = substr($v, $colonIdx+1);
+		}
+		
+		return self::fieldMatcher( $scheme, $v, $fieldType );
+	}
+		
 	/**
 	 * a.b.c.d -> { a: { b: { c: { d: {} } } } }
 	 */
@@ -93,6 +108,48 @@ class EarthIT_CMIPREST_RequestParser_Util
 		}
 		
 		self::parsePathToTree( array_slice($path, 1), $into[$path[0]] );
+	}
+	
+	/**
+	 * @param array $specs array of array('fieldName'=>field name (external form), 'direction'=>'ASC'|'DESC')
+	 */
+	public static function orderByComponents( array $specs, EarthIT_Schema_ResourceClass $rc, callable $fieldNamer ) {
+		$fieldsByName = $rc->getFields();
+		$fieldsByExternalName = array();
+		foreach( $fieldsByName as $f ) {
+			$fieldsByExternalName[call_user_func($fieldNamer,$f)] = $f;
+		}
+		
+		$oorderByComponents = array();
+		foreach( $specs as $spec ) {
+			if( isset($fieldsByExternalName[$spec['fieldName']]) ) {
+				$field = $fieldsByExternalName[$spec['fieldName']];
+			} else {
+				throw new Exception("Unknown field in orderBy: '{$spec['fieldName']}'");
+			}
+			$orderByComponents[] = new EarthIT_CMIPREST_OrderByComponent($field, $spec['direction']==='ASC');
+		}
+		return $orderByComponents;
+	}
+		
+	public static function parseOrderByComponents( $v, EarthIT_Schema_ResourceClass $rc, callable $fieldNamer ) {
+		if( is_string($v) ) $v = explode(',',$v);
+		
+		$specs = array();
+		
+		foreach( $v as $cv ) {
+			if( $cv[0] == '+' ) {
+				$ascending = true;
+				$cv = substr($cv,1);
+			} else if( $cv[0] == '-' ) {
+				$ascending = false;
+				$cv = substr($cv,1);
+			} else $ascending = true;
+			
+			$specs[] = array('fieldName'=>$cv, 'direction'=>$ascending?'ASC':'DESC');
+		}
+		
+		return self::orderByComponents($specs, $rc, $fieldNamer);
 	}
 	
 	private static function findJohnByName( EarthIT_Schema $schema, EarthIT_Schema_ResourceClass $originRc, $linkName, callable $namer ) {

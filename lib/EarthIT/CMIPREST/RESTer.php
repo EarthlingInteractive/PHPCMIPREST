@@ -88,7 +88,7 @@ class EarthIT_CMIPREST_RESTer
 		return $internal;
 	}
 	
-	/** @deprecated, delete. */
+	/** @deprecated */
 	protected function internalObjectToRest( EarthIT_Schema_ResourceClass $rc, array $fieldValues ) {
 		$result = array();
 		foreach( EarthIT_CMIPREST_Util::restReturnableFields($rc) as $field ) {
@@ -102,6 +102,7 @@ class EarthIT_CMIPREST_RESTer
 	
 	////
 	
+	/** @deprecated */
 	protected function getFieldsByRestName( EarthIT_Schema_ResourceClass $rc ) {
 		$fbrn = array();
 		foreach( $rc->getFields() as $f ) {
@@ -111,7 +112,8 @@ class EarthIT_CMIPREST_RESTer
 	}
 	
 	//// Action conversion
-	
+
+	/** @deprecated */
 	protected function parseOrderByComponents( EarthIT_Schema_ResourceClass $rc, $v ) {
 		$fieldsByName = $rc->getFields();
 		$fieldsByRestName = $this->getFieldsByRestName($rc);
@@ -140,6 +142,7 @@ class EarthIT_CMIPREST_RESTer
 	
 	/**
 	 * a.b.c.d -> { a: { b: { c: { d: {} } } } }
+	 * @deprecated
 	 */
 	protected static function parsePathToTree( $path, array &$into ) {
 		if( $path === '' ) return;
@@ -153,6 +156,7 @@ class EarthIT_CMIPREST_RESTer
 		self::parsePathToTree( array_slice($path, 1), $into[$path[0]] );
 	}
 	
+	/** @deprecated */
 	protected static function getFields( EarthIT_Schema_ResourceClass $rc, array $fieldNames ) {
 		$f = $rc->getFields();
 		$fields = array();
@@ -161,6 +165,7 @@ class EarthIT_CMIPREST_RESTer
 	}
 	
 	// TODO: Delegate to utility class.  Remove for 1.0.0.
+	/** @deprecated */
 	private function findJohnByRestName( EarthIT_Schema_ResourceClass $originRc, $linkRestName ) {
 		foreach( $originRc->getReferences() as $refName=>$ref ) {
 			$restName = EarthIT_Schema_WordUtil::toCamelCase($refName);
@@ -233,6 +238,7 @@ class EarthIT_CMIPREST_RESTer
 		throw new Exception("Can't find '$linkRestName' link from ".$originRc->getName());
 	}
 	
+	/** @deprecated */
 	private function _withsToJohnBranches( array $withs, EarthIT_Schema_ResourceClass $originRc ) {
 		$branches = array();
 		foreach( $withs as $k=>$subWiths ) {
@@ -247,6 +253,7 @@ class EarthIT_CMIPREST_RESTer
 	
 	/**
 	 * @api
+	 * @deprecated
 	 */
 	public function withsToJohnBranches( EarthIT_Schema_ResourceClass $originRc, $withs ) {
 		if( is_scalar($withs) ) $withs = explode(',',$withs);
@@ -261,6 +268,7 @@ class EarthIT_CMIPREST_RESTer
 	 * @return EarthIT_CMIPREST_RESTAction
 	 * @api
 	 * @overridable
+	 * @deprecated
 	 */
 	public function cmipRequestToResourceAction( EarthIT_CMIPREST_CMIPRESTRequest $crr ) {
 		if( ($propName = $crr->getResourcePropertyName()) !== null ) {
@@ -500,6 +508,11 @@ class EarthIT_CMIPREST_RESTer
 	// It might be nice if doAction were refactored to delegate
 	// to separate validateSimpleAction, preAuthorizeSimpleAction, actuallyDoAction methods
 	// (or somesuch) so that they could be more easily overridden.
+	//
+	// Something like
+	// $action = $this->actionValidator->validate($action) throws ActionInvalid
+	// would allow validate to DWIM for cases that would otherwise not be valid
+	// but that we want to allow by automatically 'fixing'
 	
 	/**
 	 * Result will be either a Nife_HTTP_Response, RESTer::SUCCESS, or a JSON array in REST form.
