@@ -120,7 +120,7 @@ class EarthIT_CMIPREST_RequestParser_Util
 			$fieldsByExternalName[call_user_func($fieldNamer,$f)] = $f;
 		}
 		
-		$oorderByComponents = array();
+		$orderByComponents = array();
 		foreach( $specs as $spec ) {
 			if( isset($fieldsByExternalName[$spec['fieldName']]) ) {
 				$field = $fieldsByExternalName[$spec['fieldName']];
