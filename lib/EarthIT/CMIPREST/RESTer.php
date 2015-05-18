@@ -1,5 +1,7 @@
 <?php
 
+use EarthIT_CMIPREST_RequestParser_Util AS RPU;
+
 /*
  * TODO:
  * - Remove cmiRequestToResourceAction
@@ -126,39 +128,7 @@ class EarthIT_CMIPREST_RESTer
 			throw new Exception("Don't know how to parse \"$v\" as a ".$fieldType->getName());
 		}
 	}
-	
-	protected static function parseFieldMatcher( $v, EarthIT_Schema_DataType $fieldType ) {
-		$colonIdx = strpos($v, ':');
-		if( $colonIdx === false ) {
-			return (strpos($v, '*') === false) ?
-				new EarthIT_CMIPREST_FieldMatcher_Equal(self::parseValue($v, $fieldType)) :
-				new EarthIT_CMIPREST_FieldMatcher_Like($v);
-		} else {
-			$scheme = substr($v, 0, $colonIdx);
-			$pattern = substr($v, $colonIdx+1) ?: ''; // Because substr('xyz',3) returns false. #phpwtf
-			if( $scheme == 'in' ) {
-				$vals = array();
-				if( $pattern !== '' ) foreach( explode(',',$pattern) as $p ) {
-					$vals[] = self::parseValue($p, $fieldType);
-				}
-				return new EarthIT_CMIPREST_FieldMatcher_In($vals);
-			} else if( $scheme == 'like' ) {
-				return new EarthIT_CMIPREST_FieldMatcher_Like($pattern);
-			}
-			$value = self::parseValue($pattern, $fieldType);
-			switch( $scheme ) {
-			case 'eq': return new EarthIT_CMIPREST_FieldMatcher_Equal($value);
-			case 'ne': return new EarthIT_CMIPREST_FieldMatcher_NotEqual($value);
-			case 'gt': return new EarthIT_CMIPREST_FieldMatcher_Greater($value);
-			case 'ge': return new EarthIT_CMIPREST_FieldMatcher_GreaterOrEqual($value);
-			case 'lt': return new EarthIT_CMIPREST_FieldMatcher_Lesser($value);
-			case 'le': return new EarthIT_CMIPREST_FieldMatcher_LesserOrEqual($value);
-			default:
-				throw new Exception("Unrecognized field match scheme: '$scheme'");
-			}
-		}
-	}
-	
+		
 	protected function parseOrderByComponents( EarthIT_Schema_ResourceClass $rc, $v ) {
 		$fieldsByName = $rc->getFields();
 		$fieldsByRestName = $this->getFieldsByRestName($rc);
@@ -385,7 +355,7 @@ class EarthIT_CMIPREST_RESTer
 						}
 						$fieldName = $fieldRestToInternalNames[$k];
 						$fieldType = $fields[$fieldName]->getType();
-						$fieldMatchers[$fieldName] = self::parseFieldMatcher($v, $fieldType);
+						$fieldMatchers[$fieldName] = RPU::parseFieldMatcher($v, $fieldType);
 					}
 				}
 				$sp = new EarthIT_CMIPREST_SearchParameters( $fieldMatchers, $orderBy, $skip, $limit );

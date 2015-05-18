@@ -180,7 +180,8 @@ class EarthIT_CMIPREST_RequestParser_JAORequestParser implements EarthIT_CMIPRES
 							throw new Exception("No field found on '".$rc->getName()."' matching the name '$fn' (specified by filters)");
 						}
 						$field = $fieldsByJaoName[$fn];
-						$fieldMatchers[$field->getName()] = new EarthIT_CMIPREST_FieldMatcher_Equal($v);
+						$fieldType = $field->getType();
+						$fieldMatchers[$field->getName()] = RPU::parseFieldMatcher($v, $fieldType);
 					}
 				}
 				
