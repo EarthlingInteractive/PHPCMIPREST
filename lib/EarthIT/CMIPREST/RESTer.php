@@ -112,23 +112,6 @@ class EarthIT_CMIPREST_RESTer
 	
 	//// Action conversion
 	
-	protected static function parseValue( $v, EarthIT_Schema_DataType $fieldType ) {
-		switch( $fieldType->getPhpTypeName() ) {
-		case 'string': return $v;
-		case 'int': return (int)$v;
-		case 'float': return (float)$v;
-		case 'bool':
-			switch( $v ) {
-			case '1': case 'true' : return true;
-			case '0': case 'false': return false;
-			default:
-				throw new Exception("Don't know how to parse \"$v\" as a boolean value (try using 'true', 'false', '1', or '0').");
-			}
-		default:
-			throw new Exception("Don't know how to parse \"$v\" as a ".$fieldType->getName());
-		}
-	}
-		
 	protected function parseOrderByComponents( EarthIT_Schema_ResourceClass $rc, $v ) {
 		$fieldsByName = $rc->getFields();
 		$fieldsByRestName = $this->getFieldsByRestName($rc);
