@@ -13,6 +13,17 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 		$this->schemaObjectNamer = $schemaObjectNamer;
 	}
 	
+	protected function restObjectToInternal( array $restObj, EarthIT_Schema_ResourceClass $rc ) {
+		$internal = array();
+		foreach( $rc->getFields() as $field ) {
+			$frn = call_user_func($this->schemaObjectNamer, $field, false);
+			if( array_key_exists($frn, $restObj) ) {
+				$internal[$field->getName()] = $restObj[$frn];
+			}
+		}
+		return $internal;
+	}
+	
 	public function parse( $requestMethod, $path, $queryString, Nife_Blob $content=null ) {
 		if( preg_match('#^ /([^/;]+) (?:;([^/]*))? (?:/([^/]*))? (?:/([^/]*))? $#x', $path, $bif) ) {
 			$collectionSeg = $bif[1];
@@ -78,7 +89,7 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 				'limit' => $limit,
 				'orderBy' => $orderBy,
 				'collectionModifiers' => $collectionModifiers,
-				'contentObject' => $content
+				'contentObject' => $contentObject
 			);
 		}
 		return null;
@@ -152,7 +163,7 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 				);
 			}
 		case 'POST':
-			if( $crr->getResourceInstanceId() !== null ) {
+			if( $request['instanceId'] !== null ) {
 				throw new Exception("You may not include item ID when POSTing");
 			}
 			$data = $request['contentObject'];
@@ -176,13 +187,13 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 			if( $isSingleItemPost ) {
 				return new EarthIT_CMIPREST_RESTAction_PostItemAction(
 					$resourceClass,
-					$this->restObjectToInternal($resourceClass, $data),
+					$this->restObjectToInternal($data, $resourceClass),
 					new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler('assembleSingleResult', $this->keyByIds)
 				);
 			} else {
 				$items = array();
 				foreach( $data as $dat ) {
-					$items[] = $this->restObjectToInternal($resourceClass, $dat);
+					$items[] = $this->restObjectToInternal($dat, $resourceClass);
 				}
 				return EarthIT_CMIPREST_RESTActions::multiPost(
 					$resourceClass, $items,
@@ -195,14 +206,15 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 			}
 			return new EarthIT_CMIPREST_RESTAction_PutItemAction(
 				$resourceClass, $request['instanceId'],
-				$this->restObjectToInternal($resourceClass, $request['contentObject']),
+				$this->restObjectToInternal($request['contentObject'], $resourceClass),
 				new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler('assembleSingleResult', $this->keyByIds)
 			);
 		case 'PATCH':
 			if( $request['instanceId'] === null ) {
+				// TODO: Determine if this should exist.  I forgot why it's here or what it's supposed to do.
 				$items = array();
 				foreach( $request['contentObject'] as $itemId=>$restItem ) {
-					$items[$itemId] = $this->restObjectToInternal($resourceClass, $restItem);
+					$items[$itemId] = $this->restObjectToInternal($restItem, $resourceClass);
 				}
 				return EarthIT_CMIPREST_RESTActions::multiPatch(
 					$resourceClass, $items,
@@ -211,7 +223,7 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 			} else {
 				return new EarthIT_CMIPREST_RESTAction_PatchItemAction(
 					$resourceClass, $request['instanceId'],
-					$this->restObjectToInternal($resourceClass, $request['contentObject']),
+					$this->restObjectToInternal($request['contentObject'], $resourceClass),
 					new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler('assembleSingleResult', $this->keyByIds)
 				);
 			}
@@ -224,7 +236,7 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 				new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler('assembleDeleteResult', $this->keyByIds)
 			);
 		default:
-			throw new Exception("Unrecognized method, '".$crr->getMethod()."'");
+			throw new Exception("Unrecognized method, '".$request['method']."'");
 		}
 	}
 }
