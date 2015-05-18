@@ -10,11 +10,17 @@ class EarthIT_CMIPREST_RequestParser_FancyRequestParser implements EarthIT_CMIPR
 		$this->parsers = $parsers;
 	}
 	
-	/** TODO: Lazy-load parsers */
+	/**
+	 * TODO: Lazy-load parsers
+	 * TODO: Replace $nameFormatter with some object
+	 */
 	public static function buildStandardParsers( EarthIT_Schema $schema, callable $nameFormatter, $default='cmip' ) {
+		$schemaObjectNamer = function($obj, $plural=false) use ($nameFormatter) {
+			return call_user_func($nameFormatter, $obj, $plural);
+		};
 		$parsers = array(
 			'jao' => new EarthIT_CMIPREST_RequestParser_JAORequestParser( $schema, $nameFormatter ),
-			'cmip' => new EarthIT_CMIPREST_RequestParser_CMIPRequestParser(),
+			'cmip' => new EarthIT_CMIPREST_RequestParser_CMIPRequestParser( $schema, $schemaObjectNamer ),
 			'compound' => new EarthIT_CMIPREST_RequestParser_CompoundRequestParser($this)
 		);
 		if( $default !== null ) $parsers['default'] = $parsers[$default];
