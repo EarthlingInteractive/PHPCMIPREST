@@ -16,7 +16,7 @@ class EarthIT_CMIPREST_RequestParser_FancyRequestParser implements EarthIT_CMIPR
 	 */
 	public static function buildStandardParsers( EarthIT_Schema $schema, callable $nameFormatter, $default='cmip' ) {
 		$schemaObjectNamer = function($obj, $plural=false) use ($nameFormatter) {
-			return call_user_func($nameFormatter, $obj, $plural);
+			return call_user_func($nameFormatter, $obj->getName(), $plural);
 		};
 		$parsers = array(
 			'jao' => new EarthIT_CMIPREST_RequestParser_JAORequestParser( $schema, $nameFormatter ),

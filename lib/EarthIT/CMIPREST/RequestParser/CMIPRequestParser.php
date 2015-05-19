@@ -141,7 +141,11 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 				$fields = $resourceClass->getFields();
 				$fieldRestToInternalNames = array();
 				foreach( $fields as $fn=>$field ) {
-					$fieldRestToInternalNames[call_user_func($this->schemaObjectNamer,$field)] = $fn;
+					$restName = call_user_func($this->schemaObjectNamer,$field);
+					if( $restName == '' ) throw new Exception(
+						"Naming function returned empty string for name of field '".
+						$field->getName()."', which obviously isn't right.");
+					$fieldRestToInternalNames[$restName] = $fn;
 				}
 				
 				$fieldMatchers = array();
@@ -150,7 +154,9 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 					// TODO: 'id' may need to be remapped to multiple field matchers
 					// Will probably want to allow for other fake, searchable fields, too
 					if( !isset($fieldRestToInternalNames[$filter['fieldName']]) ) {
-						throw new Exception("No such field: '{$filter['fieldName']}'");
+						throw new Exception(
+							"No such field: '{$filter['fieldName']}'; recognized field names are: ".
+							implode(', ',array_keys($fieldRestToInternalNames)));
 					}
 					$fieldName = $fieldRestToInternalNames[$filter['fieldName']];
 					$fieldType = $fields[$fieldName]->getType();
