@@ -6,12 +6,20 @@ class EarthIT_CMIPREST_RequestParser_Util
 		return isset($bif[$idx]) && $bif[$idx] != '' ? $bif[$idx] : null;
 	}
 	
+	/**
+	 * @api
+	 */
 	public static function parseQueryString( $queryString ) {
 		$params = array();
 		if($queryString) parse_str($queryString, $params);
 		return $params;
 	}
 	
+	/**
+	 * @api
+	 * Here as a counterpart to parseQueryString, because sometimes you
+	 * need to go that way.
+	 */
 	public static function buildQueryString( array $stuff ) {
 		$p = array();
 		foreach( $stuff as $k=>$v ) {
