@@ -413,7 +413,7 @@ class EarthIT_CMIPREST_MSSQLStorage implements EarthIT_CMIPREST_Storage
 		if( !$merge ) {
 			// Set other field values to their defaults.
 			// Assuming null for now...
-			foreach( $rc->getFields() as $fieldName => $field ) {
+			foreach( EarthIT_CMIPREST_Util::storableFields($rc) as $fieldName => $field ) {
 				if( !isset($internalValues[$fieldName]) ) {
 					$internalValues[$fieldName] = null;
 					if( !$field->isNullable() ) $erroneouslyNullFieldNames[] = $fieldName;
