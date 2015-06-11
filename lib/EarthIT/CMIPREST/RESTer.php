@@ -537,7 +537,7 @@ class EarthIT_CMIPREST_RESTer
 		$preAuth = $this->authorizer->preAuthorizeSimpleAction($act, $ctx, $authorizationExplanation);
 		
 		if( $preAuth === false ) {
-			throw new EarthIT_CMIPREST_ActionUnauthorized($act, $authorizationExplanation);
+			throw new EarthIT_CMIPREST_ActionUnauthorized($act, $ctx, $authorizationExplanation);
 		}
 		
 		if( $act instanceof EarthIT_CMIPREST_RESTAction_SearchAction ) {

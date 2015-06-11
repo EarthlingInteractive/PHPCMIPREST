@@ -203,7 +203,7 @@ class EarthIT_CMIPREST_Util
 		if( $e instanceof EarthIT_CMIPREST_ActionUnauthorized ) {
 			$act = $e->getAction();
 			$status = $userIsAuthenticated ? 403 : 401;
-			return EarthIT_CMIPREST_Util::singleErrorResponse( $status, $act->getActionDescription(), $e->getNotes() );
+			return EarthIT_CMIPREST_Util::singleErrorResponse( $status, $e->getSimpleMessage(), $e->getNotes() );
 		} else if( $e instanceof EarthIT_CMIPREST_ActionInvalid ) {
 			return EarthIT_CMIPREST_Util::multiErrorResponse( 409, $e->getErrorDetails() );
 		} else if( $e instanceof EarthIT_Schema_NoSuchResourceClass ) {
