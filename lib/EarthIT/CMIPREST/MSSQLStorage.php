@@ -329,8 +329,18 @@ class EarthIT_CMIPREST_MSSQLStorage implements EarthIT_CMIPREST_Storage
 			$whereClause = '';
 		}
 		
+		$selects = $this->buildSelects($targetRc, $params, $targetAlias);
+		if( count($selects) == 0 ) {
+			// Add one so we have a valid query,
+			// and be sure to ignore it later.
+			$countingEmptyRows = true;
+			$selects = ['0'];
+		} else {
+			$countingEmptyRows = false;
+		}
+		
 		$sql =
-			"SELECT ".implode(', ', $this->buildSelects($targetRc, $params, $targetAlias))."\n".
+			"SELECT ".implode(', ', $selects)."\n".
 			"FROM (\n\t".str_replace("\n","\n\t",
 				"SELECT *{$rowCountSql}\n".
 				$searchQuery['fromSection'].
@@ -339,8 +349,9 @@ class EarthIT_CMIPREST_MSSQLStorage implements EarthIT_CMIPREST_Storage
 			(count($joins) ? implode("\n",$joins)."\n" : '').
 			$whereClause.
 			"ORDER BY {$alias0}.__ROWNUM\n";
-
+		
 		foreach( $this->fetchRows($sql, $params) AS $dbObj ) {
+			if( $countingEmptyRows ) $dbObj = [];
 			$results[$path][] = $this->dbObjectToInternal($targetRc, $dbObj);
 		}
 	}
