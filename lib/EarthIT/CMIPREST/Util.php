@@ -126,10 +126,12 @@ class EarthIT_CMIPREST_Util
 		return $filtered;
 	}
 	
+	/** @api */
 	public static function restReturnableFields( EarthIT_Schema_ResourceClass $rc ) {
 		return self::fieldsWithProperty($rc->getFields(), EarthIT_CMIPREST_NS::IS_RETURNED_BY_REST_SERVICES);
 	}
 	
+	/** @api */
 	public static function storableFields( EarthIT_Schema_ResourceClass $rc ) {
 		return self::fieldsWithProperty($rc->getFields(), EarthIT_CMIPREST_NS::HAS_A_DATABASE_COLUMN);
 	}
