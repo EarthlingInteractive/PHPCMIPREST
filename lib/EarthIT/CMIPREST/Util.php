@@ -108,7 +108,7 @@ class EarthIT_CMIPREST_Util
 	 * Get a field property value, taking into account
 	 * whether the field is fake or not, and defaults for either case.
 	 */
-	protected static function fieldPropertyValue( $f, $propUri, $nonFakeDefault=true, $fakeDefault=false ) {
+	protected static function fieldPropertyValue( $f, $propUri, $nonFakeDefault=null, $fakeDefault=null ) {
 		$v = $f->getFirstPropertyValue($propUri);
 		if( $v !== null ) return $v;
 		
@@ -116,7 +116,7 @@ class EarthIT_CMIPREST_Util
 		return $isFake ? $fakeDefault : $nonFakeDefault;
 	}
 	
-	protected static function fieldsWithProperty( array $l, $propUri, $nonFakeDefault=true, $fakeDefault=false ) {
+	protected static function fieldsWithProperty( array $l, $propUri, $nonFakeDefault=null, $fakeDefault=null ) {
 		$filtered = array();
 		foreach( $l as $k=>$f ) {
 			if( self::fieldPropertyValue($f, $propUri, $nonFakeDefault, $fakeDefault) ) {
@@ -128,12 +128,12 @@ class EarthIT_CMIPREST_Util
 	
 	/** @api */
 	public static function restReturnableFields( EarthIT_Schema_ResourceClass $rc ) {
-		return self::fieldsWithProperty($rc->getFields(), EarthIT_CMIPREST_NS::IS_RETURNED_BY_REST_SERVICES);
+		return self::fieldsWithProperty($rc->getFields(), EarthIT_CMIPREST_NS::IS_RETURNED_BY_REST_SERVICES, true, false);
 	}
 	
 	/** @api */
 	public static function storableFields( EarthIT_Schema_ResourceClass $rc ) {
-		return self::fieldsWithProperty($rc->getFields(), EarthIT_CMIPREST_NS::HAS_A_DATABASE_COLUMN);
+		return self::fieldsWithProperty($rc->getFields(), EarthIT_CMIPREST_NS::HAS_A_DATABASE_COLUMN, true, false);
 	}
 
 	/**
