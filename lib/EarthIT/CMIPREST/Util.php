@@ -119,7 +119,7 @@ class EarthIT_CMIPREST_Util
 	protected static function fieldsWithProperty( array $l, $propUri, $nonFakeDefault=true, $fakeDefault=false ) {
 		$filtered = array();
 		foreach( $l as $k=>$f ) {
-			if( self::fieldPropertyValue($f, $propUri) ) {
+			if( self::fieldPropertyValue($f, $propUri, $nonFakeDefault, $fakeDefault) ) {
 				$filtered[$k] = $f;
 			}
 		}
