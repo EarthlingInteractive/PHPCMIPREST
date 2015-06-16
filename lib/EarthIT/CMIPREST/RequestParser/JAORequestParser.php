@@ -26,11 +26,26 @@ class EarthIT_CMIPREST_RequestParser_JAORequestParser implements EarthIT_CMIPRES
 		$params = RPU::parseQueryString($queryString);
 		$filterParams = array();
 		$pageParams = array();
+		$orderBySpecs = array();
 		$includes = array();
 		foreach( $params as $k=>$v ) {
 			switch( $k ) {
 			case 'page': $pageParams = $v; break;
 			case 'include': $includes = explode(',', $v); break;
+			case 'sort':
+				foreach( explode(',',$v) as $t ) {
+					if( $t[0] == '-' ) {
+						$o = 'DESC';
+						$t = substr($t,1);
+					} else if( $t[0] == '+' ) {
+						$o = 'ASC';
+						$t = substr($t,1);
+					} else {
+						$o = 'ASC';
+					}
+					$orderBySpecs[] = array('fieldName'=>$t, 'direction'=>$o);
+				}
+				break;
 			case 'filter':
 				foreach( $v as $k2=>$v2 ) $filterParams[$k2] = $v2;
 				break;
@@ -46,7 +61,8 @@ class EarthIT_CMIPREST_RequestParser_JAORequestParser implements EarthIT_CMIPRES
 			'contentObject' => RPU::parseJsonContent($content),
 			'pageParams' => $pageParams,
 			'includes' => $includes,
-			'filterParams' => $filterParams
+			'filterParams' => $filterParams,
+			'orderBySpecs' => $orderBySpecs
 		);
 	}
 	
@@ -185,7 +201,9 @@ class EarthIT_CMIPREST_RequestParser_JAORequestParser implements EarthIT_CMIPRES
 					}
 				}
 				
-				$sp = new EarthIT_CMIPREST_SearchParameters($fieldMatchers, array(), $offset, $limit);
+				$orderBy = RPU::orderByComponents($req['orderBySpecs'], $rc, $this->schemaObjectNamer);
+				
+				$sp = new EarthIT_CMIPREST_SearchParameters($fieldMatchers, $orderBy, $offset, $limit);
 				return new EarthIT_CMIPREST_RESTAction_SearchAction($rc, $sp, $johnBranches, $rasm);
 			} else {
 				return new EarthIT_CMIPREST_RESTAction_GetItemAction($rc, $req['instanceId'], $johnBranches, $rasm);
