@@ -71,7 +71,7 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 						$skip  = (int)$p[0];
 						$limit = (int)$p[1];
 					} else {
-						$limit = (int)$p[1];
+						$limit = (int)$p[0];
 					}
 					break;
 				default:
