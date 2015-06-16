@@ -75,7 +75,12 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 					}
 					break;
 				default:
-					$filters[] = array('fieldName'=>$k, 'opName'=>strpos($v,'*') === false ? 'eq' : 'like', 'pattern'=>$v);
+					$p = explode(':',$v,2);
+					if( count($p) == 2 ) {
+						$filters[] = array('fieldName'=>$k, 'opName'=>$p[0], 'pattern'=>$p[1]);
+					} else {
+						$filters[] = array('fieldName'=>$k, 'opName'=>strpos($v,'*') === false ? 'eq' : 'like', 'pattern'=>$v);
+					}
 				}
 			}
 			
