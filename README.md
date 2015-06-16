@@ -7,7 +7,8 @@ Handles CMIP-style (see below) REST requests using a schema definition.
 A convention for REST services.
 
 URLs are of the form ```/<collection>[;<modifiers>][/<identifier>[/<property>]]```, hence 'CMIP'.
-I couldn't think of a better name.
+
+It also supports some other styles, mapping them to the same underlying operations.
 
 There are five basic operations: search, get, post, put, patch, delete.
 
