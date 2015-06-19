@@ -221,6 +221,8 @@ class EarthIT_CMIPREST_RequestParser_JAORequestParser implements EarthIT_CMIPRES
 			$items = self::parseContentData($req['contentObject']['data'], $rc, $this->schema, $this->nameFormatter);
 			$item = self::firstAndOnly($items);
 			return new EarthIT_CMIPREST_RESTAction_PatchItemAction($rc, $req['instanceId'], $item, $rasm);
+		case 'DELETE':
+			return new EarthIT_CMIPREST_RESTAction_DeleteItemAction($rc, $req['instanceId'], $rasm);
 		}
 		
 		throw new Exception( "Unsupported JAORequest: ".print_r($req,true));
