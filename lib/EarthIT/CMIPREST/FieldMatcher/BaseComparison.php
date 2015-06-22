@@ -12,7 +12,7 @@ abstract class EarthIT_CMIPREST_FieldMatcher_BaseComparison implements EarthIT_C
 		return $this->value;
 	}
 	
-	protected abstract function getSqlComparisonOp();
+	public abstract function getSqlComparisonOp();
 	
 	public function toSql( $fieldValueSql, $fieldType, &$params ) {
 		$paramName = EarthIT_DBC_ParameterUtil::newParamName('exactMatchValue');
