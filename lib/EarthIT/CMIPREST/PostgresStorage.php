@@ -189,7 +189,9 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 		if( count($orderByComponents = $sp->getOrderByComponents()) > 0 ) {
 			$orderBySqlComponents = array();
 			foreach( $orderByComponents as $oc ) {
-				$orderBySqlComponents[] = $this->fieldDbName($rc, $oc->getField()).($oc->isAscending() ? " ASC" : " DESC");
+				$orderByColumnParamName = EarthIT_DBC_ParameterUtil::newParamName('orderBy');
+				$params[$orderByColumnParamName] = new EarthIT_DBC_SQLIdentifier($this->fieldDbName($rc, $oc->getField()));
+				$orderBySqlComponents[] = "{{$orderByColumnParamName}}".($oc->isAscending() ? " ASC" : " DESC");
 			}
 			$orderBySection = "ORDER BY ".implode(', ',$orderBySqlComponents)."\n";
 		} else $orderBySection = '';
