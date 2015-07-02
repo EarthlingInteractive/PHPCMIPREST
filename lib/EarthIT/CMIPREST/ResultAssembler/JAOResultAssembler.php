@@ -34,7 +34,7 @@ class EarthIT_CMIPREST_ResultAssembler_JAOResultAssembler implements EarthIT_CMI
 		$normalFields = array();
 		if( $pk !== null ) foreach( $pk->getFieldNames() as $fn ) $pkFieldNames[$fn] = $fn;
 		foreach( $rc->getReferences() as $fk ) foreach( $fk->getOriginFieldNames() as $fn ) $fkFieldNames[$fn] = $fn;
-		foreach( $rc->getFields() as $k=>$f ) {
+		foreach( EarthIT_CMIPREST_Util::restReturnableFields($rc) as $k=>$f ) {
 			if( !isset($pkFieldNames[$k]) and !isset($fkFieldNames[$k]) ) $normalFields[$k] = $f;
 		}
 		return $normalFields;
