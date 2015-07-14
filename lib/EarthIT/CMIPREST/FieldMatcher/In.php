@@ -24,4 +24,8 @@ class EarthIT_CMIPREST_FieldMatcher_In implements EarthIT_CMIPREST_FieldMatcher
 	public function matches( $fieldValue ) {
 		return in_array( $fieldValue, $this->values );
 	}
+	
+	public function getValues() {
+		return $this->values;
+	}
 }
