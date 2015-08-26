@@ -545,7 +545,7 @@ class EarthIT_CMIPREST_RESTer
 		}
 		
 		if( $preAuth !== true ) {
-			throw new Exception("preAuthorizeSimpleAction should only return true or false for non-search actions, but it returned ".var_export($auth,true));
+			throw new Exception("preAuthorizeSimpleAction should only return true or false for non-search actions, but it returned ".var_export($preAuth,true));
 		}
 		
 		// Otherwise it's A-Okay!
