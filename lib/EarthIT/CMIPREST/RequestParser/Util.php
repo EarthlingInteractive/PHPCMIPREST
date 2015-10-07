@@ -30,7 +30,7 @@ class EarthIT_CMIPREST_RequestParser_Util
 	
 	public static function parseJsonContent( Nife_Blob $content=null ) {
 		if( $content === null ) return null;
-		if( $content->getLength() == 0 ) return null;
+		if( $content->getLength() === 0 ) return null;
 		if( $content instanceof EarthIT_JSON_PrettyPrintedJSONBlob ) return $content->getValue();
 		$c = (string)$content;
 		if( $c == '' ) return null;
