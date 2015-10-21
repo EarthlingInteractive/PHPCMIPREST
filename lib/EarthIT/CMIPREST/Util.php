@@ -60,6 +60,7 @@ class EarthIT_CMIPREST_Util
 		$fields = $rc->getFields();
 		$parts = array();
 		foreach( $pk->getFieldNames() as $fn ) {
+			if( !isset($item[$fn]) ) return null;
 			$parts[] = $item[$fn];
 		}
 		return implode("-", $parts);
