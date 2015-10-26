@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/EarthlingInteractive/PHPCMIPREST.svg?branch=storage)](https://travis-ci.org/EarthlingInteractive/PHPCMIPREST)
+
 # CMIP REST
 
 Handles CMIP-style (see below) REST requests using a schema definition.
