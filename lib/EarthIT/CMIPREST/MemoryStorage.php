@@ -27,7 +27,7 @@ class EarthIT_CMIPREST_MemoryStorage implements EarthIT_CMIPREST_Storage
 	}
 	
 	
-	public function search(
+	public function johnlySearch(
 		EarthIT_Schema_ResourceClass $rc,
 		EarthIT_CMIPREST_SearchParameters $sp,
 		array $johnBranches
@@ -116,6 +116,14 @@ class EarthIT_CMIPREST_MemoryStorage implements EarthIT_CMIPREST_Storage
 	}
 	
 	public function saveItems( array $itemData, EarthIT_Schema_ResourceClass $rc, array $options=array() ) {
+		throw new Exception(get_class($this).'#'.__FUNCTION__." not yet implemented");
+	}
+	
+	public function getItems( EarthIT_Schema_ResourceClass $rc, array $filters, array $orderBy, $offset, $limit, array $options ) {
+		throw new Exception(get_class($this).'#'.__FUNCTION__." not yet implemented");
+	}
+
+	public function deleteItems( EarthIT_Schema_ResourceClass $rc, array $filters ) {
 		throw new Exception(get_class($this).'#'.__FUNCTION__." not yet implemented");
 	}
 }

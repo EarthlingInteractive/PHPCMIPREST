@@ -167,7 +167,7 @@ class EarthIT_CMIPREST_Util
 	
 	public static function getItemById( EarthIT_CMIPREST_Storage $storage, EarthIT_Schema_ResourceClass $rc, $itemId ) {
 		$sp = self::itemIdToSearchParameters($rc, $itemId);
-		$rez = $storage->search( $rc, $sp, array() );
+		$rez = $storage->johnlySearch( $rc, $sp, array() );
 		$results = $rez['root'];
 		if( count($results) == 0 ) return null;
 		if( count($results) == 1 ) return self::first($results);
