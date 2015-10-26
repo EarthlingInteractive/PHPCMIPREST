@@ -18,13 +18,16 @@ There are five basic operations: search, get, post, put, patch, delete.
   The exact subset returned is determined by the ```<filter>``` (see 'collection filters'),
   and the way each object is represented is determined by ```<modifiers>``` (see 'record modifiers').
 - **GET** ```/<collection>[;<modifiers>]/<id>``` returns a single object of the collection identified by _id_.
-- **POST** ```/<collection>``` adds a new record to the collection.
-  The record's data is provided as JSON in the request content.
+- **POST** ```/<collection>``` add new records to the collection.
+  The new records are provided as a JSON-encoded list in the request.
+  If items POSTed include primary keys, they may conflict with existing items,
+  in which case those items are updated as if a **PATCH** was done on those items.
 - **PUT** ```/<collection>/<id>``` replaces a record with the data given as JSON in the request content.
-  All fields must be provided.
+  Fields without values provided are reset to their defaults.
 - **PATCH** ```/<collection>/<id>``` updates a record with data given as JSON in the request content.
-  Any fields not explicitly updated retain their old value.
+  Fields not explicitly mentioned retain their old value.
 - **DELETE** ```/<collection>/<id>``` deletes a record.
+- **DELETE** ```/<collection>?<filters>``` deletes records matching a filter.
 
 ### Record modifiers
 
