@@ -3,6 +3,7 @@
 composer.lock
 config/test-dbc.json
 test/db-scripts/create-database.sql
+test/db-scripts/create-tables.sql
 test/schema.php
 util/SchemaSchemaDemo.jar
 util/test-psql

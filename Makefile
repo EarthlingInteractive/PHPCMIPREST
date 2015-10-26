@@ -33,9 +33,12 @@ util/SchemaSchemaDemo.jar: util/SchemaSchemaDemo.jar.urn
 run_schema_processor = \
 	java -jar util/SchemaSchemaDemo.jar \
 	-o-schema-php test/schema.php -php-schema-class-namespace EarthIT_Schema \
+	-o-create-tables-script test/db-scripts/create-tables.sql \
 	test/schema.txt
 
 test/schema.php: test/schema.txt util/SchemaSchemaDemo.jar
+	${run_schema_processor}
+test/db-scripts/create-tables.sql: test/schema.txt util/SchemaSchemaDemo.jar
 	${run_schema_processor}
 
 composer.lock: composer.json
@@ -75,5 +78,8 @@ test/db-scripts/create-database.sql: test/config/dbc.json vendor
 	echo "or need to re-create it for some other reason, you may delete this file" >>"$@"
 	cat util/create-test-tables.sql | util/test-psql -v ON_ERROR_STOP=1
 
-run-unit-tests: vendor .database-created test/schema.php
+run-unit-tests: vendor .database-created test/schema.php test/db-scripts/create-tables.sql
+	util/test-psql -v ON_ERROR_STOP=1 <test/db-scripts/drop-schema.sql
+	util/test-psql -v ON_ERROR_STOP=1 <test/db-scripts/create-schema.sql
+	util/test-psql -v ON_ERROR_STOP=1 <test/db-scripts/create-tables.sql
 	phpunit --bootstrap vendor/autoload.php test

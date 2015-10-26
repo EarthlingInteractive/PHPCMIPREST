@@ -3,9 +3,11 @@ import everything from 'http://ns.nuke24.net/Schema/DataTypeTranslation/'
 import everything from 'http://ns.nuke24.net/Schema/Application/'
 
 import 'http://www.w3.org/2000/01/rdf-schema#isSubclassOf' as 'extends'
+import 'http://ns.nuke24.net/Schema/RDB/Schema'
 import 'http://ns.nuke24.net/Schema/RDB/Sequence'
-import 'http://ns.nuke24.net/Schema/RDB/initialValue'
 import 'http://ns.nuke24.net/Schema/RDB/defaultValueSequence'
+import 'http://ns.nuke24.net/Schema/RDB/initialValue'
+import 'http://ns.nuke24.net/Schema/RDB/isInNamespace'
 
 sequence 'entity IDs' : initial value @ 1001
 
@@ -33,19 +35,18 @@ class property 'collection name' : value type @ string :
 	long name @ "http://ns.earthit.com/CMIPREST/collectionName" :
 	comment @ "Name of the set of members of this class; usually this would be the plural form of the class name"
 
+schema 'CMIPREST test'
+
 # Standard Rest Resource
-class modifier 'SRR' = has a database table : has a REST service : members are public
+class modifier 'SRR' = has a database table : has a REST service : members are public : is in namespace @ CMIPREST test
 
 field modifier 'EIPK' = entity ID : key(primary) : default value sequence @ entity IDs
 
-enum mood {
-	'ugh!'
-	really bad
-	meh
-	sort of okay
-	nice
-	pretty sweet
-	'rad!'
+class 'mood code' : extends(string)
+
+class 'mood' : SRR {
+	mood code : mood code : key(primary)
+	description : string
 }
 
 class 'resource' : SRR {
@@ -70,5 +71,5 @@ class 'rating' : SRR {
 	comment          : text       : nullable
 	quality rating   : percentage : nullable
 	resource is fake : boolean    : nullable
-	feeling          : mood       : nullable
+	mood : reference(mood) : nullable = mood code
 }
