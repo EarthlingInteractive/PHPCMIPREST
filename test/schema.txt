@@ -9,8 +9,6 @@ import 'http://ns.nuke24.net/Schema/RDB/defaultValueSequence'
 import 'http://ns.nuke24.net/Schema/RDB/initialValue'
 import 'http://ns.nuke24.net/Schema/RDB/isInNamespace'
 
-sequence 'entity IDs' : initial value @ 1001
-
 class 'integer' :
 	SQL type @ "INT" :
 	PHP type @ "int" :
@@ -37,10 +35,12 @@ class property 'collection name' : value type @ string :
 
 schema 'CMIPREST test'
 
+sequence 'new entity ID' : initial value @ 1001 : is in namespace @ CMIPREST test
+
 # Standard Rest Resource
 class modifier 'SRR' = has a database table : has a REST service : members are public : is in namespace @ CMIPREST test
 
-field modifier 'EIPK' = entity ID : key(primary) : default value sequence @ entity IDs
+field modifier 'EIPK' = entity ID : key(primary) : default value sequence @ new entity ID
 
 class 'mood code' : extends(string)
 
