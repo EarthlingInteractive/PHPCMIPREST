@@ -38,8 +38,12 @@ run_schema_processor = \
 test/schema.php: test/schema.txt util/SchemaSchemaDemo.jar
 	${run_schema_processor}
 
-vendor: composer.json
-	if [ -e "$@" ] ; then composer update ; else composer install ; fi
+composer.lock: composer.json
+	rm -f composer.lock
+	composer install
+
+vendor: composer.lock
+	composer install
 	touch "$@"
 
 clean:
@@ -48,7 +52,7 @@ clean:
 test/config/dbc.json:
 	cp test/config/dbc.json.example test/config/dbc.json
 
-test/db-scripts/create-database.sql: test/config/dbc.json
+test/db-scripts/create-database.sql: test/config/dbc.json vendor
 	mkdir -p test/db-scripts
 	php util/generate-database-creation-script test/config/dbc.json >"$@"
 
