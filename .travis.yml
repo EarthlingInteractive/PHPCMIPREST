@@ -1,0 +1,20 @@
+language: php
+
+# It might work (or be made to work)
+# in PHP 5.2 and 5.3.  Do that later.
+php:
+  - 5.3
+  - 5.4
+  - 5.5
+  - 5.6
+  - nightly
+
+addons:
+  postgresql: "9.3"
+
+before_script:
+  - make .create-database.sql
+  - psql -U postgres <.create-database.sql
+  - touch .database-created
+
+script: make run-unit-tests

@@ -1,6 +1,6 @@
 <?php
 
-abstract class EarthIT_CMIPREST_StorageTest extends PHPUnit_Framework_TestCase
+abstract class EarthIT_CMIPREST_StorageTest extends EarthIT_CMIPREST_TestCase
 {
 	protected $storage;
 	protected $schema;
@@ -8,7 +8,7 @@ abstract class EarthIT_CMIPREST_StorageTest extends PHPUnit_Framework_TestCase
 	protected abstract function createStorage();
 	
 	public function setUp() {
-		$this->schema = require 'test-schema.php';
+		$this->schema = $this->loadTestSchema();
 		$this->storage = $this->createStorage();
 	}
 	
