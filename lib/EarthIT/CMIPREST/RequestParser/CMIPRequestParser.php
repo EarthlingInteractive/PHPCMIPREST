@@ -8,7 +8,12 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 	protected $schemaObjectNamer;
 	protected $keyByIds = true;
 	
-	public function __construct( EarthIT_Schema $schema, callable $schemaObjectNamer ) {
+	/**
+	 * @param EarthIT_Schema $schema the schema that we're parsing requests for
+	 * @param callable $schemaObjectNamer a EarthIT_Schema_Field -> string function
+	 *   to provide 'REST names' for fields (probably camelCase).
+	 */
+	public function __construct( EarthIT_Schema $schema, $schemaObjectNamer ) {
 		$this->schema = $schema;
 		$this->schemaObjectNamer = $schemaObjectNamer;
 	}
