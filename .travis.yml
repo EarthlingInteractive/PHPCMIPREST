@@ -15,7 +15,7 @@ addons:
   postgresql: "9.3"
 
 before_script:
-  - make test/db-scripts/create-database.sql
+  - make test/config/dbc.json test/db-scripts/create-database.sql
   - psql -U postgres <test/db-scripts/create-database.sql
   - touch .database-created
 

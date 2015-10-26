@@ -56,7 +56,7 @@ test/db-scripts/create-database.sql: test/config/dbc.json vendor
 	mkdir -p test/db-scripts
 	php util/generate-database-creation-script test/config/dbc.json >"$@"
 
-.database-created: test/config/dbc.json test/db-scripts/create-database.sql util/test-psql
+.database-created: test/config/dbc.json test/db-scripts/create-database.sql | util/test-psql
 	echo "-------------------------------------------------------------------" >&2
 	echo "Creating database on default postgres server based on configuration" >&2
 	echo "in test/config/dbc.json." >&2
