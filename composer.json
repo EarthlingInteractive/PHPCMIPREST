@@ -8,6 +8,7 @@
 		"togos/action": "^1.0.0",
 		"earthit/php-common": "^1.0.0",
 		"earthit/schema": "^1.0.0",
+		"earthit/storage": "^0.1.2",	
 		"earthit/dbc": "^1.0.0"
 	},
 	"require-dev": {

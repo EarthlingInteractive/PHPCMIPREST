@@ -11,8 +11,12 @@ class EarthIT_CMIPREST_PostgresStorageTest extends EarthIT_CMIPREST_StorageTest
 		}
 		$dbConfig = EarthIT_JSON::decode($dbConfigJson);
 		$this->schema = require 'test-schema.php';
-		$this->dbAdapter = Doctrine\DBAL\DriverManager::getConnection($dbConfig);
-		$this->dbNamer = new EarthIT_DBC_PostgresNamer();
-		return new EarthIT_CMIPREST_PostgresStorage($this->dbAdapter, $this->schema, $this->dbNamer);
+		$this->sqlRunner = new EarthIT_DBC_DoctrineSQLRunner(Doctrine\DBAL\DriverManager::getConnection($dbConfig));
+		$this->dbObjectNamer = new EarthIT_DBC_PostgresNamer();
+		return new EarthIT_CMIPREST_SQLStorage(
+			$this->schema,
+			$this->sqlRunner,
+			$this->dbObjectNamer,
+			new EarthIT_Storage_PostgresSQLGenerator($this->dbObjectNamer));
 	}
 }

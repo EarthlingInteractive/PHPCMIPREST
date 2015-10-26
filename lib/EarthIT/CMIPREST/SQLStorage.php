@@ -1,18 +1,7 @@
 <?php
 
-// TODO: Replace with generic SQL-backed storage, taking a separate object to generate queries
-class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
+class EarthIT_CMIPREST_SQLStorage extends EarthIT_Storage_SQLStorage implements EarthIT_CMIPREST_Storage
 {
-	protected $dbAdapter;
-	protected $schema;
-	protected $dbNamer;
-	
-	public function __construct( Doctrine\DBAL\Connection $dbAdapter, EarthIT_Schema $schema, EarthIT_DBC_Namer $dbNamer) {
-		$this->dbAdapter = $dbAdapter;
-		$this->schema = $schema;
-		$this->dbNamer = $dbNamer;
-	}
-	
 	protected $dbNamespacePath = array();
 	public function setDbNamespacePath( $path ) {
 		if( is_scalar($path) ) $path = explode('.', $path);
@@ -25,6 +14,8 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 	/**
 	 * Return an EarthIT_DBC_SQLExpression that identifies the table.
 	 * If a dbNamespacePath has been configured, it will be part of the expression.
+	 *
+	 * @deprecated
 	 */
 	protected function rcTableExpression( EarthIT_Schema_ResourceClass $rc ) {
 		$components = array();
@@ -35,14 +26,14 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 			$components[] = new EarthIT_DBC_SQLIdentifier($ns);
 		}
 		// TODO for breaking release: Remove getTableNameOverride; the namer should do that.
-		$components[] = new EarthIT_DBC_SQLIdentifier($rc->getTableNameOverride() ?: $this->dbNamer->getTableName($rc));
+		$components[] = new EarthIT_DBC_SQLIdentifier($rc->getTableNameOverride() ?: $this->dbObjectNamer->getTableName($rc));
 		return new EarthIT_DBC_SQLNamespacePath($components);
 	}
 	
 	/** i.e. 'name of column corresponding to field' */
 	protected function fieldDbName( EarthIT_Schema_ResourceClass $rc, EarthIT_Schema_Field $f ) {
 		// TODO for breaking release: Remove getTableNameOverride; the namer should do that.
-		return $f->getColumnNameOverride() ?: $this->dbNamer->getColumnName( $rc, $f );
+		return $f->getColumnNameOverride() ?: $this->dbObjectNamer->getColumnName( $rc, $f );
 	}
 	
 	//// Conversion
@@ -66,7 +57,7 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 	}
 	
 	protected function internalObjectToDb( EarthIT_Schema_ResourceClass $rc, array $obj, array &$params ) {
-		$columnNamer = $this->dbNamer;
+		$columnNamer = $this->dbObjectNamer;
 		$columnValues = array();
 		foreach( EarthIT_CMIPREST_Util::storableFields($rc) as $f ) {
 			$fieldName = $f->getName();
@@ -126,21 +117,6 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 			$parts[] = "{{$cnp}} = {{$cvp}}";
 		}
 		return $parts;
-	}
-	
-	//// Do stuff
-	
-	protected function fetchRows( $sql, array $params ) {
-		if( $sql == 'SELECT NOTHING' ) return array();
-		$builder = new EarthIT_DBC_DoctrineStatementBuilder($this->dbAdapter);
-		$stmt = $builder->makeStatement($sql, $params);
-		$stmt->execute();
-		return $stmt->fetchAll();
-	}
-	
-	/** Same as fetchRows; just doesn't return anything. */
-	protected function doQuery( $sql, array $params ) {
-		$this->fetchRows($sql, $params);
 	}
 	
 	//// Build complimicated queries
@@ -285,7 +261,7 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 			).") AS $alias0\n".
 			(count($joins) ? implode("\n",$joins)."\n" : '');
 		
-		foreach( $this->fetchRows($sql, $params) AS $dbObj ) {
+		foreach( $this->sqlRunner->fetchRows($sql, $params) AS $dbObj ) {
 			$results[$path][] = $this->dbObjectToInternal($targetRc, $dbObj);
 		}
 	}
@@ -323,7 +299,7 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 		$selects = implode(', ',$this->buildSelects($rc, $params));
 		$params['table'] = $tableExpression;
 		$params['columns'] = $columnExpressionList;
-		$rows = $this->fetchRows(
+		$rows = $this->sqlRunner->fetchRows(
 			"INSERT INTO {table}\n".
 			"{columns} VALUES\n".
 			"(".implode(',',$valuex).")\n".
@@ -380,7 +356,7 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 			"\t"."RETURNING {$selects}\n".
 			")\n".
 			"SELECT * FROM los_updatos UNION ALL SELECT * FROM los_insertsos";
-		$rows = $this->fetchRows( $sql, $params );
+		$rows = $this->sqlRunner->fetchRows( $sql, $params );
 		if( count($rows) != 1 ) {
 			throw new Exception("UPDATE ... RETURNING returned ".count($rows)." rows; expected exactly 1.");
 		}
@@ -404,7 +380,7 @@ class EarthIT_CMIPREST_PostgresStorage implements EarthIT_CMIPREST_Storage
 		$sql =
 			"DELETE FROM {table}\n".
 			"WHERE ".implode("\n  AND ", $conditions);
-		$this->fetchRows( $sql, $params );
+		$this->sqlRunner->fetchRows( $sql, $params );
 		// Nothing to return
 	}
 }

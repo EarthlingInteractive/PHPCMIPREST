@@ -114,4 +114,8 @@ class EarthIT_CMIPREST_MemoryStorage implements EarthIT_CMIPREST_Storage
 			unset($this->items[$rc->getName()][$index]);
 		}
 	}
+	
+	public function saveItems( array $itemData, EarthIT_Schema_ResourceClass $rc, array $options=array() ) {
+		throw new Exception(get_class($this).'#'.__FUNCTION__." not yet implemented");
+	}
 }

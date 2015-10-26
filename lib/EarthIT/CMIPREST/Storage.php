@@ -8,7 +8,7 @@
 // TODO: Refactor put/post/patch into a single 'save' function with options for
 // - allow/disallow/require ID to be generated
 // - on duplicate replace/patch/error/undefined
-interface EarthIT_CMIPREST_Storage
+interface EarthIT_CMIPREST_Storage extends EarthIT_Storage_ItemSaver
 {
 	/**
 	 * Perform a search, returning an array of join path => list of result objects (in internal form).
