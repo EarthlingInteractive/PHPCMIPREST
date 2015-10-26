@@ -193,9 +193,10 @@ class EarthIT_CMIPREST_RESTerTest extends EarthIT_CMIPREST_TestCase
 			)
 		), $rez);
 		
-		$items = $this->storage->search($rc, new EarthIT_CMIPREST_SearchParameters(
+		$rez = $this->storage->search($rc, new EarthIT_CMIPREST_SearchParameters(
 			array('ID' => new EarthIT_CMIPREST_FieldMatcher_In(array($personA['ID'], $personB['ID']))),
-			array(), 0, null ), array())['root'];
+			array(), 0, null ), array());
+		$items = $rez['root'];
 		foreach( $items as $item ) {
 			if( $item['ID'] == $personA['ID'] ) {
 				$this->assertEquals('Fred', $item['first name']);
