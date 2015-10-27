@@ -9,8 +9,8 @@
 // - allow/disallow/require ID to be generated
 // - on duplicate replace/patch/error/undefined
 interface EarthIT_CMIPREST_Storage extends
-	EarthIT_CMIPREST_JohnlyItemFetcher,
-	EarthIT_Storage_ItemFetcher,
+	EarthIT_CMIPREST_JohnlyItemSearcher,
+	EarthIT_Storage_ItemSearcher,
 	EarthIT_Storage_ItemSaver,
 	EarthIT_Storage_ItemDeleter
 {

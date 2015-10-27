@@ -268,7 +268,7 @@ class EarthIT_CMIPREST_SQLStorage extends EarthIT_Storage_SQLStorage implements 
 	
 	////
 	
-	public function johnlySearch(
+	public function johnlySearchItems(
 		EarthIT_Schema_ResourceClass $rc,
 		EarthIT_CMIPREST_SearchParameters $sp,
 		array $branches

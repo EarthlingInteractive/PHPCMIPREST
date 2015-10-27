@@ -148,7 +148,7 @@ class EarthIT_CMIPREST_RESTerTest extends EarthIT_CMIPREST_TestCase
 		$bobHopeId = $rez[0]['id'];
 		$redSkeltonId = $rez[1]['id'];
 		
-		$rez = $this->storage->johnlySearch($rc, new EarthIT_CMIPREST_SearchParameters(
+		$rez = $this->storage->johnlySearchItems($rc, new EarthIT_CMIPREST_SearchParameters(
 			array('ID' => new EarthIT_CMIPREST_FieldMatcher_In(array($bobHopeId, $redSkeltonId))),
 			array(), 0, null ), array());
 		$items = $rez['root'];
@@ -193,7 +193,7 @@ class EarthIT_CMIPREST_RESTerTest extends EarthIT_CMIPREST_TestCase
 			)
 		), $rez);
 		
-		$rez = $this->storage->johnlySearch($rc, new EarthIT_CMIPREST_SearchParameters(
+		$rez = $this->storage->johnlySearchItems($rc, new EarthIT_CMIPREST_SearchParameters(
 			array('ID' => new EarthIT_CMIPREST_FieldMatcher_In(array($personA['ID'], $personB['ID']))),
 			array(), 0, null ), array());
 		$items = $rez['root'];

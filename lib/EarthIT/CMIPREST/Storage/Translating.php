@@ -19,7 +19,7 @@ class EarthIT_CMIPREST_Storage_Translating implements EarthIT_CMIPREST_Storage
 		array $johnBranches
 	) {
 		// Probably need to translate search parameters, too `_`
-		$result = $this->backingStorage->johnlySearch($rootRc, $sp, $johnBranches);
+		$result = $this->backingStorage->johnlySearchItems($rootRc, $sp, $johnBranches);
 		$translatedResults = array();
 		foreach( $result as $path => $items ) {
 			$pathComponents = explode('.',$path);

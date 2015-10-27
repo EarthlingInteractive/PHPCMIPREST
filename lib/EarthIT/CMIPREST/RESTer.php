@@ -470,7 +470,7 @@ class EarthIT_CMIPREST_RESTer
 		$rc = $act->getResourceClass();
 		$sp = $act->getSearchParameters();
 		$queryParams = array();
-		$relevantObjects = $this->storage->johnlySearch( $rc, $sp, $act->getJohnBranches() );
+		$relevantObjects = $this->storage->johnlySearchItems( $rc, $sp, $act->getJohnBranches() );
 		$johnCollections = $this->collectJohns( $act->getJohnBranches(), 'root' );
 		
 		// If we need to post-authorize, do it.

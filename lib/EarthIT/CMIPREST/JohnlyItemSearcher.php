@@ -1,6 +1,6 @@
 <?php
 
-interface EarthIT_CMIPREST_JohnlyItemFetcher
+interface EarthIT_CMIPREST_JohnlyItemSearcher
 {
 	/**
 	 * Perform a search, returning an array of join path => list of result objects (in internal form).
@@ -27,7 +27,7 @@ interface EarthIT_CMIPREST_JohnlyItemFetcher
 	 *   branches)
 	 * @return array of result object lists, keyed by branch path
 	 */
-	public function johnlySearch(
+	public function johnlySearchItems(
 		EarthIT_Schema_ResourceClass $rc,
 		EarthIT_CMIPREST_SearchParameters $sp,
 		array $johnBranches
