@@ -6,6 +6,8 @@
  * e.g. to search within a hierarchy, or by visibility to a certain user.
  *
  * TODO for v1: Replace fieldMatchers with a more general list of filters
+ * 
+ * @deprecated use EarthIT_Storage_Searches instead
  */
 class EarthIT_CMIPREST_SearchParameters
 {

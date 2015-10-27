@@ -9,6 +9,8 @@ class EarthIT_CMIPREST_Util
 	
 	/**
 	 * Convert a value to the named PHP scalar type using PHP's default conversion.
+	 *
+	 * @deprecated use Storage_Util::cast
 	 */
 	public static function cast( $value, $phpType ) {
 		if( $phpType === null or $value === null ) return $value;
@@ -68,24 +70,11 @@ class EarthIT_CMIPREST_Util
 	
 	/**
 	 * return array of field name => field value for the primary key fields encoded in $id
+	 *
+	 * @deprecated use Storage_Util::idToFieldValues
 	 */
 	public static function idToFieldValues( EarthIT_Schema_ResourceClass $rc, $id) {
-		$idRegex = self::getIdRegex( $rc );
-		if( !preg_match('/^'.$idRegex.'$/', $id, $bif) ) {
-			throw new Exception("ID did not match regex /^$idRegex\$/: $id");
-		}
-		
-		$idFieldValues = array();
-		$pk = $rc->getPrimaryKey();
-		$fields = $rc->getFields();
-		$i = 1;
-		foreach( $pk->getFieldNames() as $fn ) {
-			$field = $fields[$fn];
-			$idFieldValues[$fn] = EarthIT_CMIPREST_Util::cast($bif[$i], $field->getType()->getPhpTypeName());
-			++$i;
-		}
-		
-		return $idFieldValues;
+		return EarthIT_Storage_Util::itemIdToFieldValues($id, $rc);
 	}
 		
 	public static function mergeEnsuringNoContradictions() {
@@ -156,6 +145,9 @@ class EarthIT_CMIPREST_Util
 		return $schema->getResourceClass( EarthIT_Schema_WordUtil::depluralize($collectionName) );
 	}
 	
+	/**
+	 * @return EarthIT_Storage_Search
+	 */
 	public static function itemIdToSearchParameters( EarthIT_Schema_ResourceClass $rc, $id ) {
 		$fieldValues = EarthIT_CMIPREST_Util::idToFieldValues( $rc, $id );
 		$fieldMatchers = array();
@@ -166,12 +158,7 @@ class EarthIT_CMIPREST_Util
 	}
 	
 	public static function getItemById( EarthIT_CMIPREST_Storage $storage, EarthIT_Schema_ResourceClass $rc, $itemId ) {
-		$sp = self::itemIdToSearchParameters($rc, $itemId);
-		$rez = $storage->johnlySearchItems( $rc, $sp, array() );
-		$results = $rez['root'];
-		if( count($results) == 0 ) return null;
-		if( count($results) == 1 ) return self::first($results);
-		throw new Exception("Multiple ".$rc->getName()." records found with ID = '".$itemId."'");
+		return EarthIT_Storage_Util::getItemById( $itemId, $rc, $storage );
 	}
 	
 	//// Nife_HTTP_Response generation
