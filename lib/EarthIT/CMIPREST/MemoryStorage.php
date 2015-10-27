@@ -120,10 +120,27 @@ class EarthIT_CMIPREST_MemoryStorage implements EarthIT_CMIPREST_Storage
 	}
 	
 	public function searchItems( EarthIT_Storage_Search $search, array $options=array() ) {
-		throw new Exception(get_class($this).'#'.__FUNCTION__." not yet implemented");
+		$rcName = $search->getResourceClass()->getName();
+		$matched = array();
+		if( isset($this->items[$rcName]) ) foreach( $this->items[$rcName] as $item ) {
+			foreach( $search->getFilters() as $filt ) {
+				if( !$filt->matches($item) ) continue;
+			}
+			$matched[] = $item;
+		}
+		usort( $matched, $search->getComparator() );
+		return array_slice($matched, $search->getSkip(), $search->getLimit());
 	}
-
+	
 	public function deleteItems( EarthIT_Schema_ResourceClass $rc, array $filters ) {
-		throw new Exception(get_class($this).'#'.__FUNCTION__." not yet implemented");
+		$rcName = $search->getResourceClass()->getName();
+		$matchedKeys = array();
+		if( isset($this->items[$rcName]) ) foreach( $this->items[$rcName] as $k=>$item ) {
+			foreach( $search->getFilters() as $filt ) {
+				if( !$filt->matches($item) ) continue;
+			}
+			$matchedKeys[] = $k;
+		}
+		foreach( $matchedKeys as $k ) unset($this->items[$k]);
 	}
 }
