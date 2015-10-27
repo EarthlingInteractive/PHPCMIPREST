@@ -19,24 +19,32 @@ interface EarthIT_CMIPREST_Storage extends
 	/**
 	 * Create a new object, returning the values of all it fields after
 	 * being created
+	 * 
+	 * @deprecated; use saveItems, instead.
 	 */
 	public function postItem( EarthIT_Schema_ResourceClass $rc, array $itemData );
 	
 	/**
 	 * Replace all data of an object, setting unspecified fields to their default values,
 	 * returning the new values of all its fields
+	 * 
+	 * @deprecated; use saveItems, instead.
 	 */
 	public function putItem( EarthIT_Schema_ResourceClass $rc, $itemId, array $itemData );
 	
 	/**
 	 * Update only specified fields of the given object,
 	 * returning the values of all its fields after being updated
+	 * 
+	 * @deprecated; use saveItems, instead.
 	 */
 	public function patchItem( EarthIT_Schema_ResourceClass $rc, $itemId, array $itemData );
 	
 	/**
 	 * Make the item not exist.
 	 * Deleting an item that already does not exist should NOT be considered an error.
+	 * 
+	 * @deprecated; use deleteItems, instead.
 	 */
 	public function deleteItem( EarthIT_Schema_ResourceClass $rc, $itemId );
 }
