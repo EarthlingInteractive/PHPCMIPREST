@@ -108,21 +108,6 @@ implements EarthIT_CMIPREST_Storage
 	
 	//// Build complimicated queries
 	
-	protected function buildSelects( EarthIT_Schema_ResourceClass $rc, $tableAlias=null, EarthIT_DBC_ParamsBuilder $PB ) {
-		$taPrefix = $tableAlias ? "{$tableAlias}." : '';
-		$selects = array();
-		foreach( EarthIT_CMIPREST_Util::storableFields($rc) as $f ) {
-			$columnName = $this->dbObjectNamer->getColumnName($rc, $f);
-			$columnNameParam = $PB->newParam('c', new EarthIT_DBC_SQLIdentifier($columnName));
-			if( self::valuesOfTypeShouldBeSelectedAsGeoJson($f->getType()) ) {
-				$selects[] = "ST_AsGeoJSON({$taPrefix}{{$columnNameParam}}) AS {{$columnNameParam}}";
-			} else {
-				$selects[] = "{$taPrefix}{{$columnNameParam}}";
-			}
-		}
-		return $selects;
-	}
-	
 	private function buildSearchSql(
 		EarthIT_Storage_Search $search,
 		$tableAlias,
@@ -223,8 +208,15 @@ implements EarthIT_CMIPREST_Storage
 		// We want the order and limit clauses to apply only to the root
 		// table, not the things we join to!
 		
+		$selectedValueSqls = EarthIT_Storage_Util::formatSelectComponents(
+			$this->sqlGenerator->makeDbExternalFieldValueSqls(
+				$targetRc->getFields(), $targetRc, $targetAlias, $PB), $PB);
+		if( count($selectedValueSqls) == 0 ) {
+			throw new Exception("Can't select zero stuff.");
+		}
+
 		$sql =
-			"SELECT ".implode(', ', $this->buildSelects($targetRc, $targetAlias, $PB))."\n".
+			"SELECT ".implode(', ',$selectedValueSqls)."\n".
 			"FROM (\n\t".str_replace("\n","\n\t",
 				"SELECT *\n".
 				$searchQuery['fromSection'].
