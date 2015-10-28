@@ -2,6 +2,12 @@
 
 // TODO: replace this and other CMIPREST_*Storage with a single
 // CMIPRESTStorageAdapter that wraps a Storage_Item*er object */
+
+// Note that johnlySearchItems isn't going to work.
+// It's full of undefined variables and stuff from before it was
+// switched to take a Storage_Search instead of a
+// CMIPREST_SearchParameters, etc.
+
 class EarthIT_CMIPREST_SQLStorage
 extends EarthIT_Storage_SQLStorage
 implements EarthIT_CMIPREST_Storage
