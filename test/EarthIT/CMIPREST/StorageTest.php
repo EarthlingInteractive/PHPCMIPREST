@@ -91,4 +91,38 @@ abstract class EarthIT_CMIPREST_StorageTest extends EarthIT_CMIPREST_TestCase
 		$item = EarthIT_CMIPREST_UTil::getItemById($this->storage, $resourceRc, $id);
 		$this->assertNull( $item );
 	}
+	
+	public function testJohnlySearch() {
+		$resourceRc = $this->schema->getResourceClass('resource');
+		$personRc   = $this->schema->getResourceClass('person');
+		$ratingRc   = $this->schema->getResourceClass('rating');
+		
+		$resource = $this->storage->postItem($resourceRc, array('URN'=>'data:text/plain,'.rand(1000000,9999999)));
+		$person   = $this->storage->postItem($personRc,   array('first name' => 'John', 'last name' => 'Haas'));
+		$rating   = $this->storage->postItem($ratingRc,   array(
+			'author ID'  => $person['ID'],
+			'subject ID' => $resource['ID'],
+			'comment'    => 'My favorite number!  Very Radiohead',
+			'quality rating' => 85,
+			'resource is fake' => false,
+			'mood' => null
+		));
+		
+		// Yay it's stored.  Let's try to load it.
+		$search = new EarthIT_Storage_Search(
+			$ratingRc,
+			EarthIT_Storage_ItemFilters::byId($person['ID'].'-'.$resource['ID'], $ratingRc) );
+		
+		$objectNamer = function($sobj) { return $sobj->getName(); };
+		
+		$johnBranches = EarthIT_CMIPREST_RequestParser_Util::withsToJohnBranches(
+			$this->schema, $ratingRc,
+			'author,subject', $objectNamer, '.');
+		$rez = $this->storage->johnlySearchItems( $search, $johnBranches, array() );
+		$this->assertEquals( array(
+			'root' => array( $rating ),
+			'root.author' => array( $person ),
+			'root.subject' => array( $resource )
+		), $rez);
+	}
 }
