@@ -66,34 +66,11 @@ implements EarthIT_CMIPREST_Storage
 		return EarthIT_CMIPREST_Util::cast( $value, $t->getPhpTypeName() );
 	}
 	
-	protected function internalObjectToDb( EarthIT_Schema_ResourceClass $rc, array $obj, array &$params ) {
-		$columnNamer = $this->dbObjectNamer;
-		$columnValues = array();
-		foreach( EarthIT_CMIPREST_Util::storableFields($rc) as $f ) {
-			$fieldName = $f->getName();
-			if( array_key_exists($fieldName, $obj) ) {
-				$value = $obj[$fieldName];
-				
-				if( self::valuesOfTypeShouldBeSelectedAsGeoJson($f->getType()) and $value !== null ) {
-					$paramName = EarthIT_DBC_ParameterUtil::newParamName('geojson');
-					$params[$paramName] = json_encode($value);
-					$dbValue = new EarthIT_DBC_BaseSQLExpression("ST_GeomFromGeoJSON({{$paramName}})");
-				} else if( self::valuesOfTypeShouldBeSelectedAsJson($f->getType()) and $value !== null ) {
-					$dbValue = EarthIT_JSON::prettyEncode($value);
-				} else {
-					$dbValue = $value;
-				}
-				$columnValues[$this->fieldDbName($rc, $f)] = $dbValue;
-			}
-		}
-		return $columnValues;
-	}
-	
 	protected function dbObjectToInternal( EarthIT_Schema_ResourceClass $rc, array $obj ) {
 		$fieldValues = array();
 		foreach( EarthIT_CMIPREST_Util::storableFields($rc) as $f ) {
 			$fieldName = $f->getName();
-			$columnName = $this->fieldDbName($rc, $f);
+			$columnName = $this->dbObjectNamer->getColumnName($rc, $f);
 			$fieldValues[$f->getName()] = self::dbToPhpValue($f->getType(), $obj[$columnName]);
 		}
 		return $fieldValues;
@@ -106,7 +83,7 @@ implements EarthIT_CMIPREST_Storage
 		$columnValues = array();
 		$fields = $rc->getFields();
 		foreach( $fieldValues as $fieldName=>$value ) {
-			$columnValues[$this->fieldDbName($rc, $fields[$fieldName])] = $value;
+			$columnValues[$this->dbObjectNamer->getColumnName($rc, $fields[$fieldName])] = $value;
 		}
 		return $columnValues;
 	}
@@ -131,13 +108,12 @@ implements EarthIT_CMIPREST_Storage
 	
 	//// Build complimicated queries
 	
-	protected function buildSelects( EarthIT_Schema_ResourceClass $rc, array &$params, $tableAlias=null ) {
+	protected function buildSelects( EarthIT_Schema_ResourceClass $rc, $tableAlias=null, EarthIT_DBC_ParamsBuilder $PB ) {
 		$taPrefix = $tableAlias ? "{$tableAlias}." : '';
 		$selects = array();
 		foreach( EarthIT_CMIPREST_Util::storableFields($rc) as $f ) {
-			$columnName = $this->fieldDbName($rc, $f);
-			$columnNameParam = EarthIT_DBC_ParameterUtil::newParamName('c');
-			$params[$columnNameParam] = new EarthIT_DBC_SQLIdentifier($columnName);
+			$columnName = $this->dbObjectNamer->getColumnName($rc, $f);
+			$columnNameParam = $PB->newParam('c', new EarthIT_DBC_SQLIdentifier($columnName));
 			if( self::valuesOfTypeShouldBeSelectedAsGeoJson($f->getType()) ) {
 				$selects[] = "ST_AsGeoJSON({$taPrefix}{{$columnNameParam}}) AS {{$columnNameParam}}";
 			} else {
@@ -148,49 +124,36 @@ implements EarthIT_CMIPREST_Storage
 	}
 	
 	private function buildSearchSql(
-		EarthIT_Schema_ResourceClass $rc,
-		EarthIT_CMIPREST_SearchParameters $sp,
+		EarthIT_Storage_Search $search,
 		$tableAlias,
-		array &$params
+		EarthIT_DBC_ParamsBuilder $PB
 	) {
+		$rc = $search->getResourceClass();
 		$fields = $rc->getFields();
 		$whereClauses = array();
-		$tableExpression = $this->rcTableExpression( $rc );
-		$params['table'] = $tableExpression;
-		foreach( $sp->getFieldMatchers() as $fieldName => $matcher ) {
-			$field = $fields[$fieldName];
-			$columnName = $this->fieldDbName($rc, $field);
-			$columnParamName = EarthIT_DBC_ParameterUtil::newParamName('column');
-			$params[$columnParamName] = new EarthIT_DBC_SQLIdentifier($columnName);
-			$columnExpression = "{$tableAlias}.{{$columnParamName}}";
-			$matcherSql = $matcher->toSql( $columnExpression, $fields[$fieldName]->getType()->getPhpTypeName(), $params );
-			if( $matcherSql === 'TRUE' ) {
-				continue;
-			} else if( $matcherSql === 'FALSE' ) {
-				return array('emptyResultSetGuaranteed' => true);
-			}
-			$whereClauses[] = $matcherSql;
-		}
+		$tableParamName = $PB->newParam('table', $this->rcTableExpression( $rc ));
 		
-		if( count($orderByComponents = $sp->getOrderByComponents()) > 0 ) {
+		$filterSql = $search->getFilter()->toSql($tableAlias, $this->dbObjectNamer, $PB );
+		
+		if( count($orderByComponents = $search->getComparator()->getComponents()) > 0 ) {
 			$orderBySqlComponents = array();
 			foreach( $orderByComponents as $oc ) {
-				$orderByColumnParamName = EarthIT_DBC_ParameterUtil::newParamName('orderBy');
-				$params[$orderByColumnParamName] = new EarthIT_DBC_SQLIdentifier($this->fieldDbName($rc, $oc->getField()));
-				$orderBySqlComponents[] = "{{$orderByColumnParamName}}".($oc->isAscending() ? " ASC" : " DESC");
+				$columnName = $this->dbObjectNamer->getColumnName($fields[$oc->getFieldName()]);
+				$orderByColumnParamName = $PU->newParam('orderBy', new EarthIT_DBC_SQLIdentifier($columnName));
+				$orderBySqlComponents[] = "{{$orderByColumnParamName}} ".$oc->getDirection();
 			}
 			$orderBySection = "ORDER BY ".implode(', ',$orderBySqlComponents)."\n";
 		} else $orderBySection = '';
-
+		
 		$limitClauseParts = array();
-		if( $sp->getLimit() !== null ) $limitClauseParts[] = "LIMIT ".$sp->getLimit();
-		if( $sp->getSkip() != 0 ) $limitClauseParts[] = "OFFSET ".$sp->getSkip();
+		if( $search->getLimit() !== null ) $limitClauseParts[] = "LIMIT ".$sp->getLimit();
+		if( $search->getSkip() != 0 ) $limitClauseParts[] = "OFFSET ".$sp->getSkip();
 		$limitSection = $limitClauseParts ? implode(' ',$limitClauseParts)."\n" : '';
 		
 		return array(
 			'emptyResultSetGuaranteed' => false,
-			'fromSection' => "FROM {table} AS {$tableAlias}\n",
-			'whereSection' => $whereClauses ? "WHERE ".implode("\n  AND ",$whereClauses)."\n" : '',
+			'fromSection' => "FROM {{$tableParamName}} AS {$tableAlias}\n",
+			'whereSection' => "WHERE $filterSql\n",
 			'orderBySection' => $orderBySection,
 			'limitSection' => $limitSection
 		);
@@ -201,7 +164,7 @@ implements EarthIT_CMIPREST_Storage
 		foreach( EarthIT_CMIPREST_Util::storableFields($rc) as $f ) {
 			$columnNameParam = EarthIT_DBC_ParameterUtil::newParamName('column');
 			$fieldNameParam = EarthIT_DBC_ParameterUtil::newParamName('field');
-			$params[$columnNameParam] = new EarthIT_DBC_SQLIdentifier($this->fieldDbName($rc, $f));
+			$params[$columnNameParam] = new EarthIT_DBC_SQLIdentifier($this->dbObjectNamer->getColumnName($rc, $f));
 			$params[$fieldNameParam] = new EarthIT_DBC_SQLIdentifier($f->getName());
 			$selectedThings[] = "{$tableAlias}.{{$columnNameParam}} AS {{$fieldNameParam}}";
 		}
@@ -209,8 +172,7 @@ implements EarthIT_CMIPREST_Storage
 	}
 	
 	protected function evaluateJohnTree(
-		EarthIT_Schema_ResourceClass $rc,
-		EarthIT_CMIPREST_SearchParameters $sp,
+		EarthIT_Storage_Search $search,
 		array $johns,
 		array $branches,
 		$path, array &$results
@@ -218,16 +180,18 @@ implements EarthIT_CMIPREST_Storage
 		foreach( $branches as $k=>$johnTreeNode ) {
 			$newJohns = $johns;
 			$newJohns[] = $johnTreeNode->getJohn();
-			$this->evaluateJohnTree( $rc, $sp, $newJohns, $johnTreeNode->branches, $path.".".$k, $results );
+			$this->evaluateJohnTree( $search, $newJohns, $johnTreeNode->branches, $path.".".$k, $results );
 		}
+		
+		$rc = $search->getResourceClass();
 		
 		$results[$path] = array();
 		
 		$aliasNum = 0;
 		$alias0 = 'a'.($aliasNum++);
 
-		$params = array();
-		$searchQuery = $this->buildSearchSql( $rc, $sp, 'root', $params );
+		$PB = new EarthIT_DBC_ParamsBuilder();
+		$searchQuery = $this->buildSearchSql( $search, 'root', $PB );
 		if( $searchQuery['emptyResultSetGuaranteed'] ) return;
 		
 		$joins = array();
@@ -242,14 +206,13 @@ implements EarthIT_CMIPREST_Storage
 				$targetAlias = 'a'.($aliasNum++);
 				$joinConditions = array();
 				for( $li=0; $li<count($j->originLinkFields); ++$li ) {
-					$originColumnParam = EarthIT_DBC_ParameterUtil::newParamName('originColumn');
-					$targetColumnParam = EarthIT_DBC_ParameterUtil::newParamName('targetColumn');
-					$params[$originColumnParam] = new EarthIT_DBC_SQLIdentifier($this->fieldDbName($originRc, $j->originLinkFields[$li]));
-					$params[$targetColumnParam] = new EarthIT_DBC_SQLIdentifier($this->fieldDbName($targetRc, $j->targetLinkFields[$li]));
+					$originColumnParam = $PB->newParam('originColumn',
+						new EarthIT_DBC_SQLIdentifier($this->dbObjectNamer->getColumnName($originRc, $j->originLinkFields[$li])));
+					$targetColumnParam = $PB->newParam('targetColumn',
+						new EarthIT_DBC_SQLIdentifier($this->dbObjectNamer->getColumnName($targetRc, $j->targetLinkFields[$li])));
 					$joinConditions[] = "{$targetAlias}.{{$targetColumnParam}} = {$originAlias}.{{$originColumnParam}}";
 				}
-				$targetTableParam = EarthIT_DBC_ParameterUtil::newParamName('targetTable');
-				$params[$targetTableParam] = $this->rcTableExpression($targetRc);
+				$targetTableParam = $PB->newParam('targetTable', $this->rcTableExpression($targetRc));
 				$joins[] = "JOIN {{$targetTableParam}} AS {$targetAlias} ON ".implode(' AND ',$joinConditions);
 				$originAlias = $targetAlias;
 			}
@@ -261,7 +224,7 @@ implements EarthIT_CMIPREST_Storage
 		// table, not the things we join to!
 		
 		$sql =
-			"SELECT ".implode(', ', $this->buildSelects($targetRc, $params, $targetAlias))."\n".
+			"SELECT ".implode(', ', $this->buildSelects($targetRc, $targetAlias, $PB))."\n".
 			"FROM (\n\t".str_replace("\n","\n\t",
 				"SELECT *\n".
 				$searchQuery['fromSection'].
@@ -271,7 +234,7 @@ implements EarthIT_CMIPREST_Storage
 			).") AS $alias0\n".
 			(count($joins) ? implode("\n",$joins)."\n" : '');
 		
-		foreach( $this->sqlRunner->fetchRows($sql, $params) AS $dbObj ) {
+		foreach( $this->sqlRunner->fetchRows($sql, $PB->getParams()) AS $dbObj ) {
 			$results[$path][] = $this->dbObjectToInternal($targetRc, $dbObj);
 		}
 	}
@@ -285,7 +248,7 @@ implements EarthIT_CMIPREST_Storage
 		array $options=array()
 	) {
 		$results = array();
-		$this->evaluateJohnTree( $rc, $sp, array(), $branches, 'root', $results );
+		$this->evaluateJohnTree( $search, array(), $johnBranches, 'root', $results );
 		return $results;
 	}
 	
