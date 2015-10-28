@@ -1,6 +1,8 @@
 <?php
 
-class EarthIT_CMIPREST_MemoryStorage implements EarthIT_CMIPREST_Storage
+class EarthIT_CMIPREST_MemoryStorage
+extends EarthIT_Storage_MemoryStorage
+implements EarthIT_CMIPREST_Storage
 {
 	/** Array of resource class name => list of items of that class */
 	protected $items;
@@ -9,7 +11,7 @@ class EarthIT_CMIPREST_MemoryStorage implements EarthIT_CMIPREST_Storage
 	
 	// TODO: Maybe move these to Util
 	
-	protected function matches( array $item, EarthIT_CMIPREST_SearchParameters $sp ) {
+	protected function spMatches( array $item, EarthIT_CMIPREST_SearchParameters $sp ) {
 		foreach( $sp->getFieldMatchers() as $fieldName=>$fieldMatcher ) {
 			if( !$fieldMatcher->matches($item[$fieldName]) ) return false;
 		}
@@ -17,125 +19,50 @@ class EarthIT_CMIPREST_MemoryStorage implements EarthIT_CMIPREST_Storage
 	}
 	
 	protected function order( array $items, array $orderByComponents ) {
-		// TODO
-		return $items;
+		if( count($orderByComponents) == 0 ) return $items;
+		
+		throw new Exception("MemoryStorage doesn't support ordering when doing johnly searches.");
 	}
 	
-	protected function limit( array $items, $skip, $limit ) {
-		// TODO
-		return $items;
-	}
-	
-	
+	/** @override */
 	public function johnlySearchItems(
 		EarthIT_Schema_ResourceClass $rc,
 		EarthIT_CMIPREST_SearchParameters $sp,
 		array $johnBranches
 	) {
+		if( count($johnBranches) > 0 ) {
+			throw new Exception("John branches not supported by MemoryStorage.");
+		}
+		
 		$results = array();
 		if( isset($this->items[$rc->getName()]) ) {
 			foreach( $this->items[$rc->getName()] as $item ) {
-				if( $item !== null and $this->matches($item, $sp) ) {
+				if( $item !== null and $this->spMatches($item, $sp) ) {
 					$results[] = $item;
 				}
 			}
 		}
-		$results = $this->limit( $this->order($results, $sp->getOrderByComponents()), $sp->getSkip(), $sp->getLimit() );
+		$results = array_slice( $this->order($results, $sp->getOrderByComponents()), $sp->getSkip(), $sp->getLimit() );
 		return array('root'=>$results);
 	}
 	
-	protected function getItemIndex( EarthIT_Schema_ResourceClass $rc, $itemId ) {
-		if( !isset($this->items[$rc->getName()]) ) return null;
-		
-		$sp = EarthIT_CMIPREST_Util::itemIdToSearchParameters($rc, $itemId);
-		
-		$items = $this->items[$rc->getName()];
-		foreach( $items as $k=>$item ) {
-			if( $this->matches($item, $sp) ) return $k;
-		}
-		return null;
-	}
-	
-	/**
-	 * Create a new object, returning the values of all it fields after
-	 * being created
-	 */
+	/** @override */
 	public function postItem( EarthIT_Schema_ResourceClass $rc, array $itemData ) {
-		if( ($pk = $rc->getPrimaryKey()) ) {
-			if( $pk->getFieldNames() ) foreach( $pk->getFieldNames() as $fn ) {
-				if(!isset($itemData[$fn])) $itemData[$fn] = $this->nextId++;
-			}
-		}
-		
-		$this->items[$rc->getName()][] = $itemData;
-		return $itemData;
+		return EarthIT_CMIPREST_Util::postItem( $this, $rc, $itemData );
 	}
 	
-	/**
-	 * Replace all data of an object, setting unspecified fields to their default values,
-	 * returning the new values of all its fields
-	 */
+	/** @override */
 	public function putItem( EarthIT_Schema_ResourceClass $rc, $itemId, array $itemData ) {
-		foreach( EarthIT_CMIPREST_Util::idToFieldValues($rc, $itemId) as $k=>$v ) {
-			if(!isset($itemData[$k])) $itemData[$k] = $v;
-		}
-		if( ($index = $this->getItemIndex($rc, $itemId)) !== null ) {
-			$this->items[$rc->getName()][$index] = $itemData;
-		} else {
-			$this->items[$rc->getName()][] = $itemData;
-		}
-		
-		return $itemData;
+		return EarthIT_CMIPREST_Util::putItem( $this, $rc, $itemId, $itemData );
 	}
 	
-	/**
-	 * Update only specified fields of the given object,
-	 * returning the values of all its fields after being updated
-	 */
+	/** @override */
 	public function patchItem( EarthIT_Schema_ResourceClass $rc, $itemId, array $itemData ) {
-		foreach( EarthIT_CMIPREST_Util::idToFieldValues($rc, $itemId) as $k=>$v ) {
-			if(!isset($itemData[$k])) $itemData[$k] = $v;
-		}
-		if( ($index = $this->getItemIndex($rc, $itemId)) === null ) {
-			throw new Exception("No ".$rc->getName()." $itemId to patch!");
-		}
-		
-		$item =& $this->items[$rc->getName()][$index];
-		$item = array_merge( $item, $itemData );
-		return $item;
+		return EarthIT_CMIPREST_Util::patchItem( $this, $rc, $itemId, $itemData );
 	}
 	
-	/**
-	 * Make the item not exist.
-	 * Deleting an item that already does not exist should NOT be considered an error.
-	 */
+	/** @override */
 	public function deleteItem( EarthIT_Schema_ResourceClass $rc, $itemId ) {
-		if( ($index = $this->getItemIndex($rc, $itemId)) !== null ) {
-			unset($this->items[$rc->getName()][$index]);
-		}
-	}
-	
-	public function saveItems( array $itemData, EarthIT_Schema_ResourceClass $rc, array $options=array() ) {
-		throw new Exception(get_class($this).'#'.__FUNCTION__." not yet implemented");
-	}
-	
-	public function searchItems( EarthIT_Storage_Search $search, array $options=array() ) {
-		$rcName = $search->getResourceClass()->getName();
-		$filter = $search->getFilter();
-		$matched = array();
-		if( isset($this->items[$rcName]) ) foreach( $this->items[$rcName] as $item ) {
-			if( $filter->matches($item) ) $matched[] = $item;
-		}
-		usort( $matched, $search->getComparator() );
-		return array_slice($matched, $search->getSkip(), $search->getLimit());
-	}
-	
-	public function deleteItems( EarthIT_Schema_ResourceClass $rc, EarthIT_Storage_ItemFilter $filter ) {
-		$rcName = $search->getResourceClass()->getName();
-		$matchedKeys = array();
-		if( isset($this->items[$rcName]) ) foreach( $this->items[$rcName] as $k=>$item ) {
-			if( $filter->matches($item) ) $matchedKeys[] = $k;
-		}
-		foreach( $matchedKeys as $k ) unset($this->items[$k]);
+		unset($this->items[$rc->getName()][$itemId]);
 	}
 }

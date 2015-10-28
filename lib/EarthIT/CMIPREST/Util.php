@@ -54,24 +54,18 @@ class EarthIT_CMIPREST_Util
 		}
 		return implode("-", $parts);
 	}
-	
+
+	/**
+	 * @deprecated use Storage_Util::itemId
+	 */
 	public static function itemId( EarthIT_Schema_ResourceClass $rc, array $item ) {
-		$pk = $rc->getPrimaryKey();
-		if( $pk === null or count($pk->getFieldNames()) == 0 ) return null;
-		
-		$fields = $rc->getFields();
-		$parts = array();
-		foreach( $pk->getFieldNames() as $fn ) {
-			if( !isset($item[$fn]) ) return null;
-			$parts[] = $item[$fn];
-		}
-		return implode("-", $parts);
+		return EarthIT_Storage_Util::itemId($item, $rc);
 	}
 	
 	/**
 	 * return array of field name => field value for the primary key fields encoded in $id
 	 *
-	 * @deprecated use Storage_Util::idToFieldValues
+	 * @deprecated use Storage_Util::itemIdToFieldValues
 	 */
 	public static function idToFieldValues( EarthIT_Schema_ResourceClass $rc, $id) {
 		return EarthIT_Storage_Util::itemIdToFieldValues($id, $rc);
@@ -159,6 +153,31 @@ class EarthIT_CMIPREST_Util
 	
 	public static function getItemById( EarthIT_CMIPREST_Storage $storage, EarthIT_Schema_ResourceClass $rc, $itemId ) {
 		return EarthIT_Storage_Util::getItemById( $itemId, $rc, $storage );
+	}
+
+	public static function postItem( EarthIT_Storage_ItemSaver $storage, EarthIT_Schema_ResourceClass $rc, array $itemData ) {
+		$itemData = EarthIT_Storage_Util::castItemFieldValues($itemData,$rc);
+		return EarthIT_CMIPREST_Util::first( $storage->saveItems( array($itemData), $rc, array(
+			EarthIT_Storage_ItemSaver::RETURN_SAVED => true,
+			EarthIT_Storage_ItemSaver::ON_DUPLICATE_KEY => EarthIT_Storage_ItemSaver::ODK_UPDATE) ) );
+	}
+	
+	public static function putItem( EarthIT_Storage_ItemSaver $storage, EarthIT_Schema_ResourceClass $rc, $itemId, array $itemData ) {
+		$itemData = EarthIT_CMIPREST_Util::mergeEnsuringNoContradictions(
+			EarthIT_Storage_Util::itemIdToFieldValues($itemId,$rc),
+			EarthIT_Storage_Util::castItemFieldValues($itemData,$rc));
+		return EarthIT_CMIPREST_Util::first( $storage->saveItems( array($itemData), $rc, array(
+			EarthIT_Storage_ItemSaver::RETURN_SAVED => true,
+			EarthIT_Storage_ItemSaver::ON_DUPLICATE_KEY => EarthIT_Storage_ItemSaver::ODK_REPLACE) ) );
+	}
+	
+	public static function patchItem( EarthIT_Storage_ItemSaver $storage, EarthIT_Schema_ResourceClass $rc, $itemId, array $itemData ) {
+		$itemData = EarthIT_CMIPREST_Util::mergeEnsuringNoContradictions(
+			EarthIT_Storage_Util::itemIdToFieldValues($itemId,$rc),
+			EarthIT_Storage_Util::castItemFieldValues($itemData,$rc));
+		return EarthIT_CMIPREST_Util::first( $storage->saveItems( array($itemData), $rc, array(
+			EarthIT_Storage_ItemSaver::RETURN_SAVED => true,
+			EarthIT_Storage_ItemSaver::ON_DUPLICATE_KEY => EarthIT_Storage_ItemSaver::ODK_UPDATE) ) );
 	}
 	
 	//// Nife_HTTP_Response generation

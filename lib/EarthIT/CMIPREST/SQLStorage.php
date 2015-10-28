@@ -268,6 +268,7 @@ class EarthIT_CMIPREST_SQLStorage extends EarthIT_Storage_SQLStorage implements 
 	
 	////
 	
+	/** @override */
 	public function johnlySearchItems(
 		EarthIT_Schema_ResourceClass $rc,
 		EarthIT_CMIPREST_SearchParameters $sp,
@@ -278,109 +279,22 @@ class EarthIT_CMIPREST_SQLStorage extends EarthIT_Storage_SQLStorage implements 
 		return $results;
 	}
 	
+	/** @override */
 	public function postItem( EarthIT_Schema_ResourceClass $rc, array $itemData ) {
-		$tableExpression = $this->rcTableExpression( $rc );
-
-		$params = array();
-		$valuex = array();
-		$columnValues = $this->internalObjectToDb($rc, $itemData, $params);
-		$columnExpressionList = array();
-		foreach( $columnValues as $columnName => $value ) {
-			$valueParamName = EarthIT_DBC_ParameterUtil::newParamName('v');
-			$valuex[] = "{{$valueParamName}}";
-			$params[$valueParamName] = $value;
-			$columnExpressionList[] = new EarthIT_DBC_SQLIdentifier($columnName);
-			$columnValueList[] = $value;
-		}
-		
-		// TODO: actually determine ID columns
-		// So we can validate or something?
-		
-		$selects = implode(', ',$this->buildSelects($rc, $params));
-		$params['table'] = $tableExpression;
-		$params['columns'] = $columnExpressionList;
-		$rows = $this->sqlRunner->fetchRows(
-			"INSERT INTO {table}\n".
-			"{columns} VALUES\n".
-			"(".implode(',',$valuex).")\n".
-			"RETURNING {$selects}", $params);
-		if( count($rows) != 1 ) {
-			throw new Exception("INSERT INTO ... RETURNING returned ".count($rows)." rows; expected exactly 1.");
-		}
-		foreach( $rows as $row ) {
-			return $this->dbObjectToInternal($rc, $row);
-		}
+		return EarthIT_CMIPREST_Util::postItem( $this, $rc, $itemData );
 	}
 	
-	protected function doPatchLikeAction( EarthIT_Schema_ResourceClass $rc, $itemId, array $itemData, $merge ) {
-		// TODO: Make it work even if the record does not already exist
-		
-		$idFieldValues = EarthIT_CMIPREST_Util::idToFieldValues( $rc, $itemId );
-		$internalValues = EarthIT_CMIPREST_Util::mergeEnsuringNoContradictions( $idFieldValues, $itemData );
-		if( !$merge ) {
-			// Set other field values to their defaults.
-			// Assuming null for now...
-			foreach( $rc->getFields() as $fieldName => $field ) {
-				if( !isset($internalValues[$fieldName]) ) {
-					$internalValues[$fieldName] = null;
-				}
-			}
-		}
-		
-		$params = array('table' => $this->rcTableExpression($rc));
-		$columnValues = $this->internalObjectToDb($rc, $internalValues, $params);
-
-		$conditions = self::encodeColumnValuePairs($this->internalObjectToDb($rc, $idFieldValues, $params), $params);
-		$sets       = self::encodeColumnValuePairs($columnValues, $params);
-		
-		$params['columns'] = array();
-		$values = array();
-		foreach( $columnValues as $colName => $value ) {
-			$params['columns'][] = new EarthIT_DBC_SQLIdentifier($colName);
-			$valueParamName = EarthIT_DBC_ParameterUtil::newParamName('v');
-			$valueSelects[] = "{{$valueParamName}}";
-			$params[$valueParamName] = $value;
-		}
-		
-		$selects = implode(', ',$this->buildSelects($rc, $params));
-		$sql =
-			"WITH los_updatos AS (\n".
-			"\t"."UPDATE {table} SET\n".
-			"\t\t".implode(",\n\t\t",$sets)."\n".
-			"\t"."WHERE ".implode("\n\t  AND",$conditions)."\n".
-			"\t"."RETURNING {$selects}\n".
-			"), los_insertsos AS (\n".
-			"\t"."INSERT INTO {table} {columns}\n".
-			"\t"."SELECT ".implode(", ",$valueSelects)."\n".
-			"\t"."WHERE NOT EXISTS ( SELECT * FROM los_updatos )\n".
-			"\t"."RETURNING {$selects}\n".
-			")\n".
-			"SELECT * FROM los_updatos UNION ALL SELECT * FROM los_insertsos";
-		$rows = $this->sqlRunner->fetchRows( $sql, $params );
-		if( count($rows) != 1 ) {
-			throw new Exception("UPDATE ... RETURNING returned ".count($rows)." rows; expected exactly 1.");
-		}
-		foreach( $rows as $row ) {
-			return $this->dbObjectToInternal($rc, $row);
-		}
-	}
-	
+	/** @override */
 	public function putItem( EarthIT_Schema_ResourceClass $rc, $itemId, array $itemData ) {
-		return $this->doPatchLikeAction($rc, $itemId, $itemData, false);
+		return EarthIT_CMIPREST_Util::putItem( $this, $rc, $itemId, $itemData );
 	}
 	
+	/** @override */
 	public function patchItem( EarthIT_Schema_ResourceClass $rc, $itemId, array $itemData ) {
-		return $this->doPatchLikeAction($rc, $itemId, $itemData, true);
+		return EarthIT_CMIPREST_Util::patchItem( $this, $rc, $itemId, $itemData );
 	}
 	
 	public function deleteItem( EarthIT_Schema_ResourceClass $rc, $itemId ) {
-		$idFieldValues = EarthIT_CMIPREST_Util::idToFieldValues( $rc, $itemId );
-		$params = array('table' => $this->rcTableExpression($rc));
-		$conditions = self::encodeColumnValuePairs($this->internalObjectToDb($rc, $idFieldValues, $params), $params);
-		$sql =
-			"DELETE FROM {table}\n".
-			"WHERE ".implode("\n  AND ", $conditions);
-		$this->sqlRunner->fetchRows( $sql, $params );
-		// Nothing to return
+		$this->deleteItems($rc, EarthIT_Storage_ItemFilters::byId($itemId, $rc));
 	}
 }
