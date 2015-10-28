@@ -1,48 +1,33 @@
 <?php
 
+// TODO: replace this and other CMIPREST_*Storage with a single
+// CMIPRESTStorageAdapter that wraps a Storage_Item*er object */
 class EarthIT_CMIPREST_MemoryStorage
 extends EarthIT_Storage_MemoryStorage
 implements EarthIT_CMIPREST_Storage
 {
-	/** Array of resource class name => list of items of that class */
-	protected $items;
-	protected $nextId = 1;
-	
-	
-	// TODO: Maybe move these to Util
-	
-	protected function spMatches( array $item, EarthIT_CMIPREST_SearchParameters $sp ) {
-		foreach( $sp->getFieldMatchers() as $fieldName=>$fieldMatcher ) {
-			if( !$fieldMatcher->matches($item[$fieldName]) ) return false;
-		}
-		return true;
-	}
-	
-	protected function order( array $items, array $orderByComponents ) {
-		if( count($orderByComponents) == 0 ) return $items;
-		
-		throw new Exception("MemoryStorage doesn't support ordering when doing johnly searches.");
-	}
-	
 	/** @override */
 	public function johnlySearchItems(
-		EarthIT_Schema_ResourceClass $rc,
-		EarthIT_CMIPREST_SearchParameters $sp,
-		array $johnBranches
+		EarthIT_Storage_Search $search,
+		array $johnBranches,
+		array $options=array()
 	) {
 		if( count($johnBranches) > 0 ) {
+			// Though we certainly /could/
 			throw new Exception("John branches not supported by MemoryStorage.");
 		}
 		
+		$rc = $search->getResourceClass();
+		$filter = $search->getFilter();
 		$results = array();
 		if( isset($this->items[$rc->getName()]) ) {
 			foreach( $this->items[$rc->getName()] as $item ) {
-				if( $item !== null and $this->spMatches($item, $sp) ) {
-					$results[] = $item;
-				}
+				if( $item !== null and $filter->matches($item) ) $results[] = $item;
 			}
 		}
-		$results = array_slice( $this->order($results, $sp->getOrderByComponents()), $sp->getSkip(), $sp->getLimit() );
+		
+		usort( $results, $search->getComparator() );
+		$results = array_slice( $results, $search->getSkip(), $search->getLimit() );
 		return array('root'=>$results);
 	}
 	

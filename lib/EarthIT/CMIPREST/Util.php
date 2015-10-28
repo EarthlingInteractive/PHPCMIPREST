@@ -139,18 +139,6 @@ class EarthIT_CMIPREST_Util
 		return $schema->getResourceClass( EarthIT_Schema_WordUtil::depluralize($collectionName) );
 	}
 	
-	/**
-	 * @return EarthIT_Storage_Search
-	 */
-	public static function itemIdToSearchParameters( EarthIT_Schema_ResourceClass $rc, $id ) {
-		$fieldValues = EarthIT_CMIPREST_Util::idToFieldValues( $rc, $id );
-		$fieldMatchers = array();
-		foreach( $fieldValues as $fieldName => $value ) {
-			$fieldMatchers[$fieldName] = new EarthIT_CMIPREST_FieldMatcher_Equal($value);
-		}
-		return new EarthIT_CMIPREST_SearchParameters($fieldMatchers, array(), 0, null);
-	}
-	
 	public static function getItemById( EarthIT_CMIPREST_Storage $storage, EarthIT_Schema_ResourceClass $rc, $itemId ) {
 		return EarthIT_Storage_Util::getItemById( $itemId, $rc, $storage );
 	}

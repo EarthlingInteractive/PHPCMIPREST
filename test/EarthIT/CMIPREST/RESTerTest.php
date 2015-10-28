@@ -148,9 +148,13 @@ class EarthIT_CMIPREST_RESTerTest extends EarthIT_CMIPREST_TestCase
 		$bobHopeId = $rez[0]['id'];
 		$redSkeltonId = $rez[1]['id'];
 		
-		$rez = $this->storage->johnlySearchItems($rc, new EarthIT_CMIPREST_SearchParameters(
-			array('ID' => new EarthIT_CMIPREST_FieldMatcher_In(array($bobHopeId, $redSkeltonId))),
-			array(), 0, null ), array());
+		$rez = $this->storage->johnlySearchItems(
+			new EarthIT_Storage_Search(
+				$rc,
+				EarthIT_Storage_ItemFilters::byId(array($bobHopeId, $redSkeltonId), $rc),
+				EarthIT_Storage_FieldwiseComparator::parse('+ID')
+			),
+			array(), array());
 		$items = $rez['root'];
 		$this->assertEquals( array(
 			array(
@@ -161,7 +165,7 @@ class EarthIT_CMIPREST_RESTerTest extends EarthIT_CMIPREST_TestCase
 				'ID' => $redSkeltonId,
 				'first name' => 'Red',
 				'last name' => 'Skelton'
-		)), $items);
+			)), $items);
 	}
 	
 	public function testMultiPatch() {
@@ -193,9 +197,12 @@ class EarthIT_CMIPREST_RESTerTest extends EarthIT_CMIPREST_TestCase
 			)
 		), $rez);
 		
-		$rez = $this->storage->johnlySearchItems($rc, new EarthIT_CMIPREST_SearchParameters(
-			array('ID' => new EarthIT_CMIPREST_FieldMatcher_In(array($personA['ID'], $personB['ID']))),
-			array(), 0, null ), array());
+		$rez = $this->storage->johnlySearchItems(
+			new EarthIT_Storage_Search(
+				$rc,
+				EarthIT_Storage_ItemFilters::byId(array($personA['ID'], $personB['ID']), $rc)
+			),
+			array(), array());
 		$items = $rez['root'];
 		foreach( $items as $item ) {
 			if( $item['ID'] == $personA['ID'] ) {
@@ -204,88 +211,6 @@ class EarthIT_CMIPREST_RESTerTest extends EarthIT_CMIPREST_TestCase
 			if( $item['ID'] == $personB['ID'] ) {
 				$this->assertEquals('Frank', $item['first name']);
 			}
-		}
-	}
-	
-	//// Test CMIPRESTRequest parsing
-	
-	public function testParseMultiPatch() {
-		$crr = EarthIT_CMIPREST_CMIPRESTRequest::parse('PATCH', '/people', array(), array(
-			3 => array(
-				'firstName' => 'Jake',
-				'lastName' => 'Wagner'
-			),
-			7 => array(
-				'firstName' => 'Jeff',
-				'lastName' => 'Glaze'
-			)
-		));
-		$crr->userId = 123;
-		
-		$ra = $this->rester->cmipRequestToResourceAction($crr);
-		
-		$this->assertEquals( EarthIT_CMIPREST_RESTActions::multiPatch(
-			$this->schema->getResourceClass('person'),
-			array(
-				3 => array(
-					'first name' => 'Jake',
-					'last name' => 'Wagner'
-				),
-				7 => array(
-					'first name' => 'Jeff',
-					'last name' => 'Glaze'
-				)
-			),
-			$this->standardSaveActionResultAssembler
-		), $ra);
-	}
-	
-	public function testParseCompoundAction() {
-		$lastName = 'Shaque'.rand(1000000,9999999).rand(1000000,9999999);
-		$crr = EarthIT_CMIPREST_CMIPRESTRequest::parse('POST', ';compound', array(), array(
-			'actions' => array(
-				'a' => array(
-					'method' => 'POST',
-					'path' => '/people',
-					'params' => array(),
-					'content' => array(
-						array(
-							'firstName' => 'Jaque',
-							'lastName' => 'Shaque'
-						),
-						array(
-							'firstName' => 'Jaque',
-							'lastName' => $lastName
-						)
-					)
-				),
-				'b' => array(
-					'method' => 'GET',
-					'path' => '/people',
-					'params' => array('lastName'=>'eq:'.$lastName)
-				)
-			)
-		));
-		$compoundAction = $this->rester->cmipRequestToResourceAction($crr);
-		$this->assertEquals( 'EarthIT_CMIPREST_RESTAction_CompoundAction', get_class($compoundAction) );
-		$this->assertEquals( array('a','b'), array_keys($compoundAction->getActions()) );
-		$this->assertEquals( 'EarthIT_CMIPREST_RESTAction_ArrayExpression', get_class($compoundAction->getResultExpression()) );
-		
-		// For good measure, let's see if it works
-		$rez = $this->rester->doAction($compoundAction, $this->standardActionContext);
-		$this->assertEquals( array('a','b'), array_keys($rez) );
-		$this->assertEquals( 2, count($rez['a']) );
-		$this->assertEquals( 1, count($rez['b']) );
-		$zux = null;
-		foreach( $rez['b'] as $prsn ) {
-			$this->assertNotNull($prsn['id']);
-			$this->assertNotNull($prsn['firstName']);
-			$this->assertNotNull($prsn['lastName']);
-		}
-		foreach( $rez['a'] as $prsn ) {
-			$this->assertNotNull($prsn['id']);
-			$this->assertNotNull($prsn['firstName']);
-			$this->assertNotNull($prsn['lastName']);
 		}
 	}
 	

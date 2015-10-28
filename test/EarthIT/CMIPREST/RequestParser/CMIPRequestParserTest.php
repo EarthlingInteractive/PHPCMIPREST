@@ -37,11 +37,11 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParserTest extends EarthIT_CMIPR
 		
 		$act = $parser->toAction($req);
 		$this->assertTrue( $act instanceof EarthIT_CMIPREST_RESTAction_SearchAction );
-		$sp = $act->getSearchParameters();
-		$this->assertEquals( 2, count($sp->getFieldMatchers()) );
-		$this->assertEquals( 100, $sp->getSkip() );
-		$this->assertEquals( 25, $sp->getLimit() );
-		$ob = $sp->getOrderByComponents();
+		$search = $act->getSearch();
+		$this->assertEquals( 'EarthIT_Storage_Filter_AndedItemFilter', get_class($search->getFilter()) );
+		$this->assertEquals( 100, $search->getSkip() );
+		$this->assertEquals( 25, $search->getLimit() );
+		$ob = $search->getComparator()->getComponents();
 		$this->assertEquals( 1, count($ob) );
 
 	}

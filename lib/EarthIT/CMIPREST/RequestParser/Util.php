@@ -64,45 +64,36 @@ class EarthIT_CMIPREST_RequestParser_Util
 		}
 	}
 	
-	public static function fieldMatcher( $scheme, $pattern, EarthIT_Schema_DataType $fieldType ) {
-		if( $scheme == 'in' ) {
-			$vals = array();
-			if( $pattern !== '' ) foreach( explode(',',$pattern) as $p ) {
-					$vals[] = self::parseValue($p, $fieldType);
-				}
-			return new EarthIT_CMIPREST_FieldMatcher_In($vals);
-		} else if( $scheme == 'like' ) {
-			return new EarthIT_CMIPREST_FieldMatcher_Like($pattern);
+	public static function keyByMappedName( array $schemaObjects, $schemaObjectNamer ) {
+		$keyed = array();
+		foreach( $schemaObjects as $obj ) {
+			$name = call_user_func($schemaObjectNamer,$obj);
+			if( $name == '' ) throw new Exception(
+				"Naming function returned empty string for name of schema object '".
+				$obj->getName()."', which obviously isn't right.");
+			$keyed[$name] = $obj;
 		}
-		$value = self::parseValue($pattern, $fieldType);
-		switch( $scheme ) {
-		case 'eq': return new EarthIT_CMIPREST_FieldMatcher_Equal($value);
-		case 'ne': return new EarthIT_CMIPREST_FieldMatcher_NotEqual($value);
-		case 'gt': return new EarthIT_CMIPREST_FieldMatcher_Greater($value);
-		case 'ge': return new EarthIT_CMIPREST_FieldMatcher_GreaterOrEqual($value);
-		case 'lt': return new EarthIT_CMIPREST_FieldMatcher_Lesser($value);
-		case 'le': return new EarthIT_CMIPREST_FieldMatcher_LesserOrEqual($value);
-		default:
-			throw new Exception("Unrecognized field match scheme: '$scheme'");
-		}
+		return $keyed;
 	}
 	
-	public static function parseFieldMatcher( $v, EarthIT_Schema_DataType $fieldType ) {
-		$colonIdx = strpos($v, ':');
-		if( $colonIdx === false ) {
-			if( strpos($v, '*') === false ) {
-				$scheme = 'eq';
-			} else {
-				$scheme = 'like';
-			}
-		} else {
-			$scheme = substr($v, 0, $colonIdx);
-			$v = substr($v, $colonIdx+1);
+	public static function parseFilter( array $requestFilters, EarthIT_Schema_ResourceClass $rc, array $fields ) {
+		$filterComponents = array();
+		foreach( $requestFilters as $filter ) {
+			$field = $fields[$filter['fieldName']];
+			$filterComponents[] = EarthIT_Storage_ItemFilters::fieldValueFilter( $filter['opName'], $filter['pattern'], $field, $rc );
 		}
-		
-		return self::fieldMatcher( $scheme, $v, $fieldType );
+		return EarthIT_Storage_ItemFilters::anded($filterComponents);
 	}
-		
+	
+	public static function parseComparator( array $requestOrderBys, EarthIT_Schema_ResourceClass $rc, array $fields ) {
+		$fieldwiseComparatorComponents = array();
+		foreach( $requestOrderBys as $orderBy ) {
+			$field = $fields[$orderBy['fieldName']];
+			$fieldwiseComparatorComponents[] = new EarthIT_Storage_FieldwiseComparatorComponent($field->getName(), $orderBy['direction']);
+		}
+		return new EarthIT_Storage_FieldwiseComparator($fieldwiseComparatorComponents);
+	}
+	
 	/**
 	 * a.b.c.d -> { a: { b: { c: { d: {} } } } }
 	 */

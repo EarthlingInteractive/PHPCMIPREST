@@ -148,33 +148,12 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 					new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler('assembleSingleResult', $this->keyByIds)
 				);
 			} else {
-				$fields = $resourceClass->getFields();
-				$fieldRestToInternalNames = array();
-				foreach( $fields as $fn=>$field ) {
-					$restName = call_user_func($this->schemaObjectNamer,$field);
-					if( $restName == '' ) throw new Exception(
-						"Naming function returned empty string for name of field '".
-						$field->getName()."', which obviously isn't right.");
-					$fieldRestToInternalNames[$restName] = $fn;
-				}
-				
-				$fieldMatchers = array();
-				$orderBy = RPU::orderByComponents($request['orderBy'], $resourceClass, $this->schemaObjectNamer);
-				foreach( $request['filters'] as $filter ) {
-					// TODO: 'id' may need to be remapped to multiple field matchers
-					// Will probably want to allow for other fake, searchable fields, too
-					if( !isset($fieldRestToInternalNames[$filter['fieldName']]) ) {
-						throw new Exception(
-							"No such field: '{$filter['fieldName']}'; recognized field names are: ".
-							implode(', ',array_keys($fieldRestToInternalNames)));
-					}
-					$fieldName = $fieldRestToInternalNames[$filter['fieldName']];
-					$fieldType = $fields[$fieldName]->getType();
-					$fieldMatchers[$fieldName] = RPU::fieldMatcher($filter['opName'], $filter['pattern'], $fieldType);
-				}
-				$sp = new EarthIT_CMIPREST_SearchParameters( $fieldMatchers, $orderBy, $request['skip'], $request['limit'] );
+				$fieldsByRestName = RPU::keyByMappedName( $resourceClass->getFields(), $this->schemaObjectNamer );
+				$filter     = RPU::parseFilter(     $request['filters'], $resourceClass, $fieldsByRestName );
+				$comparator = RPU::parseComparator( $request['orderBy'], $resourceClass, $fieldsByRestName );
+				$search = new EarthIT_Storage_Search( $resourceClass, $filter, $comparator, $request['skip'], $request['limit'] );
 				return new EarthIT_CMIPREST_RESTAction_SearchAction(
-					$resourceClass, $sp, $johnBranches,
+					$search, $johnBranches, array(),
 					new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler('assembleSearchResult', $this->keyByIds)
 				);
 			}

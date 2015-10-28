@@ -238,201 +238,6 @@ class EarthIT_CMIPREST_RESTer
 		throw new Exception("Can't find '$linkRestName' link from ".$originRc->getName());
 	}
 	
-	/** @deprecated */
-	private function _withsToJohnBranches( array $withs, EarthIT_Schema_ResourceClass $originRc ) {
-		$branches = array();
-		foreach( $withs as $k=>$subWiths ) {
-			$john = $this->findJohnByRestName( $originRc, $k );
-			$branches[$k] = new EarthIT_CMIPREST_JohnTreeNode(
-				$john,
-				$this->_withsToJohnBranches( $subWiths, $john->targetResourceClass )
-			);
-		}
-		return $branches;
-	}
-	
-	/**
-	 * @api
-	 * @deprecated
-	 */
-	public function withsToJohnBranches( EarthIT_Schema_ResourceClass $originRc, $withs ) {
-		if( is_scalar($withs) ) $withs = explode(',',$withs);
-		if( !is_array($withs) ) throw new Exception("withs parameter must be an array or comma-delimited string.");
-		$pathTree = array();
-		foreach( $withs as $segment ) self::parsePathToTree(explode('.',$segment), $pathTree);
-		return $this->_withsToJohnBranches( $pathTree, $originRc );
-	}
-	
-	/**
-	 * TODO: Move to CMIPRESTRequest::cmipRestRequestToRESTAction
-	 * @return EarthIT_CMIPREST_RESTAction
-	 * @api
-	 * @overridable
-	 * @deprecated
-	 */
-	public function cmipRequestToResourceAction( EarthIT_CMIPREST_CMIPRESTRequest $crr ) {
-		if( ($propName = $crr->getResourcePropertyName()) !== null ) {
-			throw new Exception("Unrecognized resource property, '$propName'");
-		}
-		
-		$userId = $crr->getUserId();
-		
-		if( $crr->getMethod() == 'DO-COMPOUND-ACTION' ) {
-			$subActions = array();
-			$content = $crr->getContent();
-			foreach( $content['actions'] as $k=>$subReq ) {
-				$subCrr = EarthIT_CMIPREST_CMIPRESTRequest::parse(
-					$subReq['method'], $subReq['path'],
-					isset($subReq['params'] ) ? $subReq['params']  : array(),
-					isset($subReq['content']) ? $subReq['content'] : array()
-				);
-				$subCrr->userId = $userId;
-				$subActions[$k] = $this->cmipRequestToResourceAction($subCrr);
-			}
-			// TODO: Allow specification of response somehow
-			return EarthIT_CMIPREST_RESTActions::compoundAction($subActions);
-		}
-		
-		$resourceClass = EarthIT_CMIPREST_Util::getResourceClassByCollectionName($this->schema, $crr->getResourceCollectionName());
-		
-		if( !$resourceClass->hasRestService() ) {
-			throw new EarthIT_CMIPREST_ResourceNotExposedViaService("'".$resourceClass->getName()."' records are not exposed via services");
-		}
-		
-		switch( $crr->getMethod() ) {
-		case 'GET': case 'HEAD':
-			$johnBranches = array();
-			foreach( $crr->getResultModifiers() as $k=>$v ) {
-				if( $k === 'with' ) {
-					$johnBranches = $this->withsToJohnBranches($resourceClass, $v);
-				} else {
-					throw new Exception("Unrecognized result modifier: '$k'");
-				}
-			}
-			
-			if( $itemId = $crr->getResourceInstanceId() ) {
-				return new EarthIT_CMIPREST_RESTAction_GetItemAction(
-					$resourceClass, $itemId, $johnBranches,
-					new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler('assembleSingleResult', $this->keyByIds)
-				); 
-			} else {
-				$fields = $resourceClass->getFields();
-				$fieldRestToInternalNames = array();
-				foreach( $fields as $fn=>$field ) {
-					$fieldRestToInternalNames[$this->fieldRestName($resourceClass, $field)] = $fn;
-				}
-				
-				$fieldMatchers = array();
-				$orderBy = array();
-				$skip = 0;
-				$limit = null;
-				foreach( $crr->getParameters() as $k=>$v ) {
-					if( $k == '_' ) {
-						// Ignore!
-					} else if( $k == 'orderBy' ) {
-						$orderBy = $this->parseOrderByComponents($resourceClass, $v);
-					} else if( $k == 'limit' ) {
-						if( preg_match('/^(\d+),(\d+)$/', $v, $bif ) ) {
-							$skip = $bif[1]; $limit = $bif[2];
-						} else if( preg_match('/^(\d+)$/', $v, $bif ) ) {
-							$limit = $bif[1];
-						} else {
-							throw new Exception("Malformed skip/limit parameter: '$v'");
-						}
-					} else {
-						// TODO: 'id' may need to be remapped to multiple field matchers
-						// Will probably want to allow for other fake, searchable fields, too
-						if( !isset($fieldRestToInternalNames[$k]) ) {
-							throw new Exception("No such field: '$k'");
-						}
-						$fieldName = $fieldRestToInternalNames[$k];
-						$fieldType = $fields[$fieldName]->getType();
-						$fieldMatchers[$fieldName] = RPU::parseFieldMatcher($v, $fieldType);
-					}
-				}
-				$sp = new EarthIT_CMIPREST_SearchParameters( $fieldMatchers, $orderBy, $skip, $limit );
-				return new EarthIT_CMIPREST_RESTAction_SearchAction(
-					$resourceClass, $sp, $johnBranches,
-					new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler('assembleSearchResult', $this->keyByIds)
-				);
-			}
-		case 'POST':
-			if( $crr->getResourceInstanceId() !== null ) {
-				throw new Exception("You may not include item ID when POSTing");
-			}
-			$data = $crr->getContent();
-			
-			// If all keys are sequential integers (this includes the
-			// case when an empty list is posted), then a list of items
-			// is being posted.
-			// Otherwise, a single item is being posted and will be returned.
-			// The multi-item case should be considered the normal one;
-			// auto-detecting the single-item case is for backward-compatibility only.
-			
-			$isSingleItemPost = false;
-			$len = count($data);
-			for( $i=0; $i<$len; ++$i ) {
-				if( !array_key_exists($i, $data) ) {
-					$isSingleItemPost = true;
-					break;
-				}
-			}
-			
-			if( $isSingleItemPost ) {
-				return new EarthIT_CMIPREST_RESTAction_PostItemAction(
-					$resourceClass,
-					$this->restObjectToInternal($resourceClass, $data),
-					new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler('assembleSingleResult', $this->keyByIds)
-				);
-			} else {
-				$items = array();
-				foreach( $data as $dat ) {
-					$items[] = $this->restObjectToInternal($resourceClass, $dat);
-				}
-				return EarthIT_CMIPREST_RESTActions::multiPost(
-					$resourceClass, $items,
-					new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler('assembleSingleResult', $this->keyByIds)
-				);
-			}
-		case 'PUT':
-			if( $crr->getResourceInstanceId() === null ) {
-				throw new Exception("You ust include item ID when PUTing");
-			}
-			return new EarthIT_CMIPREST_RESTAction_PutItemAction(
-				$resourceClass, $crr->getResourceInstanceId(),
-				$this->restObjectToInternal($resourceClass, $crr->getContent()),
-				new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler('assembleSingleResult', $this->keyByIds)
-			);
-		case 'PATCH':
-			if( $crr->getResourceInstanceId() === null ) {
-				$items = array();
-				foreach( $crr->getContent() as $itemId=>$restItem ) {
-					$items[$itemId] = $this->restObjectToInternal($resourceClass, $restItem);
-				}
-				return EarthIT_CMIPREST_RESTActions::multiPatch(
-					$resourceClass, $items,
-					new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler('assembleSingleResult', $this->keyByIds)
-				);
-			} else {
-				return new EarthIT_CMIPREST_RESTAction_PatchItemAction(
-					$resourceClass, $crr->getResourceInstanceId(),
-					$this->restObjectToInternal($resourceClass, $crr->getContent()),
-					new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler('assembleSingleResult', $this->keyByIds)
-				);
-			}
-		case 'DELETE':
-			if( $crr->getResourceInstanceId() === null ) {
-				throw new Exception("You ust include item ID when DELETEing");
-			}
-			return new EarthIT_CMIPREST_RESTAction_DeleteItemAction(
-				$userId, $resourceClass, $crr->getResourceInstanceId(),
-				new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler('assembleDeleteResult', $this->keyByIds)
-			);
-		default:
-			throw new Exception("Unrecognized method, '".$crr->getMethod()."'");
-		}
-	}
-	
 	//// Action validation/authorization
 	
 	/**
@@ -468,9 +273,9 @@ class EarthIT_CMIPREST_RESTer
 	
 	protected function doSearchAction( EarthIT_CMIPREST_RESTAction_SearchAction $act, $ctx, $preAuth, $authorizationExplanation ) {
 		$rc = $act->getResourceClass();
-		$sp = $act->getSearchParameters();
+		$search = $act->getSearch();
 		$queryParams = array();
-		$relevantObjects = $this->storage->johnlySearchItems( $rc, $sp, $act->getJohnBranches() );
+		$relevantObjects = $this->storage->johnlySearchItems( $search, $act->getJohnBranches() );
 		$johnCollections = $this->collectJohns( $act->getJohnBranches(), 'root' );
 		
 		// If we need to post-authorize, do it.
@@ -523,13 +328,15 @@ class EarthIT_CMIPREST_RESTer
 	 */
 	protected function doSimpleAction( EarthIT_CMIPREST_RESTAction $act, $ctx ) {
 		$this->validateSimpleAction($act);
-
+		
+		$rc = $act->getResourceClass();
+		
 		if( $act instanceof EarthIT_CMIPREST_RESTAction_GetItemAction ) {
 			// Translate to a search action!
 			$act = new EarthIT_CMIPREST_RESTAction_SearchAction(
-				$act->getResourceClass(),
-				EarthIT_CMIPREST_Util::itemIdToSearchParameters($act->getResourceClass(), $act->getItemId()),
+				new EarthIT_Storage_Search($rc, EarthIT_Storage_ItemFilters::byId($act->getItemId(), $rc)),
 				$act->getJohnBranches(),
+				array(),
 				$act->getResultAssembler()
 			);
 		}

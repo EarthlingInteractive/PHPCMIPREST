@@ -20,16 +20,16 @@ interface EarthIT_CMIPREST_JohnlyItemSearcher
 	 *   )
 	 * )
 	 *
-	 * @param EarthIT_Schema_ResourceClass $rc
-	 * @param EarthIT_CMIPREST_SearchParameters $sp
+	 * @param EarthIT_Storage_Search $search
 	 * @param array $johnBranches array of path component =>
 	 *   EarthIT_CMIPREST_JohnTreeNode (each JohnTreeNode has its own
 	 *   branches)
+	 * @param array $options additional search options (same as taken by ItemSearcher#searchItems)
 	 * @return array of result object lists, keyed by branch path
 	 */
 	public function johnlySearchItems(
-		EarthIT_Schema_ResourceClass $rc,
-		EarthIT_CMIPREST_SearchParameters $sp,
-		array $johnBranches
+		EarthIT_Storage_Search $search,
+		array $johnBranches,
+		array $options=array()
 	);
 }

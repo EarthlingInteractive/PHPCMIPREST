@@ -1,6 +1,10 @@
 <?php
 
-class EarthIT_CMIPREST_SQLStorage extends EarthIT_Storage_SQLStorage implements EarthIT_CMIPREST_Storage
+// TODO: replace this and other CMIPREST_*Storage with a single
+// CMIPRESTStorageAdapter that wraps a Storage_Item*er object */
+class EarthIT_CMIPREST_SQLStorage
+extends EarthIT_Storage_SQLStorage
+implements EarthIT_CMIPREST_Storage
 {
 	protected $dbNamespacePath = array();
 	public function setDbNamespacePath( $path ) {
@@ -270,9 +274,9 @@ class EarthIT_CMIPREST_SQLStorage extends EarthIT_Storage_SQLStorage implements 
 	
 	/** @override */
 	public function johnlySearchItems(
-		EarthIT_Schema_ResourceClass $rc,
-		EarthIT_CMIPREST_SearchParameters $sp,
-		array $branches
+		EarthIT_Storage_Search $search,
+		array $johnBranches,
+		array $options=array()
 	) {
 		$results = array();
 		$this->evaluateJohnTree( $rc, $sp, array(), $branches, 'root', $results );
