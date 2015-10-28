@@ -61,11 +61,11 @@ class 'person' : SRR : collection name @ "people" {
 }
 
 class 'rating' : SRR {
-	author : reference(person) {
-		ID = author ID : key(primary)
+	author : reference(person) : key(primary) {
+		ID = author ID
 	}
-	subject : reference(resource) {
-		ID = subject ID : key(primary)
+	subject : reference(resource) : key(primary) {
+		ID = subject ID
 	}
 	
 	comment          : text       : nullable
