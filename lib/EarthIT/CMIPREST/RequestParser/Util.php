@@ -108,49 +108,7 @@ class EarthIT_CMIPREST_RequestParser_Util
 		
 		self::parsePathToTree( array_slice($path, 1), $into[$path[0]] );
 	}
-	
-	/**
-	 * @param array $specs array of array('fieldName'=>field name (external form), 'direction'=>'ASC'|'DESC')
-	 */
-	public static function orderByComponents( array $specs, EarthIT_Schema_ResourceClass $rc, $fieldNamer ) {
-		$fieldsByName = $rc->getFields();
-		$fieldsByExternalName = array();
-		foreach( $fieldsByName as $f ) {
-			$fieldsByExternalName[call_user_func($fieldNamer,$f)] = $f;
-		}
 		
-		$orderByComponents = array();
-		foreach( $specs as $spec ) {
-			if( isset($fieldsByExternalName[$spec['fieldName']]) ) {
-				$field = $fieldsByExternalName[$spec['fieldName']];
-			} else {
-				throw new Exception("Unknown field in orderBy: '{$spec['fieldName']}'");
-			}
-			$orderByComponents[] = new EarthIT_CMIPREST_OrderByComponent($field, $spec['direction']==='ASC');
-		}
-		return $orderByComponents;
-	}
-		
-	public static function parseOrderByComponents( $v, EarthIT_Schema_ResourceClass $rc, $fieldNamer ) {
-		if( is_string($v) ) $v = explode(',',$v);
-		
-		$specs = array();
-		
-		foreach( $v as $cv ) {
-			if( $cv[0] == '+' ) {
-				$ascending = true;
-				$cv = substr($cv,1);
-			} else if( $cv[0] == '-' ) {
-				$ascending = false;
-				$cv = substr($cv,1);
-			} else $ascending = true;
-			
-			$specs[] = array('fieldName'=>$cv, 'direction'=>$ascending?'ASC':'DESC');
-		}
-		
-		return self::orderByComponents($specs, $rc, $fieldNamer);
-	}
-	
 	private static function findJohnByName( EarthIT_Schema $schema, EarthIT_Schema_ResourceClass $originRc, $linkName, $namer ) {
 		foreach( $originRc->getReferences() as $refName=>$ref ) {
 			$name = $namer($ref);

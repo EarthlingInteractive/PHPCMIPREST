@@ -112,33 +112,6 @@ class EarthIT_CMIPREST_RESTer
 	}
 	
 	//// Action conversion
-
-	/** @deprecated */
-	protected function parseOrderByComponents( EarthIT_Schema_ResourceClass $rc, $v ) {
-		$fieldsByName = $rc->getFields();
-		$fieldsByRestName = $this->getFieldsByRestName($rc);
-		$oorderByComponents = array();
-		foreach( explode(',',$v) as $cv ) {
-			if( $cv[0] == '+' ) {
-				$ascending = true;
-				$cv = substr($cv,1);
-			} else if( $cv[0] == '-' ) {
-				$ascending = false;
-				$cv = substr($cv,1);
-			} else $ascending = true;
-			
-			// May eventually need to take fake fields into account, here
-			if( isset($fieldsByName[$cv]) ) {
-				$field = $fieldsByName[$cv];
-			} else if( isset($fieldsByRestName[$cv]) ) {
-				$field = $fieldsByRestName[$cv];
-			} else {
-				throw new Exception("Unknown field in orderBy: '$cv'");
-			}
-			$orderByComponents[] = new EarthIT_CMIPREST_OrderByComponent($field, $ascending);
-		}
-		return $orderByComponents;
-	}
 	
 	/**
 	 * a.b.c.d -> { a: { b: { c: { d: {} } } } }
