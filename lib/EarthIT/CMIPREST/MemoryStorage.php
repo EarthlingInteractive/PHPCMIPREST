@@ -12,23 +12,7 @@ implements EarthIT_CMIPREST_Storage
 		array $johnBranches,
 		array $options=array()
 	) {
-		if( count($johnBranches) > 0 ) {
-			// Though we certainly /could/
-			throw new Exception("John branches not supported by MemoryStorage.");
-		}
-		
-		$rc = $search->getResourceClass();
-		$filter = $search->getFilter();
-		$results = array();
-		if( isset($this->items[$rc->getName()]) ) {
-			foreach( $this->items[$rc->getName()] as $item ) {
-				if( $item !== null and $filter->matches($item) ) $results[] = $item;
-			}
-		}
-		
-		usort( $results, $search->getComparator() );
-		$results = array_slice( $results, $search->getSkip(), $search->getLimit() );
-		return array('root'=>$results);
+		return EarthIT_CMIPREST_JohnlySearchUtil::johnlySearchItems( $this, $search, $johnBranches );
 	}
 	
 	/** @override */
