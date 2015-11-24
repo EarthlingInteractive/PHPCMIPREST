@@ -4,7 +4,6 @@ use EarthIT_CMIPREST_RequestParser_Util AS RPU;
 
 /*
  * TODO:
- * - Remove cmiRequestToResourceAction
  * - Comment functions better
  */
 class EarthIT_CMIPREST_RESTer
