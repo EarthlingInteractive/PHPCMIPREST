@@ -227,7 +227,7 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 				throw new Exception("You ust include item ID when DELETEing");
 			}
 			return new EarthIT_CMIPREST_RESTAction_DeleteItemAction(
-				$userId, $resourceClass, $request['instanceId'],
+				$resourceClass, $request['instanceId'],
 				new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler('assembleDeleteResult', $this->keyByIds)
 			);
 		default:
