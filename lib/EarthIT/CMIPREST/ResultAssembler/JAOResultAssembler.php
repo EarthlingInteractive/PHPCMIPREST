@@ -131,7 +131,11 @@ class EarthIT_CMIPREST_ResultAssembler_JAOResultAssembler implements EarthIT_CMI
 		if( $this->plural ) {
 			$rezData = $relevantRestObjects['root'];
 		} else {
-			$rezData = null;
+			// Justin says:
+			// "JSON API doesn't support null values for the top-level data object.
+			// "It needs to be an empty object."
+			// - 2015-12-21
+			$rezData = array();
 			foreach( $relevantRestObjects['root'] as $rezData ) break;
 		}
 		
