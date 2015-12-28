@@ -148,9 +148,10 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 		$bobHopeId = $rez[0]['id'];
 		$redSkeltonId = $rez[1]['id'];
 		
-		$items = $this->storage->search($rc, new EarthIT_CMIPREST_SearchParameters(
+		$sRez = $this->storage->search($rc, new EarthIT_CMIPREST_SearchParameters(
 			array('ID' => new EarthIT_CMIPREST_FieldMatcher_In(array($bobHopeId, $redSkeltonId))),
-			array(), 0, null ), array())['root'];
+			array(), 0, null ), array());
+		$items = $sRez['root'];
 		$this->assertEquals( array(
 			array(
 				'ID' => $bobHopeId,
