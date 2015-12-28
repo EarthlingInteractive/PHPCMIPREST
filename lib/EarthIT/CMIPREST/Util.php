@@ -167,7 +167,8 @@ class EarthIT_CMIPREST_Util
 	
 	public static function getItemById( EarthIT_CMIPREST_Storage $storage, EarthIT_Schema_ResourceClass $rc, $itemId ) {
 		$sp = self::itemIdToSearchParameters($rc, $itemId);
-		$results = $storage->search( $rc, $sp, array() )['root'];
+		$sRes = $storage->search( $rc, $sp, array() );
+		$results = $sRes['root'];
 		if( count($results) == 0 ) return null;
 		if( count($results) == 1 ) return self::first($results);
 		throw new Exception("Multiple ".$rc->getName()." records found with ID = '".$itemId."'");
