@@ -3,7 +3,7 @@
 class EarthIT_CMIPREST_RequestParser_CMIPRequestParserTest extends PHPUnit_Framework_TestCase
 {
 	public function setUp() {
-		$this->schema = require __DIR__.'/../../../../test-schema.php';
+		$this->schema = require 'test/schema.php';
 		$this->schemaObjectNamer = function($obj,$plural=false) {
 			$name = $plural ?
 				($rc->getFirstPropertyValue(EarthIT_CMIPREST_NS::COLLECTION_NAME) ?:

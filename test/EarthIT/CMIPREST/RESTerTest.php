@@ -46,13 +46,13 @@ class EarthIT_CMIPREST_RESTerTest extends PHPUnit_Framework_TestCase
 		$this->standardActionContext = new EarthIT_CMIPREST_RESTerTest_Context(1337);
 
 		// Relative to the pwd, yes.
-		$dbConfigFile = 'config/test-dbc.json';
+		$dbConfigFile = 'test/config/dbc.json';
 		$dbConfigJson = file_get_contents($dbConfigFile);
 		if( $dbConfigJson === null ) {
 			throw new Exception("Failed to load database config from $dbConfigFile");
 		}
 		$dbConfig = EarthIT_JSON::decode($dbConfigJson);
-		$this->schema = require 'test-schema.php';
+		$this->schema = require 'test/schema.php';
 		$this->storage = new EarthIT_CMIPREST_MemoryStorage();
 		$this->rester = new EarthIT_CMIPREST_RESTer(array(
 			'storage' => $this->storage,

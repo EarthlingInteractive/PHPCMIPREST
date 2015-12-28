@@ -1,0 +1,7 @@
+{
+    "dbname": "cmipresttest",
+    "host": "localhost",
+    "user": "cmipresttest",
+    "password": "cmipresttest",
+    "driver": "pdo_pgsql"
+}

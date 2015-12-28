@@ -1,8 +1,10 @@
 .create-database.sql
 .database-created
 composer.lock
-config/test-dbc.json
-test-schema.php
+test/config/dbc.json
+test/db-scripts/create-database.sql
+test/db-scripts/create-tables.sql
+test/schema.php
 util/SchemaSchemaDemo.jar
 util/test-psql
 vendor
