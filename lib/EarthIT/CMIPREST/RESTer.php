@@ -279,7 +279,8 @@ class EarthIT_CMIPREST_RESTer
 		
 		if( $crr->getMethod() == 'DO-COMPOUND-ACTION' ) {
 			$subActions = array();
-			foreach( $crr->getContent()['actions'] as $k=>$subReq ) {
+			$content = $crr->getContent();
+			foreach( $content['actions'] as $k=>$subReq ) {
 				$subCrr = EarthIT_CMIPREST_CMIPRESTRequest::parse(
 					$subReq['method'], $subReq['path'],
 					isset($subReq['params'] ) ? $subReq['params']  : array(),
