@@ -121,7 +121,7 @@ class EarthIT_CMIPREST_RequestParser_Util
 	/**
 	 * @param array $specs array of array('fieldName'=>field name (external form), 'direction'=>'ASC'|'DESC')
 	 */
-	public static function orderByComponents( array $specs, EarthIT_Schema_ResourceClass $rc, callable $fieldNamer ) {
+	public static function orderByComponents( array $specs, EarthIT_Schema_ResourceClass $rc, $fieldNamer ) {
 		$fieldsByName = $rc->getFields();
 		$fieldsByExternalName = array();
 		foreach( $fieldsByName as $f ) {
@@ -140,7 +140,7 @@ class EarthIT_CMIPREST_RequestParser_Util
 		return $orderByComponents;
 	}
 		
-	public static function parseOrderByComponents( $v, EarthIT_Schema_ResourceClass $rc, callable $fieldNamer ) {
+	public static function parseOrderByComponents( $v, EarthIT_Schema_ResourceClass $rc, $fieldNamer ) {
 		if( is_string($v) ) $v = explode(',',$v);
 		
 		$specs = array();
@@ -160,7 +160,7 @@ class EarthIT_CMIPREST_RequestParser_Util
 		return self::orderByComponents($specs, $rc, $fieldNamer);
 	}
 	
-	private static function findJohnByName( EarthIT_Schema $schema, EarthIT_Schema_ResourceClass $originRc, $linkName, callable $namer ) {
+	private static function findJohnByName( EarthIT_Schema $schema, EarthIT_Schema_ResourceClass $originRc, $linkName, $namer ) {
 		foreach( $originRc->getReferences() as $refName=>$ref ) {
 			$name = $namer($ref);
 			if( $linkName == $name ) {
@@ -238,7 +238,7 @@ class EarthIT_CMIPREST_RequestParser_Util
 
 	private static function _withsToJohnBranches(
 		EarthIT_Schema $schema, EarthIT_Schema_ResourceClass $originRc,
-		array $withs, callable $namer
+		array $withs, $namer
 	) {
 		$branches = array();
 		foreach( $withs as $k=>$subWiths ) {
@@ -253,7 +253,7 @@ class EarthIT_CMIPREST_RequestParser_Util
 	
 	public static function withsToJohnBranches(
 		EarthIT_Schema $schema, EarthIT_Schema_ResourceClass $originRc,
-		$withs, callable $namer, $pathDelimiter='.'
+		$withs, $namer, $pathDelimiter='.'
 	) {
 		if( is_scalar($withs) ) $withs = explode(',',$withs);
 		if( !is_array($withs) ) throw new Exception("withs parameter must be an array or comma-delimited string.");

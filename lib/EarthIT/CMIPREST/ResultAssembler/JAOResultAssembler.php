@@ -11,7 +11,7 @@ class EarthIT_CMIPREST_ResultAssembler_JAOResultAssembler implements EarthIT_CMI
 	protected $nameFormatter;
 	protected $plural;
 	
-	public function __construct(EarthIT_Schema $schema, callable $nameFormatter, $plural) {
+	public function __construct(EarthIT_Schema $schema, $nameFormatter, $plural) {
 		$this->schema = $schema;
 		$this->nameFormatter = $nameFormatter;
 		$this->plural = $plural;
