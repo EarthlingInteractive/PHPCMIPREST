@@ -201,7 +201,7 @@ class EarthIT_CMIPREST_RequestParser_Util
 						}
 						
 						if( $refInverseName !== null ) {
-							$mungedName = $namer(EarthIT_Schema_SchemaObject::__set_state(['name'=>$refInverseName]));
+							$mungedName = $namer(EarthIT_Schema_SchemaObject::__set_state(array('name'=>$refInverseName)));
 						} else {
 							// Default to the class name
 							$mungedName = $targetRcMungedName;
