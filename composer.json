@@ -12,7 +12,8 @@
 		"earthit/dbc": "^1.0.0"
 	},
 	"require-dev": {
-		"doctrine/dbal": "~2.4"
+		"doctrine/dbal": "~2.4",
+		"phpunit/phpunit": "^3.7"
 	},
 	"autoload": {
 		"psr-0": {

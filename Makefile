@@ -82,4 +82,4 @@ run-unit-tests: vendor .database-created test/schema.php test/db-scripts/create-
 	util/test-psql -v ON_ERROR_STOP=1 <test/db-scripts/drop-schema.sql
 	util/test-psql -v ON_ERROR_STOP=1 <test/db-scripts/create-schema.sql
 	util/test-psql -v ON_ERROR_STOP=1 <test/db-scripts/create-tables.sql
-	phpunit --bootstrap vendor/autoload.php test
+	vendor/bin/phpunit --bootstrap vendor/autoload.php test
