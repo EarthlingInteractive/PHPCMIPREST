@@ -116,7 +116,7 @@ class EarthIT_CMIPREST_ResultAssembler_JAOResultAssembler implements EarthIT_CMI
 	}
 	
 	/** @override */
-	public function assembleResult( EarthIT_CMIPREST_StorageResult $result ) {
+	public function assembleResult( EarthIT_CMIPREST_StorageResult $result, TOGoS_Action $action=null, $ctx=null ) {
 		$rootRc = $result->getRootResourceClass();
 		$johnCollections = $result->getJohnCollections();
 		$relevantObjects = $result->getItemCollections();

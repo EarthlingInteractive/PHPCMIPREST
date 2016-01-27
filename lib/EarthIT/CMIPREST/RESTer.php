@@ -264,20 +264,22 @@ class EarthIT_CMIPREST_RESTer
 		}
 		
 		return $act->getResultAssembler()->assembleResult(
-			new EarthIT_CMIPREST_StorageResult($rc, $johnCollections, $relevantObjects));
+			new EarthIT_CMIPREST_StorageResult($rc, $johnCollections, $relevantObjects),
+			$act, $ctx);
 	}
 	
 	/**
 	 * Assemble results with no johns.  i.e. a simple collection of one type of objects
 	 */
-	protected function assembleSimpleResult($act, $rc, array $items) {
+	protected function assembleSimpleResult($act, $rc, array $items, $ctx) {
 		$assembler = $act->getResultAssembler();
 		if( $assembler === null ) {
 			throw new Exception("No result assembler specified by ".get_class($act));
 		}
 		
 		return $assembler->assembleResult(
-			new EarthIT_CMIPREST_StorageResult($rc, array('root'=>array()), array('root'=>$items)) );
+			new EarthIT_CMIPREST_StorageResult($rc, array('root'=>array()), array('root'=>$items)),
+			$act, $ctx );
 	}
 
 	// TODO:
@@ -325,20 +327,22 @@ class EarthIT_CMIPREST_RESTer
 		}
 		
 		if( $preAuth !== true ) {
-			throw new Exception("preAuthorizeSimpleAction should only return true or false for non-search actions, but it returned ".var_export($preAuth,true));
+			throw new Exception(
+				"preAuthorizeSimpleAction should only return true or false ".
+				"for non-search actions, but it returned ".var_export($preAuth,true));
 		}
 		
 		// Otherwise it's A-Okay!
 		
 		if( $act instanceof EarthIT_CMIPREST_RESTAction_PostItemAction ) {
 			$rc = $act->getResourceClass();
-			return $this->assembleSimpleResult($act, $rc, array($this->storage->postItem($rc, $act->getItemData())));
+			return $this->assembleSimpleResult($act, $rc, array($this->storage->postItem($rc, $act->getItemData())), $ctx);
 		} else if( $act instanceof EarthIT_CMIPREST_RESTAction_PutItemAction ) {
 			$rc = $act->getResourceClass();
-			return $this->assembleSimpleResult($act, $rc, array($this->storage->putItem($rc, $act->getItemId(), $act->getItemData())));
+			return $this->assembleSimpleResult($act, $rc, array($this->storage->putItem($rc, $act->getItemId(), $act->getItemData())), $ctx);
 		} else if( $act instanceof EarthIT_CMIPREST_RESTAction_PatchItemAction ) {
 			$rc = $act->getResourceClass();
-			return $this->assembleSimpleResult($act, $rc, array($this->storage->patchItem($rc, $act->getItemId(), $act->getItemData())));
+			return $this->assembleSimpleResult($act, $rc, array($this->storage->patchItem($rc, $act->getItemId(), $act->getItemData())), $ctx);
 		} else if( $act instanceof EarthIT_CMIPREST_RESTAction_DeleteItemAction ) {
 			$this->storage->deleteItem($act->getResourceClass(), $act->getItemId());
 			return self::SUCCESS;

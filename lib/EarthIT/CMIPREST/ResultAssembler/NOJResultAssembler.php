@@ -118,12 +118,6 @@ class EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler implements EarthIT_CMI
 		foreach( $this->assembleSearchResult($rootRc, $johnCollections, $relevantObjects) as $item ) return $item;
 		return null;
 	}
-	protected function assemblePostResult( EarthIT_Schema_ResourceClass $rootRc, array $johnCollections, array $relevantObjects ) {
-		return $this->assembleSearchResult($rootRc, $johnCollections, $relevantObjects);
-	}
-	protected function assemblePutResult( EarthIT_Schema_ResourceClass $rootRc, array $johnCollections, array $relevantObjects ) {
-		return $this->assembleSingleResult($rootRc, $johnCollections, $relevantObjects);
-	}
 	protected function assembleSuccessResult( EarthIT_Schema_ResourceClass $rootRc, array $johnCollections, array $relevantObjects ) {
 		return self::SUCCESS;
 	}
@@ -141,7 +135,7 @@ class EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler implements EarthIT_CMI
 	}
 
 	/** @override */
-	public function assembleResult( EarthIT_CMIPREST_StorageResult $result ) {
+	public function assembleResult( EarthIT_CMIPREST_StorageResult $result, TOGoS_Action $action=null, $ctx=null ) {
 		$meth = $this->method;
 		return $this->$meth( $result->getRootResourceClass(), $result->getJohnCollections(), $result->getItemCollections());
 	}

@@ -1,21 +1,28 @@
 <?php
 
 use EarthIT_CMIPREST_RequestParser_Util AS RPU;
+use EarthIT_CMIPREST_RequestParser_ResultAssemblerFactory AS RAF;
 
 class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPREST_RequestParser
 {
 	protected $schema;
 	protected $schemaObjectNamer;
-	protected $keyByIds = true;
+	protected $resultAssemblerFactory;
 	
 	/**
 	 * @param EarthIT_Schema $schema the schema that we're parsing requests for
 	 * @param callable $schemaObjectNamer a EarthIT_Schema_Field -> string function
 	 *   to provide 'REST names' for fields (probably camelCase).
+	 * @param EarthIT_CMIPREST_RequestParser_ResultAssemblerFactory object to use for getting result assemblers.
 	 */
-	public function __construct( EarthIT_Schema $schema, $schemaObjectNamer ) {
+	public function __construct( EarthIT_Schema $schema, $schemaObjectNamer, $resultAssemblerFactory=null ) {
 		$this->schema = $schema;
 		$this->schemaObjectNamer = $schemaObjectNamer;
+		
+		if( $resultAssemblerFactory === null ) {
+			$resultAssemblerFactory = EarthIT_CMIPREST_RequestParser_CMIPResultAssemblerFactory::getInstance();
+		}
+		$this->resultAssemblerFactory = $resultAssemblerFactory;
 	}
 	
 	protected function restObjectToInternal( array $restObj, EarthIT_Schema_ResourceClass $rc ) {
@@ -145,7 +152,7 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 			if( $itemId = $request['instanceId'] ) {
 				return new EarthIT_CMIPREST_RESTAction_GetItemAction(
 					$resourceClass, $itemId, $johnBranches,
-					new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler('assembleSingleResult', $this->keyByIds)
+					$this->resultAssemblerFactory->getResultAssembler(RAF::AC_GET)
 				);
 			} else {
 				$fieldsByRestName = RPU::keyByMappedName( $resourceClass->getFields(), $this->schemaObjectNamer );
@@ -154,7 +161,7 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 				$search = new EarthIT_Storage_Search( $resourceClass, $filter, $comparator, $request['skip'], $request['limit'] );
 				return new EarthIT_CMIPREST_RESTAction_SearchAction(
 					$search, $johnBranches, array(),
-					new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler('assembleSearchResult', $this->keyByIds)
+					$this->resultAssemblerFactory->getResultAssembler(RAF::AC_SEARCH)
 				);
 			}
 		case 'POST':
@@ -183,7 +190,7 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 				return new EarthIT_CMIPREST_RESTAction_PostItemAction(
 					$resourceClass,
 					$this->restObjectToInternal($data, $resourceClass),
-					new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler('assembleSingleResult', $this->keyByIds)
+					$this->resultAssemblerFactory->getResultAssembler(RAF::AC_POST)
 				);
 			} else {
 				$items = array();
@@ -192,7 +199,7 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 				}
 				return EarthIT_CMIPREST_RESTActions::multiPost(
 					$resourceClass, $items,
-					new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler('assembleSingleResult', $this->keyByIds)
+					$this->resultAssemblerFactory->getResultAssembler(RAF::AC_MULTIPOST)
 				);
 			}
 		case 'PUT':
@@ -202,10 +209,11 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 			return new EarthIT_CMIPREST_RESTAction_PutItemAction(
 				$resourceClass, $request['instanceId'],
 				$this->restObjectToInternal($request['contentObject'], $resourceClass),
-				new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler('assembleSingleResult', $this->keyByIds)
+				$this->resultAssemblerFactory->getResultAssembler(RAF::AC_PUT)
 			);
 		case 'PATCH':
 			if( $request['instanceId'] === null ) {
+				// Patch multiple items at once!
 				// TODO: Determine if this should exist.  I forgot why it's here or what it's supposed to do.
 				$items = array();
 				foreach( $request['contentObject'] as $itemId=>$restItem ) {
@@ -213,13 +221,13 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 				}
 				return EarthIT_CMIPREST_RESTActions::multiPatch(
 					$resourceClass, $items,
-					new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler('assembleSingleResult', $this->keyByIds)
+					$this->resultAssemblerFactory->getResultAssembler(RAF::AC_MULTIPATCH)
 				);
 			} else {
 				return new EarthIT_CMIPREST_RESTAction_PatchItemAction(
 					$resourceClass, $request['instanceId'],
 					$this->restObjectToInternal($request['contentObject'], $resourceClass),
-					new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler('assembleSingleResult', $this->keyByIds)
+					$this->resultAssemblerFactory->getResultAssembler(RAF::AC_PATCH)
 				);
 			}
 		case 'DELETE':
@@ -228,7 +236,7 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 			}
 			return new EarthIT_CMIPREST_RESTAction_DeleteItemAction(
 				$resourceClass, $request['instanceId'],
-				new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler('assembleDeleteResult', $this->keyByIds)
+				$this->resultAssemblerFactory->getResultAssembler(RAF::AC_DELETE)
 			);
 		default:
 			throw new Exception("Unrecognized method, '".$request['method']."'");
