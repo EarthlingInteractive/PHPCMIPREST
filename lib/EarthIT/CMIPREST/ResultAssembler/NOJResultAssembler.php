@@ -53,7 +53,7 @@ class EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler implements EarthIT_CMI
 		return $restObjects;
 	}
 	
-	protected function assembleSearchResult( EarthIT_Schema_ResourceClass $rootRc, array $johnCollections, array $relevantObjects ) {
+	protected function assembleMultiItemResult( EarthIT_Schema_ResourceClass $rootRc, array $johnCollections, array $relevantObjects ) {
 		$relevantRestObjects = array();
 		foreach( $johnCollections as $path => $johns ) {
 			// Figure out what resource class of items we got, here
@@ -114,8 +114,8 @@ class EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler implements EarthIT_CMI
 		return $relevantRestObjects['root'];
 	}
 	
-	protected function assembleSingleResult( EarthIT_Schema_ResourceClass $rootRc, array $johnCollections, array $relevantObjects ) {
-		foreach( $this->assembleSearchResult($rootRc, $johnCollections, $relevantObjects) as $item ) return $item;
+	protected function assembleSingleItemResult( EarthIT_Schema_ResourceClass $rootRc, array $johnCollections, array $relevantObjects ) {
+		foreach( $this->assembleMultiItemResult($rootRc, $johnCollections, $relevantObjects) as $item ) return $item;
 		return null;
 	}
 	protected function assembleSuccessResult( EarthIT_Schema_ResourceClass $rootRc, array $johnCollections, array $relevantObjects ) {

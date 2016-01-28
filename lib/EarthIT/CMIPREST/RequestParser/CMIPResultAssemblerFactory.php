@@ -16,9 +16,9 @@ implements EarthIT_CMIPREST_RequestParser_ResultAssemblerFactory
 	protected static function meth($actionClass) {
 		switch($actionClass) {
 		case self::AC_GET: case self::AC_POST: case self::AC_PUT: case self::AC_PATCH:
-			return 'assembleSingleResult';
+			return 'assembleSingleItemResult';
 		case self::AC_SEARCH: case self::AC_MULTIPOST: case self::AC_MULTIPATCH;
-			return 'assembleMultipleResult';
+			return 'assembleMultiItemResult';
 		case self::AC_DELETE:
 			return 'assembleDeleteResult';
 		default:

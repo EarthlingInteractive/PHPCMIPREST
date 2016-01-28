@@ -38,7 +38,7 @@ class EarthIT_CMIPREST_RESTerTest extends EarthIT_CMIPREST_TestCase
 	
 	public function setUp() {
 		$this->standardSaveActionResultAssembler =
-			new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler('assembleSingleResult', false);
+			new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler('assembleSingleItemResult', false);
 		$this->standardSuccessActionResultAssembler =
 			new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler('assembleSuccessResult', false);
 		$this->standardDeleteActionResultAssembler =
