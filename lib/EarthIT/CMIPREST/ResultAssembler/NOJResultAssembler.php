@@ -141,7 +141,7 @@ class EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler implements EarthIT_CMI
 	}
 	
 	/** @override */
-	public function assembledResultToHttpResponse( $rez ) {
+	public function assembledResultToHttpResponse( $rez, TOGoS_Action $action=null, $ctx=null ) {
 		if( $rez === self::SUCCESS or $rez === self::DELETED ) {
 			return Nife_Util::httpResponse("204 Okay");
 		} else if( $rez === null ) {
@@ -152,7 +152,7 @@ class EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler implements EarthIT_CMI
 	}
 
 	/** @override */
-	public static function exceptionToHttpResponse( Exception $e ) {
+	public static function exceptionToHttpResponse( Exception $e, TOGoS_Action $action=null, $ctx=null ) {
 		return EarthIT_CMIPREST_Util::exceptionalNormalJsonHttpResponse($e);
 	}
 }

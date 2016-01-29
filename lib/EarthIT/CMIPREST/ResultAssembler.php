@@ -40,10 +40,10 @@ interface EarthIT_CMIPREST_ResultAssembler
 	 * Take the result returned by assembleResult and encode
 	 * it as a Nife_HTTP_Response
 	 */
-	public function assembledResultToHttpResponse( $assembled );
+	public function assembledResultToHttpResponse( $assembled, TOGoS_Action $action=null, $ctx=null );
 	
 	/**
 	 * Encode the fact that an exception occurred as a Nife_HTTP_Response.
 	 */
-	public static function exceptionToHttpResponse( Exception $e );
+	public static function exceptionToHttpResponse( Exception $e, TOGoS_Action $action=null, $ctx=null );
 }
