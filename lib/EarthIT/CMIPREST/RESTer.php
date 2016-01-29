@@ -389,9 +389,9 @@ class EarthIT_CMIPREST_RESTer
 	public function doActionAndGetHttpResponse( EarthIT_CMIPREST_RESTAction $act, $ctx ) {
 		try {
 			$rez = $this->doAction($act, $ctx);
-			return $act->getResultAssembler()->assembledResultToHttpResponse($rez);
+			return $act->getResultAssembler()->assembledResultToHttpResponse($rez, $act, $ctx);
 		} catch( Exception $e ) {
-			return $act->getResultAssembler()->exceptionToHttpResponse($e);
+			return $act->getResultAssembler()->exceptionToHttpResponse($e, $act, $ctx);
 		}
 	}
 }
