@@ -1,7 +1,7 @@
 <?php
 
 /**
- * @unstable
+ * @api
  */
 class EarthIT_CMIPREST_StorageResult
 {

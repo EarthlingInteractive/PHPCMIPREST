@@ -1,7 +1,7 @@
 <?php
 
 /**
- * @unstable
+ * @api
  */
 interface EarthIT_CMIPREST_ResultAssembler
 {
