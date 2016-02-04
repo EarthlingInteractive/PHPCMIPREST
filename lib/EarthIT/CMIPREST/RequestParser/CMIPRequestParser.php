@@ -134,10 +134,6 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 		
 		$resourceClass = EarthIT_CMIPREST_Util::getResourceClassByCollectionName($this->schema, $request['collectionName']);
 		
-		if( !$resourceClass->hasRestService() ) {
-			throw new EarthIT_CMIPREST_ResourceNotExposedViaService("'".$resourceClass->getName()."' records are not exposed via services");
-		}
-		
 		switch( $request['method'] ) {
 		case 'GET': case 'HEAD':
 			$johnBranches = array();

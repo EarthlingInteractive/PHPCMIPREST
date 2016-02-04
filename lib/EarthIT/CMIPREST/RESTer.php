@@ -221,6 +221,9 @@ class EarthIT_CMIPREST_RESTer
 	 */
 	protected function validateSimpleAction( EarthIT_CMIPREST_RESTAction $act ) {
 		if( $act instanceof EarthIT_CMIPREST_RESTAction_ResourceAction ) {
+			if( !$act->getResourceClass()->hasRestService() ) {
+				throw new EarthIT_CMIPREST_ResourceNotExposedViaService($act, array('message'=>"'".$resourceClass->getName()."' records are not exposed via services"));
+			}
 		} else if( $act instanceof EarthIT_CMIPREST_RESTAction_InvalidAction ) {
 			throw new EarthIT_CMIPREST_ActionInvalid($act, $act->getErrorDetails());
 		} else {

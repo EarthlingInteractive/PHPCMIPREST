@@ -202,11 +202,11 @@ class EarthIT_CMIPREST_Util
 			$act = $e->getAction();
 			$status = $userIsAuthenticated ? 403 : 401;
 			return EarthIT_CMIPREST_Util::singleErrorResponse( $status, $e->getSimpleMessage(), $e->getNotes() );
+		} else if( $e instanceof EarthIT_CMIPREST_ResourceNotExposedViaService ) {
+			return EarthIT_CMIPREST_Util::singleErrorResponse( 404, $e->getMessage() );
 		} else if( $e instanceof EarthIT_CMIPREST_ActionInvalid ) {
 			return EarthIT_CMIPREST_Util::multiErrorResponse( 409, $e->getErrorDetails() );
 		} else if( $e instanceof EarthIT_Schema_NoSuchResourceClass ) {
-			return EarthIT_CMIPREST_Util::singleErrorResponse( 404, $e->getMessage() );
-		} else if( $e instanceof EarthIT_CMIPREST_ResourceNotExposedViaService ) {
 			return EarthIT_CMIPREST_Util::singleErrorResponse( 404, $e->getMessage() );
 		} else {
 			throw $e;
