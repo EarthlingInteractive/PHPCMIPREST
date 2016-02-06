@@ -43,6 +43,13 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParserTest extends EarthIT_CMIPR
 		$this->assertEquals( 25, $search->getLimit() );
 		$ob = $search->getComparator()->getComponents();
 		$this->assertEquals( 1, count($ob) );
-
+	}
+	
+	public function testMultiPostToAction() {
+		$parser = new EarthIT_CMIPREST_RequestParser_CMIPRequestParser($this->schema, $this->schemaObjectNamer);
+		$req = $parser->parse('POST', '/people', '', new EarthIT_JSON_PrettyPrintedJSONBlob(array(
+			array('firstName'=>'Bob','lastName'=>'Lindmeyer'),
+			array('firstName'=>'Bob','lastName'=>'Saget')
+		)));
 	}
 }
