@@ -19,7 +19,6 @@ class EarthIT_CMIPREST_RESTer
 	
 	protected $storage;
 	protected $schema;
-	protected $keyByIds; // TODO: Remove when CMIP request parsing extracted
 	protected $authorizer;
 	
 	public function __construct( $params ) {
@@ -32,7 +31,6 @@ class EarthIT_CMIPREST_RESTer
 			'dbAdapter' => null,
 			'dbNamer' => null,
 			'schema' => null,
-			'keyByIds' => false,
 			'authorizer' => new EarthIT_CMIPREST_RESTActionAuthorizer_DefaultRESTActionAuthorizer()
 		);
 		
@@ -50,7 +48,6 @@ class EarthIT_CMIPREST_RESTer
 			throw new Exception("No schema specified.");
 		}
 		
-		$this->keyByIds = $params['keyByIds'];
 		$this->authorizer = $params['authorizer'];
 	}
 		
