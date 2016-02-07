@@ -4,6 +4,7 @@
  * @api
  */
 class EarthIT_CMIPREST_StorageResult
+implements EarthIT_CMIPREST_ActionResult
 {
 	protected $rootRc;
 	protected $johnCollections;

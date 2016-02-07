@@ -363,7 +363,7 @@ class EarthIT_CMIPREST_RESTer
 		foreach( $act->getActions() as $k=>$subAct ) {
 			$subActionResults[$k] = $this->doAction($subAct, $ctx);
 		}
-		return $act->getResultExpression()->evaluate(array('action results'=>$subActionResults));
+		return $act->getResultAssembler()->assembleResult(new EarthIT_CMIPREST_CompoundActionResult($subActionResults));
 	}
 	
 	/**

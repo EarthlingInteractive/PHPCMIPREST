@@ -51,5 +51,6 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParserTest extends EarthIT_CMIPR
 			array('firstName'=>'Bob','lastName'=>'Lindmeyer'),
 			array('firstName'=>'Bob','lastName'=>'Saget')
 		)));
+		$act = $parser->toAction($req);
 	}
 }

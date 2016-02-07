@@ -18,11 +18,11 @@ interface EarthIT_CMIPREST_ResultAssembler
 	 * Assemble a StorageResult into whatever format the thing that's
 	 * going to take the results needs.  Normally this will be an array.
 	 * 
-	 * @param EarthIT_CMIPREST_StorageResult $result the return value of the action
+	 * @param EarthIT_CMIPREST_ActionResult $result the return value of the action
 	 * @param TOGoS_Action $action the action that was invoked to get this result
 	 * @param mixed $ctx some value representing the context in which the action was done
 	 */
-	public function assembleResult( EarthIT_CMIPREST_StorageResult $result, TOGoS_Action $action=null, $ctx=null );
+	public function assembleResult( EarthIT_CMIPREST_ActionResult $result, TOGoS_Action $action=null, $ctx=null );
 
 	/**
 	 * TODO: will need something like this

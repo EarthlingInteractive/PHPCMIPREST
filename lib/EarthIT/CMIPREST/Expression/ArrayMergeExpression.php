@@ -1,6 +1,6 @@
 <?php
 
-class EarthIT_CMIPREST_RESTAction_ArrayExpression implements EarthIT_CMIPREST_RESTAction_Expression
+class EarthIT_CMIPREST_Expression_ArrayMergeExpression implements EarthIT_CMIPREST_Expression
 {
 	protected $itemExpressions;
 	public function __construct( array $itemExpressions ) {
@@ -9,7 +9,7 @@ class EarthIT_CMIPREST_RESTAction_ArrayExpression implements EarthIT_CMIPREST_RE
 	public function evaluate( array $context ) {
 		$results = array();
 		foreach( $this->itemExpressions as $k=>$e ) {
-			$results[$k] = $e->evaluate($context);
+			$results += $e->evaluate($context);
 		}
 		return $results;
 	}
