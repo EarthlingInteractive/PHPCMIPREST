@@ -17,7 +17,6 @@ class EarthIT_CMIPREST_RESTer
 	
 	protected $storage;
 	protected $schema;
-	protected $keyByIds; // TODO: Remove when CMIP request parsing extracted
 	protected $authorizer;
 	
 	public function __construct( $params ) {
@@ -30,7 +29,6 @@ class EarthIT_CMIPREST_RESTer
 			'dbAdapter' => null,
 			'dbNamer' => null,
 			'schema' => null,
-			'keyByIds' => false,
 			'authorizer' => new EarthIT_CMIPREST_RESTActionAuthorizer_DefaultRESTActionAuthorizer()
 		);
 		
@@ -48,7 +46,6 @@ class EarthIT_CMIPREST_RESTer
 			throw new Exception("No schema specified.");
 		}
 		
-		$this->keyByIds = $params['keyByIds'];
 		$this->authorizer = $params['authorizer'];
 	}
 		
@@ -63,8 +60,9 @@ class EarthIT_CMIPREST_RESTer
 	 */
 	protected function validateSimpleAction( EarthIT_CMIPREST_RESTAction $act ) {
 		if( $act instanceof EarthIT_CMIPREST_RESTAction_ResourceAction ) {
-			if( !$act->getResourceClass()->hasRestService() ) {
-				throw new EarthIT_CMIPREST_ResourceNotExposedViaService($act, array('message'=>"'".$resourceClass->getName()."' records are not exposed via services"));
+			$rc = $act->getResourceClass();
+			if( !$rc->hasRestService() ) {
+				throw new EarthIT_CMIPREST_ResourceNotExposedViaService($act, array('message'=>"'".$rc->getName()."' records are not exposed via services"));
 			}
 		} else if( $act instanceof EarthIT_CMIPREST_RESTAction_InvalidAction ) {
 			throw new EarthIT_CMIPREST_ActionInvalid($act, $act->getErrorDetails());
@@ -207,7 +205,7 @@ class EarthIT_CMIPREST_RESTer
 		foreach( $act->getActions() as $k=>$subAct ) {
 			$subActionResults[$k] = $this->doAction($subAct, $ctx);
 		}
-		return $act->getResultExpression()->evaluate(array('action results'=>$subActionResults));
+		return $act->getResultAssembler()->assembleResult(new EarthIT_CMIPREST_CompoundActionResult($subActionResults));
 	}
 	
 	/**

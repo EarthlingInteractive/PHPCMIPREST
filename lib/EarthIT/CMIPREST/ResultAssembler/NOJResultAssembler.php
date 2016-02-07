@@ -135,7 +135,9 @@ class EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler implements EarthIT_CMI
 	}
 
 	/** @override */
-	public function assembleResult( EarthIT_CMIPREST_StorageResult $result, TOGoS_Action $action=null, $ctx=null ) {
+	public function assembleResult( EarthIT_CMIPREST_ActionResult $result, TOGoS_Action $action=null, $ctx=null ) {
+		if( !($result instanceof EarthIT_CMIPREST_StorageResult) )
+			throw new Exception(get_class($this)." doesn't know how to assemble things that aren't StorageResults");
 		$meth = $this->method;
 		return $this->$meth( $result->getRootResourceClass(), $result->getJohnCollections(), $result->getItemCollections());
 	}
