@@ -39,6 +39,8 @@ class EarthIT_CMIPREST_RESTerTest extends EarthIT_CMIPREST_TestCase
 	public function setUp() {
 		$this->standardSaveActionResultAssembler =
 			new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler('assembleSingleItemResult', false);
+		$this->standardMultiSaveActionResultAssembler =
+			new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler('assembleMultiItemResult', true);
 		$this->standardSuccessActionResultAssembler =
 			new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler('assembleSuccessResult', false);
 		$this->standardDeleteActionResultAssembler =
@@ -93,11 +95,12 @@ class EarthIT_CMIPREST_RESTerTest extends EarthIT_CMIPREST_TestCase
 		}
 		$posted = $this->rester->doAction(
 			EarthIT_CMIPREST_RESTActions::multiPost(
-				$rc, $items, $this->standardSaveActionResultAssembler),
+				$rc, $items, $this->standardMultiSaveActionResultAssembler),
 			$this->standardActionContext);
+		$keys = array_keys($posted);
 		for( $i=0; $i<5; ++$i ) {
-			$this->assertNotNull($posted[$i]['id']);
-			$this->assertEquals($items[$i]['URN'], $posted[$i]['urn']);
+			$this->assertNotNull($posted[$keys[$i]]['id']);
+			$this->assertEquals($items[$i]['URN'], $posted[$keys[$i]]['urn']);
 		}
 	}
 	
@@ -142,11 +145,12 @@ class EarthIT_CMIPREST_RESTerTest extends EarthIT_CMIPREST_TestCase
 				'first name' => 'Red',
 				'last name' => 'Skelton'
 			),
-		), $this->standardSaveActionResultAssembler);
+		), $this->standardMultiSaveActionResultAssembler);
 		
 		$rez = $this->rester->doAction($multiPost, $this->standardActionContext);
-		$bobHopeId = $rez[0]['id'];
-		$redSkeltonId = $rez[1]['id'];
+		$keys = array_keys($rez);
+		$bobHopeId = $keys[0];
+		$redSkeltonId = $keys[1];
 		
 		$rez = $this->storage->johnlySearchItems(
 			new EarthIT_Storage_Search(
@@ -181,7 +185,7 @@ class EarthIT_CMIPREST_RESTerTest extends EarthIT_CMIPREST_TestCase
 			$personB['ID'] => array(
 				'first name' => 'Frank'
 			)
-		), $this->standardSaveActionResultAssembler );
+		), $this->standardMultiSaveActionResultAssembler );
 		
 		$rez = $this->rester->doAction($multiPatch, $this->standardActionContext);
 		$this->assertEquals( array(
