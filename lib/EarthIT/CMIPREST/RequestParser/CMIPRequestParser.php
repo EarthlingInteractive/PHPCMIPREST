@@ -54,13 +54,14 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 				}
 			}
 
-			$params = RPU::parseQueryString($queryString);
+			$params = RPU::parseQueryString2($queryString);
 			$contentObject = RPU::parseJsonContent($content);
 			$filters = array();
 			$orderBy = array();
 			$skip = 0;
 			$limit = null;
-			foreach( $params as $k=>$v ) {
+			foreach( $params as $p2 ) {
+				list($k,$v) = $p2;
 				switch( $k ) {
 				case 'orderBy':
 					$p = explode(',', $v);

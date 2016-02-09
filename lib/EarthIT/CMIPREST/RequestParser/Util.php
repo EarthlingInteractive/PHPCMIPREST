@@ -17,6 +17,27 @@ class EarthIT_CMIPREST_RequestParser_Util
 	
 	/**
 	 * @api
+	 * Parses the query string into a list of [k, v] pairs.
+	 * Useful when keys can have multiple values, e.g. someField=ge:123&someField=lt:456
+	 */
+	public static function parseQueryString2( $queryString ) {
+		$parts = explode('&',$queryString);
+		$re = array();
+		foreach( $parts as $p ) {
+			$kv = explode('=',$p,2);
+			foreach( $kv as &$uhm ) $uhm = urldecode($uhm); unset($uhm);
+			if( count($kv) == 1 ) {
+				$k = $v = $kv[0];
+			} else {
+				list($k,$v) = $kv;
+			}
+			$re[] = [$k,$v];
+		}
+		return $re;
+	}
+	
+	/**
+	 * @api
 	 * Here as a counterpart to parseQueryString, because sometimes you
 	 * need to go that way.
 	 */
