@@ -24,6 +24,7 @@ class EarthIT_CMIPREST_RequestParser_Util
 		$parts = explode('&',$queryString);
 		$re = array();
 		foreach( $parts as $p ) {
+			if( $p === '' ) continue;
 			$kv = explode('=',$p,2);
 			foreach( $kv as &$uhm ) $uhm = urldecode($uhm); unset($uhm);
 			if( count($kv) == 1 ) {
