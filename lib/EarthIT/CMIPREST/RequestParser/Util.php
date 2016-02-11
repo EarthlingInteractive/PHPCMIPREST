@@ -32,7 +32,7 @@ class EarthIT_CMIPREST_RequestParser_Util
 			} else {
 				list($k,$v) = $kv;
 			}
-			$re[] = [$k,$v];
+			$re[] = array($k,$v);
 		}
 		return $re;
 	}
