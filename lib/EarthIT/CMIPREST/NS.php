@@ -10,4 +10,13 @@ class EarthIT_CMIPREST_NS
 	// These only make sense in the context of a reference:
 	const INVERSE_NAME = 'http://ns.earthit.com/CMIPREST/inverseName';
 	const INVERSE_COLLECTION_NAME = 'http://ns.earthit.com/CMIPREST/inverseCollectionName';
+	
+	/**
+	 * A data structure with the semantics of a list,
+	 * but keyed by the identity of the objects in it.
+	 * 
+	 * This is defined so we can talk about the JSON-encoded objects as
+	 * returned by CMIP searches and posts (and sent to PATCH requests).
+	 */
+	const ID_KEYED_LIST = 'http://ns.earthit.com/CMIPREST/IDKeyedList';
 }
