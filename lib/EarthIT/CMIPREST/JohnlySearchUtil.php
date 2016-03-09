@@ -35,13 +35,14 @@ class EarthIT_CMIPREST_JohnlySearchUtil
 		EarthIT_Storage_Search $search,
 		array $johnBranches,
 		array &$rez,
-		$rezPrefix
+		$rezPrefix,
+		array $options=array()
 	) {
-		$items = $IS->searchItems($search);
+		$items = $IS->searchItems($search, $options);
 		$rez[$rezPrefix] = $items;
 		foreach( $johnBranches as $k=>$branch ) {
 			$subSearch = self::johnToSearch($branch->getJohn(), $items);
-			self::_johnlySearchItems($IS, $subSearch, $branch->branches, $rez, "{$rezPrefix}.{$k}");
+			self::_johnlySearchItems($IS, $subSearch, $branch->branches, $rez, "{$rezPrefix}.{$k}", $options);
 		}
 		return $rez;
 	}
@@ -49,10 +50,11 @@ class EarthIT_CMIPREST_JohnlySearchUtil
 	public static function johnlySearchItems(
 		EarthIT_Storage_ItemSearcher $IS,
 		EarthIT_Storage_Search $search,
-		array $johnBranches
+		array $johnBranches,
+		array $options=array()
 	) {
 		$rez = array();
-		self::_johnlySearchItems($IS, $search, $johnBranches, $rez, 'root');
+		self::_johnlySearchItems($IS, $search, $johnBranches, $rez, 'root', $options);
 		return $rez;
 	}
 }
