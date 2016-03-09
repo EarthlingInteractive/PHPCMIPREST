@@ -12,7 +12,7 @@ implements EarthIT_CMIPREST_Storage
 		array $johnBranches,
 		array $options=array()
 	) {
-		return EarthIT_CMIPREST_JohnlySearchUtil::johnlySearchItems( $this, $search, $johnBranches );
+		return EarthIT_CMIPREST_JohnlySearchUtil::johnlySearchItems( $this, $search, $johnBranches, $options );
 	}
 	
 	/** @override */
