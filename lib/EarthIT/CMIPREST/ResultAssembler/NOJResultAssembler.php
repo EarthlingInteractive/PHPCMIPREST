@@ -7,12 +7,20 @@ class EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler implements EarthIT_CMI
 {
 	const SUCCESS = "You're Winner!";
 	const DELETED = "BALEETED!";
+	
+	const KEY_BY_IDS = 'keyItemsById';
+	
 	protected $method;
 	protected $keyByIds;
+	protected $basicWwwAuthenticationRealm;
 	
-	public function __construct($method, $keyByIds=true) {
+	public function __construct($method, $options=array()) {
+		if( is_bool($options) ) $options = array(self::KEY_BY_IDS => $options); // For backward combatibility!
 		$this->method = $method;
-		$this->keyByIds = $keyByIds;
+		$this->keyByIds = isset($options[self::KEY_BY_IDS]) ? $options[self::KEY_BY_IDS] : true;
+		$this->basicWwwAuthenticationRealm =
+			isset($options[EarthIT_CMIPREST_Util::BASIC_WWW_AUTHENTICATION_REALM]) ?
+			$options[EarthIT_CMIPREST_Util::BASIC_WWW_AUTHENTICATION_REALM] : null;
 	}
 	
 	// TODO: Make configurable
@@ -155,6 +163,9 @@ class EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler implements EarthIT_CMI
 
 	/** @override */
 	public function exceptionToHttpResponse( Exception $e, TOGoS_Action $action=null, $ctx=null ) {
-		return EarthIT_CMIPREST_Util::exceptionalNormalJsonHttpResponse($e);
+		$userIsAuthenticated = ($ctx and method_exists($ctx,'userIsAuthenticated')) ? $ctx->userIsAuthenticated() : false;
+		return EarthIT_CMIPREST_Util::exceptionalNormalJsonHttpResponse($e, $userIsAuthenticated, array(
+			EarthIT_CMIPREST_Util::BASIC_WWW_AUTHENTICATION_REALM => $this->basicWwwAuthenticationRealm
+		));
 	}
 }

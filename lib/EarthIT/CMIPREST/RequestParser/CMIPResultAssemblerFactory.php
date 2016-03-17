@@ -8,9 +8,13 @@ implements EarthIT_CMIPREST_RequestParser_ResultAssemblerFactory
 		return new self(true);
 	}
 	
-	protected $keyByIds;
-	public function __construct( $keyByIds=true ) {
-		$this->keyByIds = $keyByIds;
+	protected $options;
+	/**
+	 * @param $options array of options to be passed to NOJResultAssembler OR true|false to indicate just the 'keyItemsById' option
+	 *   (see NOJResultAssembler constructor)
+	 */
+	public function __construct( $options=array() ) {
+		$this->options = $options;
 	}
 	
 	protected static function meth($actionClass) {
@@ -27,6 +31,6 @@ implements EarthIT_CMIPREST_RequestParser_ResultAssemblerFactory
 	}
 	
 	public function getResultAssembler( $actionClass ) {
-		return new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler(self::meth($actionClass), $this->keyByIds);
+		return new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler(self::meth($actionClass), $this->options);
 	}
 }

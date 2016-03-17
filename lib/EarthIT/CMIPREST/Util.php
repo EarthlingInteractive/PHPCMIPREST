@@ -181,27 +181,42 @@ class EarthIT_CMIPREST_Util
 		);
 	}
 	
-	public static function jsonResponse( $status, $data ) {
-		return Nife_Util::httpResponse( $status, new EarthIT_JSON_PrettyPrintedJSONBlob($data), 'application/json' );
+	public static function jsonResponse( $status, $data, $headers=array() ) {
+		$headers['content-type'] = 'application/json';
+		return Nife_Util::httpResponse( $status, new EarthIT_JSON_PrettyPrintedJSONBlob($data), $headers );
 	}
 	
-	public static function multiErrorResponse( $status, array $errors ) {
-		return self::jsonResponse($status, array('errors'=>$errors));
+	public static function multiErrorResponse( $status, array $errors, array $headers=array() ) {
+		return self::jsonResponse($status, array('errors'=>$errors), $headers);
 	}
 	
 	/**
 	 * Create a response to indicate a single error
 	 * from a status code, message, and list of notes.
 	 */
-	public static function singleErrorResponse( $status, $message, array $notes=array() ) {
-		return self::multiErrorResponse($status, array(self::errorStructure( $message, $notes )));
+	public static function singleErrorResponse( $status, $message, array $notes=array(), array $headers=array() ) {
+		return self::multiErrorResponse($status, array(self::errorStructure( $message, $notes )), $headers);
 	}
-
-	public static function exceptionalNormalJsonHttpResponse( Exception $e, $userIsAuthenticated=false ) {
+	
+	const BASIC_WWW_AUTHENTICATION_REALM = 'basicWwwAuthenticationRealm';
+	
+	/**
+	 * @param Exception $e the error
+	 * @param boolean $userIsAuthenticated whether this was triggered by a logged-in user;
+	 *   used to determine whether a 401 or 403 is appropriate in response to authorization failures.
+	 * @param array $options optional array of
+	 *   Util::BASIC_WWW_AUTHENTICATION_REALM => realm to indicate in 'WWW-Authenticate: Basic' headers, if any
+	 *     (otherwise, those headers will not be sent)
+	 */
+	public static function exceptionalNormalJsonHttpResponse( Exception $e, $userIsAuthenticated=false, array $options=array() ) {
 		if( $e instanceof EarthIT_CMIPREST_ActionUnauthorized ) {
 			$act = $e->getAction();
 			$status = $userIsAuthenticated ? 403 : 401;
-			return EarthIT_CMIPREST_Util::singleErrorResponse( $status, $e->getSimpleMessage(), $e->getNotes() );
+			$headers = array();
+			if( !$userIsAuthenticated and !empty($options[self::BASIC_WWW_AUTHENTICATION_REALM]) ) {
+				$headers['www-authenticate'] = "Basic realm=\"{$options[self::BASIC_WWW_AUTHENTICATION_REALM]}\"";
+			}
+			return EarthIT_CMIPREST_Util::singleErrorResponse( $status, $e->getSimpleMessage(), $e->getNotes(), $headers );
 		} else if( $e instanceof EarthIT_CMIPREST_ResourceNotExposedViaService ) {
 			return EarthIT_CMIPREST_Util::singleErrorResponse( 404, $e->getMessage() );
 		} else if( $e instanceof EarthIT_CMIPREST_ActionInvalid ) {

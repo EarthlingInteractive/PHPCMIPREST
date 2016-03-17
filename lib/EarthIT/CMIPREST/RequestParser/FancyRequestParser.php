@@ -16,20 +16,24 @@ class EarthIT_CMIPREST_RequestParser_FancyRequestParser implements EarthIT_CMIPR
 	 * @param EarthIT_Schema $schema
 	 * @param callable $nameFormatter a string -> string function, e.g. "my shoes" -> "myShoes"
 	 * @param string $default name of default parser to use
+	 * @param array $options more options!
 	 */
-	public static function buildStandardParsers( EarthIT_Schema $schema, $nameFormatter, $default='cmip' ) {
+	public static function buildStandardParsers( EarthIT_Schema $schema, $nameFormatter, $default='cmip', array $options=array() ) {
 		$schemaObjectNamer = function($obj, $plural=false) use ($nameFormatter) {
 			return call_user_func($nameFormatter, $obj->getName(), $plural);
 		};
+		$cmipParser = new EarthIT_CMIPREST_RequestParser_CMIPRequestParser(
+			$schema, $schemaObjectNamer,
+			new EarthIT_CMIPREST_RequestParser_CMIPResultAssemblerFactory($options));
 		$parsers = array(
 			'jao' => new EarthIT_CMIPREST_RequestParser_JAORequestParser( $schema, $nameFormatter ),
-			'cmip' => new EarthIT_CMIPREST_RequestParser_CMIPRequestParser( $schema, $schemaObjectNamer ),
+			'cmip' => $cmipParser,
 			'compound' => new EarthIT_CMIPREST_RequestParser_CompoundRequestParser($this)
 		);
 		if( $default !== null ) $parsers['default'] = $parsers[$default];
 		return $parsers;
 	}
-		
+	
 	/** Pre-modified path */
 	protected static function pmp( array $modifiers, $remainder ) {
 		return ($modifiers ? ';'.implode($modifiers) : '').$remainder;
