@@ -161,7 +161,7 @@ class EarthIT_CMIPREST_ResultAssembler_JAOResultAssembler implements EarthIT_CMI
 	}
 
 	/** @override */
-	public static function exceptionToHttpResponse( Exception $e, TOGoS_Action $action=null, $ctx=null ) {
+	public function exceptionToHttpResponse( Exception $e, TOGoS_Action $action=null, $ctx=null ) {
 		return EarthIT_CMIPREST_Util::exceptionalNormalJsonHttpResponse($e);
 	}
 }

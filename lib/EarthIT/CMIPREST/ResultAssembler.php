@@ -45,5 +45,5 @@ interface EarthIT_CMIPREST_ResultAssembler
 	/**
 	 * Encode the fact that an exception occurred as a Nife_HTTP_Response.
 	 */
-	public static function exceptionToHttpResponse( Exception $e, TOGoS_Action $action=null, $ctx=null );
+	public function exceptionToHttpResponse( Exception $e, TOGoS_Action $action=null, $ctx=null );
 }
