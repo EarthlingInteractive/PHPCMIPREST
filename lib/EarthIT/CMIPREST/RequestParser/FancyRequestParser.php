@@ -47,18 +47,26 @@ class EarthIT_CMIPREST_RequestParser_FancyRequestParser implements EarthIT_CMIPR
 			$apiModifiers = array();
 			$pathRemainder = $path;
 		}
-		foreach( $this->parsers as $key=>$parser ) {
-			if( in_array($key, $apiModifiers) or $key == 'default' && !$apiModifiers ) {
-				$remainingModifiers = array();
-				foreach( $apiModifiers as $m ) if( $m != $key ) $remainingModifiers[] = $m;
-				$parser = $this->parsers[$key];
-				$a = $parser->parse($requestMethod, self::pmp($remainingModifiers,$pathRemainder), $queryString, $content);
-				if( $a !== null ) return array(
-					'parserKey' => $key,
-					'data' => $a
-				);
+		
+		$parserKey = 'default';
+		foreach( $apiModifiers as $m ) {
+			if( isset($this->parsers[$m]) ) {
+				$parserKey = $m;
 			}
 		}
+		
+		if( !isset($this->parsers[$parserKey]) ) return null; // No default
+		
+		$parser = $this->parsers[$parserKey];
+		$remainingModifiers = array();
+		foreach( $apiModifiers as $m ) if( $m != $parserKey ) $remainingModifiers[] = $m;
+		
+		$a = $parser->parse($requestMethod, self::pmp($remainingModifiers,$pathRemainder), $queryString, $content);
+		if( $a !== null ) return array(
+			'parserKey' => $parserKey,
+			'data' => $a
+		);
+		
 		return null;
 	}
 
