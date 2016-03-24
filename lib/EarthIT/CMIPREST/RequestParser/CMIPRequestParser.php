@@ -37,23 +37,30 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 		return $internal;
 	}
 	
-	public function parse( $requestMethod, $path, $queryString, Nife_Blob $content=null ) {
-		if( preg_match('#^ /([^/;]+) (?:;([^/]*))? (?:/([^/]*))? (?:/([^/]*))? $#x', $path, $bif) ) {
-			$collectionSeg = $bif[1];
-			$modifierSeg   = RPU::m($bif, 2);
-			$instanceSeg   = RPU::m($bif, 3);
-			$propertySeg   = RPU::m($bif, 4);
-			
-			$resultModifierList = ($modifierSeg == '') ? array() : explode(';',$modifierSeg);
-			$collectionModifiers = array();
-			foreach( $resultModifierList as $mod ) {
-				$kv = explode('=',$mod,2);
-				if( count($kv) == 2 ) {
-					$collectionModifiers[$kv[0]] = $kv[1];
-				} else {
-					$collectionModifiers[$mod] = $mod;
-				}
+	protected static function parseMods($m) {
+		$modVals = array();
+		foreach( explode(';', $m) as $p ) {
+			if( $p == '' ) continue;
+			$kv = explode('=', $p, 2);
+			if( count($kv) == 2 ) {
+				$modVals[$kv[0]] = $kv[1];
+			} else {
+				$modVals[$p] = $p;
 			}
+		}
+		return $modVals;
+	}
+	
+	public function parse( $requestMethod, $path, $queryString, Nife_Blob $content=null ) {
+		if( preg_match('#^ (?P<generalMods> ;[^/]+)? /(?P<collection> [^/;]+) (?:;(?P<collectionMods> [^/]*))? (?:/(?P<instance> [^/]*))? (?:/(?P<property> [^/]*))? $#x', $path, $bif) ) {
+			$generalModSeg    = RPU::m($bif, 'generalMods');
+			$collectionSeg    = RPU::m($bif, 'collection');
+			$collectionModSeg = RPU::m($bif, 'collectionMods');
+			$instanceSeg      = RPU::m($bif, 'instance');
+			$propertySeg      = RPU::m($bif, 'property');
+			
+			$generalModifiers    = self::parseMods($generalModSeg);
+			$collectionModifiers = self::parseMods($collectionModSeg);
 
 			$params = RPU::parseQueryString2($queryString);
 			$contentObject = RPU::parseJsonContent($content);
@@ -107,6 +114,7 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 				'skip' => $skip,
 				'limit' => $limit,
 				'orderBy' => $orderBy,
+				'generalModifiers' => $generalModifiers,
 				'collectionModifiers' => $collectionModifiers,
 				'contentObject' => $contentObject
 			);
@@ -138,6 +146,14 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 		
 		$rasmOptions = array();
 		
+		foreach( $request['generalModifiers'] as $k=>$v ) {
+			if( $k === 'keyByIds' ) {
+				$rasmOptions[NOJRA::KEY_BY_IDS] = EarthIT_CMIPREST_Util::parseBoolean($v);
+			} else {
+				throw new Exception("Unrecognized general modifier: '$k'");
+			}
+		}
+		
 		switch( $request['method'] ) {
 		case 'GET': case 'HEAD':
 			$johnBranches = array();
@@ -147,7 +163,7 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 				} else if( $k === 'keyByIds' ) {
 					$rasmOptions[NOJRA::KEY_BY_IDS] = EarthIT_CMIPREST_Util::parseBoolean($v);
 				} else {
-					throw new Exception("Unrecognized result modifier: '$k'");
+					throw new Exception("Unrecognized collection modifier: '$k'");
 				}
 			}
 			

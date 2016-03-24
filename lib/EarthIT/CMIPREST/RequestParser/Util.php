@@ -2,8 +2,8 @@
 
 class EarthIT_CMIPREST_RequestParser_Util
 {
-	public static function m( $bif, $idx ) {
-		return isset($bif[$idx]) && $bif[$idx] != '' ? $bif[$idx] : null;
+	public static function m( $bif, $idx, $default=null ) {
+		return isset($bif[$idx]) && $bif[$idx] != '' ? $bif[$idx] : $default;
 	}
 	
 	/**
