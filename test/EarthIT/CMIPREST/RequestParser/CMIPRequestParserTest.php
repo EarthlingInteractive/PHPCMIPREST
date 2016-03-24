@@ -13,7 +13,7 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParserTest extends EarthIT_CMIPR
 		};
 	}
 	
-	public function testParse() {
+	public function testParseSearch() {
 		$parser = new EarthIT_CMIPREST_RequestParser_CMIPRequestParser($this->schema, $this->schemaObjectNamer);
 		$req = $parser->parse('GET', '/fooples', 'firstName=Ted&lastName=Bundy&limit=100,25&orderBy=-birthDate,%2Bweight,ssn' );
 		$this->assertEquals('fooples', $req['collectionName'] );
@@ -31,12 +31,23 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParserTest extends EarthIT_CMIPR
 		), $req['filters']);
 	}
 	
+	public function testParseSearchWithoutIdKeys() {
+		$parser = new EarthIT_CMIPREST_RequestParser_CMIPRequestParser($this->schema, $this->schemaObjectNamer);
+		$req = $parser->parse('GET', '/people;keyByIds=false', 'firstName=Ted&lastName=Bundy&limit=100,25' );
+		$this->assertEquals('people', $req['collectionName'] );
+		$this->assertNull($req['instanceId']);
+		$this->assertEquals('false', $req['collectionModifiers']['keyByIds']);
+		$act = $parser->toAction($req);
+		$this->assertFalse($act->getResultAssembler()->keyByIds);
+	}
+	
 	public function testToAction() {
 		$parser = new EarthIT_CMIPREST_RequestParser_CMIPRequestParser($this->schema, $this->schemaObjectNamer);
 		$req = $parser->parse('GET', '/people', 'firstName=Ted&lastName=Bundy&limit=100,25&orderBy=-id' );
 		
 		$act = $parser->toAction($req);
 		$this->assertTrue( $act instanceof EarthIT_CMIPREST_RESTAction_SearchAction );
+		$this->assertTrue( $act->getResultAssembler()->keyByIds );
 		$search = $act->getSearch();
 		$this->assertEquals( 'EarthIT_Storage_Filter_AndedItemFilter', get_class($search->getFilter()) );
 		$this->assertEquals( 100, $search->getSkip() );

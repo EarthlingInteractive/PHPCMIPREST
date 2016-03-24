@@ -2,6 +2,7 @@
 
 use EarthIT_CMIPREST_RequestParser_Util AS RPU;
 use EarthIT_CMIPREST_RequestParser_ResultAssemblerFactory AS RAF;
+use EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler AS NOJRA;
 
 class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPREST_RequestParser
 {
@@ -135,12 +136,16 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 		
 		$resourceClass = EarthIT_CMIPREST_Util::getResourceClassByCollectionName($this->schema, $request['collectionName']);
 		
+		$rasmOptions = array();
+		
 		switch( $request['method'] ) {
 		case 'GET': case 'HEAD':
 			$johnBranches = array();
 			foreach( $request['collectionModifiers'] as $k=>$v ) {
 				if( $k === 'with' ) {
 					$johnBranches = RPU::withsToJohnBranches($this->schema, $resourceClass, $v, $this->schemaObjectNamer);
+				} else if( $k === 'keyByIds' ) {
+					$rasmOptions[NOJRA::KEY_BY_IDS] = EarthIT_CMIPREST_Util::parseBoolean($v);
 				} else {
 					throw new Exception("Unrecognized result modifier: '$k'");
 				}
@@ -149,7 +154,7 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 			if( $itemId = $request['instanceId'] ) {
 				return new EarthIT_CMIPREST_RESTAction_GetItemAction(
 					$resourceClass, $itemId, $johnBranches,
-					$this->resultAssemblerFactory->getResultAssembler(RAF::AC_GET)
+					$this->resultAssemblerFactory->getResultAssembler(RAF::AC_GET, $rasmOptions)
 				);
 			} else {
 				$fieldsByRestName = RPU::keyByMappedName( $resourceClass->getFields(), $this->schemaObjectNamer );
@@ -158,7 +163,7 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 				$search = new EarthIT_Storage_Search( $resourceClass, $filter, $comparator, $request['skip'], $request['limit'] );
 				return new EarthIT_CMIPREST_RESTAction_SearchAction(
 					$search, $johnBranches, array(),
-					$this->resultAssemblerFactory->getResultAssembler(RAF::AC_SEARCH)
+					$this->resultAssemblerFactory->getResultAssembler(RAF::AC_SEARCH, $rasmOptions)
 				);
 			}
 		case 'POST':
@@ -187,7 +192,7 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 				return new EarthIT_CMIPREST_RESTAction_PostItemAction(
 					$resourceClass,
 					$this->restObjectToInternal($data, $resourceClass),
-					$this->resultAssemblerFactory->getResultAssembler(RAF::AC_POST)
+					$this->resultAssemblerFactory->getResultAssembler(RAF::AC_POST, $rasmOptions)
 				);
 			} else {
 				$items = array();
@@ -196,7 +201,7 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 				}
 				return EarthIT_CMIPREST_RESTActions::multiPost(
 					$resourceClass, $items,
-					$this->resultAssemblerFactory->getResultAssembler(RAF::AC_MULTIPOST)
+					$this->resultAssemblerFactory->getResultAssembler(RAF::AC_MULTIPOST, $rasmOptions)
 				);
 			}
 		case 'PUT':
@@ -206,7 +211,7 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 			return new EarthIT_CMIPREST_RESTAction_PutItemAction(
 				$resourceClass, $request['instanceId'],
 				$this->restObjectToInternal($request['contentObject'], $resourceClass),
-				$this->resultAssemblerFactory->getResultAssembler(RAF::AC_PUT)
+				$this->resultAssemblerFactory->getResultAssembler(RAF::AC_PUT, $rasmOptions)
 			);
 		case 'PATCH':
 			if( $request['instanceId'] === null ) {
@@ -218,13 +223,13 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 				}
 				return EarthIT_CMIPREST_RESTActions::multiPatch(
 					$resourceClass, $items,
-					$this->resultAssemblerFactory->getResultAssembler(RAF::AC_MULTIPATCH)
+					$this->resultAssemblerFactory->getResultAssembler(RAF::AC_MULTIPATCH, $rasmOptions)
 				);
 			} else {
 				return new EarthIT_CMIPREST_RESTAction_PatchItemAction(
 					$resourceClass, $request['instanceId'],
 					$this->restObjectToInternal($request['contentObject'], $resourceClass),
-					$this->resultAssemblerFactory->getResultAssembler(RAF::AC_PATCH)
+					$this->resultAssemblerFactory->getResultAssembler(RAF::AC_PATCH, $rasmOptions)
 				);
 			}
 		case 'DELETE':
@@ -233,7 +238,7 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 			}
 			return new EarthIT_CMIPREST_RESTAction_DeleteItemAction(
 				$resourceClass, $request['instanceId'],
-				$this->resultAssemblerFactory->getResultAssembler(RAF::AC_DELETE)
+				$this->resultAssemblerFactory->getResultAssembler(RAF::AC_DELETE, $rasmOptions)
 			);
 		default:
 			throw new Exception("Unrecognized method, '".$request['method']."'");

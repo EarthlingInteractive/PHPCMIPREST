@@ -168,4 +168,11 @@ class EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler implements EarthIT_CMI
 			EarthIT_CMIPREST_Util::BASIC_WWW_AUTHENTICATION_REALM => $this->basicWwwAuthenticationRealm
 		));
 	}
+	
+	public function __get($k) {
+		switch($k) {
+		case 'keyByIds': case 'basicWwwAuthenticationRealm':
+			return $this->$k;
+		}
+	}
 }

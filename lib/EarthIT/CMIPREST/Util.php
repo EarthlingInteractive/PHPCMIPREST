@@ -7,6 +7,19 @@ class EarthIT_CMIPREST_Util
 		return $default;
 	}
 	
+	public static function parseBoolean( $v ) {
+		if( is_bool($v) ) return $v;
+		if( is_string($v) ) switch(strtolower($v)) {
+			case '1': case 'true': case 'yes': case 'on': return true;
+			case '0': case 'false': case 'no': case 'off': return false;		
+		}
+		if( is_numeric($v) ) {
+			if( $v == 0 ) return false;
+			if( $v == 1 ) return true;
+		}
+		throw new Exception("Invalid booleanesque value: ".var_export($v,true)." (try using 'true', 'false', '0', or '1')");
+	}
+	
 	/**
 	 * Convert a value to the named PHP scalar type using PHP's default conversion.
 	 *

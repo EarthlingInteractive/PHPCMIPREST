@@ -1,5 +1,7 @@
 <?php
 
+use EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler AS NOJRA;
+
 class EarthIT_CMIPREST_RequestParser_CMIPResultAssemblerFactory
 implements EarthIT_CMIPREST_RequestParser_ResultAssemblerFactory
 {
@@ -8,13 +10,21 @@ implements EarthIT_CMIPREST_RequestParser_ResultAssemblerFactory
 		return new self(true);
 	}
 	
-	protected $options;
+	protected $defaultOptions;
 	/**
-	 * @param $options array of options to be passed to NOJResultAssembler OR true|false to indicate just the 'keyItemsById' option
+	 * @param $defaultOptions array of defaultOptions to be passed to NOJResultAssembler OR true|false to indicate just the 'keyItemsById' option
 	 *   (see NOJResultAssembler constructor)
 	 */
-	public function __construct( $options=array() ) {
-		$this->options = $options;
+	public function __construct( $defaultOptions=array() ) {
+		if( is_bool($defaultOptions) === true ) {
+			$defaultOptions = array(NOJRA::KEY_BY_IDS => $defaultOptions);
+		}
+		if( !is_array($defaultOptions) ) {
+			throw new Exception(
+				"\$defaultOptions parameter to CMIPResultAssemblerFactory must be an array.\n".
+				"Got ".var_export($defaultOptions,true));
+		}
+		$this->defaultOptions = $defaultOptions;
 	}
 	
 	protected static function meth($actionClass) {
@@ -30,7 +40,9 @@ implements EarthIT_CMIPREST_RequestParser_ResultAssemblerFactory
 		}
 	}
 	
-	public function getResultAssembler( $actionClass ) {
-		return new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler(self::meth($actionClass), $this->options);
+	public function getResultAssembler( $actionClass, array $options=array() ) {
+		return new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler(
+			self::meth($actionClass),
+			$options + $this->defaultOptions);
 	}
 }

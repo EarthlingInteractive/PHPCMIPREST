@@ -15,5 +15,5 @@ interface EarthIT_CMIPREST_RequestParser_ResultAssemblerFactory
 	 * @param string $actionClass one of the AC_* constants defined above
 	 *   indicating the general class of action being performed
 	 */
-	public function getResultAssembler( $actionClass );
+	public function getResultAssembler( $actionClass, array $options=array() );
 }
