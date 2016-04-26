@@ -26,8 +26,8 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParserTest extends EarthIT_CMIPR
 		$this->assertEquals(100, $req['skip']);
 		$this->assertEquals(25, $req['limit']);
 		$this->assertEquals(array(
-			array('fieldName'=>'firstName','opName'=>'eq','pattern'=>'Ted'),
-			array('fieldName'=>'lastName','opName'=>'eq','pattern'=>'Bundy')
+			array('fieldName'=>'firstName','pattern'=>'Ted'),
+			array('fieldName'=>'lastName','pattern'=>'Bundy')
 		), $req['filters']);
 	}
 	

@@ -102,6 +102,17 @@ class EarthIT_CMIPREST_RequestParser_Util
 		return EarthIT_Storage_ItemFilters::anded($filterComponents);
 	}
 	
+	// Better than the first one!
+	public static function parseFilter2( array $requestFilters, EarthIT_Schema_ResourceClass $rc, EarthIT_Schema $schema ) {
+		$filterComponents = array();
+		foreach( $requestFilters as $filter ) {
+			$filterComponents[] = EarthIT_Storage_ItemFilters::parsePattern(
+				$filter['fieldName'], $filter['pattern'],
+				$rc, $schema, true );
+		}
+		return EarthIT_Storage_ItemFilters::anded($filterComponents);
+	}
+	
 	public static function parseComparator( array $requestOrderBys, EarthIT_Schema_ResourceClass $rc, array $fields ) {
 		$fieldwiseComparatorComponents = array();
 		foreach( $requestOrderBys as $orderBy ) {

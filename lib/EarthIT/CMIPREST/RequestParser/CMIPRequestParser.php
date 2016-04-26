@@ -96,12 +96,7 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 					}
 					break;
 				default:
-					$p = explode(':',$v,2);
-					if( count($p) == 2 ) {
-						$filters[] = array('fieldName'=>$k, 'opName'=>$p[0], 'pattern'=>$p[1]);
-					} else {
-						$filters[] = array('fieldName'=>$k, 'opName'=>strpos($v,'*') === false ? 'eq' : 'like', 'pattern'=>$v);
-					}
+					$filters[] = array('fieldName'=>$k, 'pattern'=>$v);
 				}
 			}
 			
@@ -174,7 +169,7 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 				);
 			} else {
 				$fieldsByRestName = RPU::keyByMappedName( $resourceClass->getFields(), $this->schemaObjectNamer );
-				$filter     = RPU::parseFilter(     $request['filters'], $resourceClass, $fieldsByRestName );
+				$filter     = RPU::parseFilter2(    $request['filters'], $resourceClass, $this->schema );
 				$comparator = RPU::parseComparator( $request['orderBy'], $resourceClass, $fieldsByRestName );
 				$search = new EarthIT_Storage_Search( $resourceClass, $filter, $comparator, $request['skip'], $request['limit'] );
 				return new EarthIT_CMIPREST_RESTAction_SearchAction(
