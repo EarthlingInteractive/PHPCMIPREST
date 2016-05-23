@@ -31,6 +31,7 @@ class EarthIT_CMIPREST_RESTerTest extends EarthIT_CMIPREST_TestCase
 	protected $schema;
 
 	protected $standardSaveActionResultAssembler;
+	protected $standardMultiSaveActionResultAssembler;
 	protected $standardSuccessActionResultAssembler;
 	protected $standardDeleteActionResultAssembler;
 	
@@ -216,6 +217,27 @@ class EarthIT_CMIPREST_RESTerTest extends EarthIT_CMIPREST_TestCase
 				$this->assertEquals('Frank', $item['first name']);
 			}
 		}
+	}
+	
+	public function testPatchChangingPk() {
+		$rc = $this->schema->getResourceClass('person');
+		$person = $this->storage->postItem( $rc, array('first name'=>'Bernie', 'last name'=>'Sanders') );
+		$newId = $this->newEntityId();
+		
+		//public static function getItemById( EarthIT_CMIPREST_Storage $storage, EarthIT_Schema_ResourceClass $rc, $itemId ) {
+
+		$patch = new EarthIT_CMIPREST_RESTAction_PatchItemAction($rc, $person['ID'], array(
+			'ID' => $newId,
+		), $this->standardSaveActionResultAssembler );
+		
+		$this->rester->doAction( $patch, $this->standardActionContext );
+		
+		$this->assertEquals(
+			null,
+			EarthIT_CMIPREST_Util::getItemById($this->storage, $rc, $person['ID']) );
+		$this->assertEquals(
+			array('ID'=>$newId)+$person,
+			EarthIT_CMIPREST_Util::getItemById($this->storage, $rc, $newId) );
 	}
 	
 	//// Test some errors

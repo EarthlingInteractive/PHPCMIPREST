@@ -25,7 +25,9 @@ class 'string' :
 class 'text' : extends(string) :
 	SQL type @ "TEXT"
 class 'entity ID' : extends(integer) :
-	SQL type @ "BIGINT"
+	SQL type @ "BIGINT" :
+	PHP type @ "string" :
+	JSON type @ "string"
 class 'percentage' : extends(integer) :
 	SQL type @ "SMALLINT"
 

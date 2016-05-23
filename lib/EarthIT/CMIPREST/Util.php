@@ -83,15 +83,28 @@ class EarthIT_CMIPREST_Util
 	public static function idToFieldValues( EarthIT_Schema_ResourceClass $rc, $id) {
 		return EarthIT_Storage_Util::itemIdToFieldValues($id, $rc);
 	}
-		
-	public static function mergeEnsuringNoContradictions() {
-		$arrays = func_get_args();
+	
+	const ODK_KEEP = 'keep';
+	const ODK_REPLACE = 'overwrite';
+	const ODK_ERROR = 'error';
+	
+	public static function merge( array $arrays, $onDuplicateKey=self::ODK_ERROR, array &$collisions=array() ) {
 		$result = array();
 		foreach( $arrays as $arr ) {
 			foreach( $arr as $k=>$v ) {
 				if( isset($result[$k]) ) {
 					if( $result[$k] !== $v ) {
-						throw new Exception("Conflicting values given for '$k': ".json_encode($result[$k]).", ".json_encode($v));
+						switch( $onDuplicateKey ) {
+						case self::ODK_KEEP:
+							$collisions[$k] = $v;
+							break;
+						case self::ODK_REPLACE:
+							$collisions[$k] = $result[$k];
+							$result[$k] = $v;
+							break;
+						default:
+							throw new Exception("Conflicting values given for '$k': ".json_encode($result[$k]).", ".json_encode($v));
+						}
 					}
 				} else {
 					$result[$k] = $v;
@@ -99,6 +112,11 @@ class EarthIT_CMIPREST_Util
 			}
 		}
 		return $result;
+	}
+	
+	public static function mergeEnsuringNoContradictions() {
+		$arrays = func_get_args();
+		return call_user_func( array(__CLASS__, 'merge'), $arrays, self::ODK_ERROR );
 	}
 	
 	/**
@@ -163,22 +181,54 @@ class EarthIT_CMIPREST_Util
 			EarthIT_Storage_ItemSaver::ON_DUPLICATE_KEY => EarthIT_Storage_ItemSaver::ODK_UPDATE) ) );
 	}
 	
+	protected static function patchLike(
+		EarthIT_Storage_ItemSaver $storage,
+		EarthIT_Schema_ResourceClass $rc,
+		$itemId, array $updates, array $saveOptions
+	) {
+		$itemIdValues = EarthIT_Storage_Util::itemIdToFieldValues($itemId,$rc);
+		$updates = EarthIT_Storage_Util::castItemFieldValues($updates,$rc);
+		
+		$pkUpdates = array();
+		$mergedDataWithoutPkChange = self::merge(
+			array($itemIdValues, $updates),
+			self::ODK_KEEP,
+			$pkUpdates);
+		
+		// 2 step process.
+		// - 1) Save the item with any non-pk updates; this will make sure it exists if it doesn't already
+		// - 2) If there are any PK updates, apply them.
+		// 
+		// An update alone would not create nonexistent items.
+		
+		$itemData = EarthIT_CMIPREST_Util::first( $storage->saveItems(
+			array($mergedDataWithoutPkChange), $rc,
+			$saveOptions + array(
+				EarthIT_Storage_ItemSaver::RETURN_SAVED => true
+			)
+		) );
+		
+		if( $pkUpdates ) {
+			$itemData = $storage->updateItems(
+				$pkUpdates,
+				$rc, EarthIT_Storage_ItemFilters::exactFieldValues($itemIdValues, $rc),
+				array(EarthIT_Storage_ItemUpdater::RETURN_UPDATED => true)
+			);
+		}
+		
+		return $itemData;
+	}
+	
 	public static function putItem( EarthIT_Storage_ItemSaver $storage, EarthIT_Schema_ResourceClass $rc, $itemId, array $itemData ) {
-		$itemData = EarthIT_CMIPREST_Util::mergeEnsuringNoContradictions(
-			EarthIT_Storage_Util::itemIdToFieldValues($itemId,$rc),
-			EarthIT_Storage_Util::castItemFieldValues($itemData,$rc));
-		return EarthIT_CMIPREST_Util::first( $storage->saveItems( array($itemData), $rc, array(
-			EarthIT_Storage_ItemSaver::RETURN_SAVED => true,
-			EarthIT_Storage_ItemSaver::ON_DUPLICATE_KEY => EarthIT_Storage_ItemSaver::ODK_REPLACE) ) );
+		return self::patchLike( $storage, $rc, $itemId, $itemData, array(
+			EarthIT_Storage_ItemSaver::ON_DUPLICATE_KEY => EarthIT_Storage_ItemSaver::ODK_REPLACE
+		));
 	}
 	
 	public static function patchItem( EarthIT_Storage_ItemSaver $storage, EarthIT_Schema_ResourceClass $rc, $itemId, array $itemData ) {
-		$itemData = EarthIT_CMIPREST_Util::mergeEnsuringNoContradictions(
-			EarthIT_Storage_Util::itemIdToFieldValues($itemId,$rc),
-			EarthIT_Storage_Util::castItemFieldValues($itemData,$rc));
-		return EarthIT_CMIPREST_Util::first( $storage->saveItems( array($itemData), $rc, array(
-			EarthIT_Storage_ItemSaver::RETURN_SAVED => true,
-			EarthIT_Storage_ItemSaver::ON_DUPLICATE_KEY => EarthIT_Storage_ItemSaver::ODK_UPDATE) ) );
+		return self::patchLike( $storage, $rc, $itemId, $itemData, array(
+			EarthIT_Storage_ItemSaver::ON_DUPLICATE_KEY => EarthIT_Storage_ItemSaver::ODK_UPDATE
+		));
 	}
 	
 	//// Nife_HTTP_Response generation
