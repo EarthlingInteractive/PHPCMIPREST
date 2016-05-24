@@ -122,8 +122,10 @@ class EarthIT_CMIPREST_Util
 	/**
 	 * Get a field property value, taking into account
 	 * whether the field is fake or not, and defaults for either case.
+	 * 
+	 * @api
 	 */
-	protected static function fieldPropertyValue( $f, $propUri, $nonFakeDefault=null, $fakeDefault=null ) {
+	public static function fieldPropertyValue( EarthIT_Schema_Field $f, $propUri, $nonFakeDefault=null, $fakeDefault=null ) {
 		$v = $f->getFirstPropertyValue($propUri);
 		if( $v !== null ) return $v;
 		
@@ -131,7 +133,16 @@ class EarthIT_CMIPREST_Util
 		return $isFake ? $fakeDefault : $nonFakeDefault;
 	}
 	
-	protected static function fieldsWithProperty( array $l, $propUri, $nonFakeDefault=null, $fakeDefault=null ) {
+	/**
+	 * Return a subset of the passed in fields with the specified property,
+	 * using $nonFakeDefault and $fakeDefault as the property value for
+	 * non-fake and fake fields, respectively, that don't have a value explicitly indicated.
+	 * 
+	 * @api
+	 */
+	public static function fieldsWithProperty( $l, $propUri, $nonFakeDefault=null, $fakeDefault=null ) {
+		if( $l instanceof EarthIT_Schema_ResourceClass ) $l = $l->getFields();
+		if( !is_array($l) ) throw new Exception("Argument to fieldsWithProperty must be a ResourceClass or a list of fields.");
 		$filtered = array();
 		foreach( $l as $k=>$f ) {
 			if( self::fieldPropertyValue($f, $propUri, $nonFakeDefault, $fakeDefault) ) {
@@ -144,6 +155,11 @@ class EarthIT_CMIPREST_Util
 	/** @api */
 	public static function restReturnableFields( EarthIT_Schema_ResourceClass $rc ) {
 		return self::fieldsWithProperty($rc->getFields(), EarthIT_CMIPREST_NS::IS_RETURNED_BY_REST_SERVICES, true, false);
+	}
+	
+	/** @api */
+	public static function restAssignableFields( EarthIT_Schema_ResourceClass $rc ) {
+		return self::fieldsWithProperty($rc->getFields(), EarthIT_CMIPREST_NS::MAY_BE_SET_VIA_REST_SERVICES, true, false);
 	}
 	
 	/** @api */

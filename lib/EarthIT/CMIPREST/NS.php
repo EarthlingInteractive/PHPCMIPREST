@@ -4,6 +4,7 @@ class EarthIT_CMIPREST_NS
 {
 	const IS_FAKE_FIELD = 'http://ns.nuke24.net/Schema/Application/isFakeField';
 	const IS_RETURNED_BY_REST_SERVICES = 'http://ns.nuke24.net/Schema/Application/isReturnedByRestServices';
+	const MAY_BE_SET_VIA_REST_SERVICES = 'http://ns.nuke24.net/Schema/Application/mayBeSetViaRestServices';
 	const HAS_A_DATABASE_COLUMN = 'http://ns.nuke24.net/Schema/Application/hasADatabaseColumn';
 	
 	const COLLECTION_NAME = 'http://ns.earthit.com/CMIPREST/collectionName';
