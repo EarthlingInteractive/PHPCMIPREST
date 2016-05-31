@@ -13,7 +13,7 @@ abstract class EarthIT_CMIPREST_TestCase extends PHPUnit_Framework_TestCase
 	}
 	
 	protected $cache = array();
-	protected function __get($thing) {
+	public function __get($thing) {
 		if( isset($this->cache[$thing]) ) return $this->cache[$thing];
 		if( $thing == 'schema' ) {
 			return $this->cache[$thing] = $this->loadTestSchema();

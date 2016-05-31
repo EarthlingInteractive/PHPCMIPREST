@@ -52,6 +52,13 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 	}
 	
 	public function parse( $requestMethod, $path, $queryString, Nife_Blob $content=null ) {
+		if( $requestMethod == 'DO-COMPOUND-ACTION' && $path == '' or $requestMethod == 'POST' && $path == ';compound' ) {
+			return array(
+				'method' => 'DO-COMPOUND-ACTION',
+				'contentObject' => RPU::parseJsonContent($content)
+			);
+		}
+		
 		if( preg_match('#^ (?P<generalMods> ;[^/]+)? /(?P<collection> [^/;]+) (?:;(?P<collectionMods> [^/]*))? (?:/(?P<instance> [^/]*))? (?:/(?P<property> [^/]*))? $#x', $path, $bif) ) {
 			$generalModSeg    = RPU::m($bif, 'generalMods');
 			$collectionSeg    = RPU::m($bif, 'collection');
@@ -61,7 +68,7 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 			
 			$generalModifiers    = self::parseMods($generalModSeg);
 			$collectionModifiers = self::parseMods($collectionModSeg);
-
+			
 			$params = RPU::parseQueryString2($queryString);
 			$contentObject = RPU::parseJsonContent($content);
 			$filters = array();
@@ -118,18 +125,19 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 	}
 	
 	public function toAction( array $request ) {
-		if( ($propName = $request['propertyName']) !== null ) {
+		if( isset($request['propertyName']) ) {
 			throw new Exception("Unrecognized resource property, '$propName'");
 		}
 		
 		if( $request['method'] == 'DO-COMPOUND-ACTION' ) {
+			//ezecho($request);
 			$subActions = array();
 			foreach( $request['contentObject']['actions'] as $k=>$cat ) {
 				$subRequest = $this->parse(
 					$cat['method'], $cat['path'],
 					isset($cat['queryString']) ? $cat['queryString'] :
 					(isset($cat['params']) ? RPU::buildQueryString($cat['params']) : ''),
-					isset($cat['content']) ? $cat['content'] : array()
+					Nife_Util::blob(isset($cat['content']) ? $cat['content'] : '')
 				);
 				$subActions[$k] = $this->toAction($subRequest);
 			}

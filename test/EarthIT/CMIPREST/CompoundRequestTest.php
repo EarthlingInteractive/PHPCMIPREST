@@ -62,4 +62,72 @@ class EarthIT_CMIPREST_CompoundRequestTest extends EarthIT_CMIPREST_TestCase
 			5 => array('id'=>5, 'firstName'=>'Nissage', 'lastName'=>'Saget'),
 		), $asm, "Result of multipatch should look like I think it ought to.");
 	}
+	
+	public function testDoCompoundAction() {
+		$this->memoryStorage->saveItems( array(
+			array('ID'=>4, 'first name'=>'Bob','last name'=>'Lindmeier'),
+			array('ID'=>5, 'first name'=>'Bob','last name'=>'Saget')
+		), $this->schema->getResourceClass('person'), array(
+			EarthIT_Storage_ItemSaver::RETURN_SAVED => false,
+			EarthIT_Storage_ItemSaver::ON_DUPLICATE_KEY => EarthIT_Storage_ItemSaver::ODK_REPLACE
+		));
+		
+		$requestObject = array(
+			'actions' => array(
+				'patchBobL' => array(
+					'method' => 'PATCH',
+					'path' => '/people/4',
+					'content' => json_encode(array('firstName' => 'Sob'))
+				),
+				'getAllBobs' => array(
+					'method' => 'GET',
+					'path' => '/people',
+					'queryString' => 'id=in:4,5'
+				),
+				'deleteBobS' => array(
+					'method' => 'DELETE',
+					'path' => '/people/5',
+				),
+				'getAllBobsAgain' => array(
+					'method' => 'GET',
+					'path' => '/people',
+					'queryString' => 'id=in:4,5'
+				),
+			)
+		);
+
+		$requestParser = new EarthIT_CMIPREST_RequestParser_CMIPRequestParser($this->schema, $this->schemaObjectNamer);
+		$req = $requestParser->parse('DO-COMPOUND-ACTION', '', '', new EarthIT_JSON_PrettyPrintedJSONBlob($requestObject));
+		$this->assertTrue( is_array($req), "RequestParser#parse( compound action stuff ) should return an array; got ".var_export($req,true) );
+		$act = $requestParser->toAction($req);
+		$asm = $this->rester->doAction($act, null);
+		
+		$this->assertEquals( array(
+			'patchBobL' => array(
+				'id' => '4',
+				'firstName' => 'Sob',
+				'lastName' => 'Lindmeier',
+			),
+			'getAllBobs' => array(
+				'4' => array(
+					'id' => '4',
+					'firstName' => 'Sob',
+					'lastName' => 'Lindmeier',
+				),
+				'5' => array(
+					'id' => '5',
+					'firstName' => 'Bob',
+					'lastName' => 'Saget',
+				)
+			),
+			'deleteBobS' => "You're Winner!",
+			'getAllBobsAgain' => array(
+				'4' => array(
+					'id' => '4',
+					'firstName' => 'Sob',
+					'lastName' => 'Lindmeier',
+				),
+			),
+		), $asm, "Result of compound action should look like I think it should" );
+	}
 }
