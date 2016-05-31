@@ -103,31 +103,42 @@ class EarthIT_CMIPREST_CompoundRequestTest extends EarthIT_CMIPREST_TestCase
 		$asm = $this->rester->doAction($act, null);
 		
 		$this->assertEquals( array(
-			'patchBobL' => array(
-				'id' => '4',
-				'firstName' => 'Sob',
-				'lastName' => 'Lindmeier',
-			),
-			'getAllBobs' => array(
-				'4' => array(
-					'id' => '4',
-					'firstName' => 'Sob',
-					'lastName' => 'Lindmeier',
+			'actionResults' => array(
+				'patchBobL' => array(
+					'statusCode' => 200,
+					'contentObject' => array(
+						'id' => '4',
+						'firstName' => 'Sob',
+						'lastName' => 'Lindmeier',
+					)
 				),
-				'5' => array(
-					'id' => '5',
-					'firstName' => 'Bob',
-					'lastName' => 'Saget',
+				'getAllBobs' => array(
+					'statusCode' => 200,
+					'contentObject' => array(
+						'4' => array(
+							'id' => '4',
+							'firstName' => 'Sob',
+							'lastName' => 'Lindmeier',
+						),
+						'5' => array(
+							'id' => '5',
+							'firstName' => 'Bob',
+							'lastName' => 'Saget',
+						)
+					)
+				),
+				'deleteBobS' => array( 'statusCode' => 204 ),
+				'getAllBobsAgain' => array(
+					'statusCode' => 200,
+					'contentObject' => array(
+						'4' => array(
+							'id' => '4',
+							'firstName' => 'Sob',
+							'lastName' => 'Lindmeier',
+						)
+					)
 				)
-			),
-			'deleteBobS' => "You're Winner!",
-			'getAllBobsAgain' => array(
-				'4' => array(
-					'id' => '4',
-					'firstName' => 'Sob',
-					'lastName' => 'Lindmeier',
-				),
-			),
+			)
 		), $asm, "Result of compound action should look like I think it should" );
 	}
 }

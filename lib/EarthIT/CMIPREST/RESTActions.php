@@ -43,14 +43,11 @@ class EarthIT_CMIPREST_RESTActions
 	}
 	
 	public static function compoundAction( array $subActions, EarthIT_CMIPREST_Expression $resultExpression=null ) {
-		if( $resultExpression === null ) {
-			$resultItems = array();
-			foreach( $subActions as $k=>$act ) {
-				$resultItems[$k] = new EarthIT_CMIPREST_Expression_ActionResultExpression($k);
-			}
-			$resultExpression = new EarthIT_CMIPREST_Expression_ArrayExpression($resultItems);
+		if( $resultExpression !== null ) {
+			$rasm = new EarthIT_CMIPREST_ResultAssembler_ExpressionBasedCompoundResultAssembler( $resultExpression );
+		} else {
+			$rasm = new EarthIT_CMIPREST_ResultAssembler_NormalCompoundResultAssembler();
 		}
-		return new EarthIT_CMIPREST_RESTAction_CompoundAction( $subActions,
-			new EarthIT_CMIPREST_ResultAssembler_ExpressionBasedCompoundResultAssembler( $resultExpression ));
+		return new EarthIT_CMIPREST_RESTAction_CompoundAction( $subActions, $rasm );
 	}
 }
