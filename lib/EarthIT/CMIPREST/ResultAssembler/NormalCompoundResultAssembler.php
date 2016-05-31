@@ -35,6 +35,6 @@ implements EarthIT_CMIPREST_ResultAssembler
 	}
 
 	public function assembledResultToHttpResponse( $rez, TOGoS_Action $action=null, $ctx=null ) {
-		return Nife_Util::httpResponse(200, EarthIT_JSON::encode($rez));
+		return Nife_Util::httpResponse(200, EarthIT_JSON::encode($rez), 'application/json');
 	}
 }
