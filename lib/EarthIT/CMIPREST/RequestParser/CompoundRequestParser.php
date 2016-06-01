@@ -23,11 +23,19 @@ implements EarthIT_CMIPREST_RequestParser
 	public function toAction( array $request ) {
 		$subActions = array();
 		foreach( $request['contentObject']['actions'] as $k=>$cat ) {
+			if( isset($cat['contentObject']) ) {
+				$contentBlob = new EarthIT_JSON_PrettyPrintedJSONBlob($cat['contentObject']);
+			} else if( isset($cat['content']) ) {
+				$contentBlob = Nife_Util::blob(isset($cat['content']) ? $cat['content'] : '');
+			} else {
+				$contentBlob = null;
+			}
+
 			$subRequest = $this->subRequestParser->parse(
 				$cat['method'], $cat['path'],
 				isset($cat['queryString']) ? $cat['queryString'] :
 				(isset($cat['params']) ? RPU::buildQueryString($cat['params']) : ''),
-				Nife_Util::blob(isset($cat['content']) ? $cat['content'] : '')
+				$contentBlob
 			);
 			$subActions[$k] = $this->subRequestParser->toAction($subRequest);
 		}

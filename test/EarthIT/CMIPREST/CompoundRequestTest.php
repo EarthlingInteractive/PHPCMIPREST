@@ -57,7 +57,7 @@ class EarthIT_CMIPREST_CompoundRequestTest extends EarthIT_CMIPREST_TestCase
 		), $asm, "Result of multipatch should look like I think it ought to.");
 	}
 	
-	protected function _testDoCompoundAction( $requestParser, $method, $path ) {
+	protected function _testDoCompoundAction( $requestParser, $method, $path, $encodeContent=true ) {
 		$this->memoryStorage->saveItems( array(
 			array('ID'=>4, 'first name'=>'Bob','last name'=>'Lindmeier'),
 			array('ID'=>5, 'first name'=>'Bob','last name'=>'Saget')
@@ -66,13 +66,19 @@ class EarthIT_CMIPREST_CompoundRequestTest extends EarthIT_CMIPREST_TestCase
 			EarthIT_Storage_ItemSaver::ON_DUPLICATE_KEY => EarthIT_Storage_ItemSaver::ODK_REPLACE
 		));
 		
+		$bobPatch = array(
+			'method' => 'PATCH',
+			'path' => '/people/4',
+			'contentObject' => array('firstName' => 'Sob')
+		);
+		if( $encodeContent ) {
+			$bobPatch['content'] = json_encode($bobPatch['contentObject']);
+			unset($bobPatch['contentObject']);
+		}
+		
 		$requestObject = array(
 			'actions' => array(
-				'patchBobL' => array(
-					'method' => 'PATCH',
-					'path' => '/people/4',
-					'content' => json_encode(array('firstName' => 'Sob'))
-				),
+				'patchBobL' => $bobPatch,
 				'getAllBobs' => array(
 					'method' => 'GET',
 					'path' => '/people',
@@ -147,5 +153,12 @@ class EarthIT_CMIPREST_CompoundRequestTest extends EarthIT_CMIPREST_TestCase
 			EarthIT_CMIPREST_RequestParser_FancyRequestParser::buildStandardFancyParser(
 				$this->schema, $this->schemaObjectNamer);
 		$this->_testDoCompoundAction( $requestParser, 'POST', ';compound' );
+	}
+
+	public function testDoCompoundActionViaPostWithFancyRequestParserAndUnencodedContentObject() {
+		$requestParser =
+			EarthIT_CMIPREST_RequestParser_FancyRequestParser::buildStandardFancyParser(
+				$this->schema, $this->schemaObjectNamer);
+		$this->_testDoCompoundAction( $requestParser, 'POST', ';compound', false );
 	}
 }
