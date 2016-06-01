@@ -4,13 +4,7 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParserTest extends EarthIT_CMIPR
 {
 	public function setUp() {
 		$this->schema = $this->loadTestSchema();
-		$this->schemaObjectNamer = function($obj,$plural=false) {
-			$name = $plural ?
-				($rc->getFirstPropertyValue(EarthIT_CMIPREST_NS::COLLECTION_NAME) ?:
-				 EarthIT_Schema_WordUtil::pluralize($obj->getName())) :
-				$obj->getName();
-			return EarthIT_Schema_WordUtil::toCamelCase($name);
-		};
+		$this->schemaObjectNamer = EarthIT_CMIPREST_Namers::getStandardCamelCaseNamer();
 	}
 	
 	public function testParseSearch() {

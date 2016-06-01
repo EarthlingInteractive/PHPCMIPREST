@@ -16,29 +16,27 @@ class EarthIT_CMIPREST_RequestParser_FancyRequestParser implements EarthIT_CMIPR
 		}
 	}
 	
-	public static function buildStandardFancyParser( EarthIT_Schema $schema, $nameFormatter, $default='cmip', array $options=array() ) {
+	public static function buildStandardFancyParser( EarthIT_Schema $schema, EarthIT_Schema_SchemaObjectNamer $namer, $default='cmip', array $options=array() ) {
 		$P = new self(array());
-		$P->addParsers( $P->buildStandardParsers($schema, $nameFormatter, $default, $options) );
+		$P->addParsers( $P->buildStandardParsers($schema, $namer, $default, $options) );
 		return $P;
 	}
 	
 	/**
 	 * TODO: Lazy-load parsers
-	 * TODO: Replace $nameFormatter with some object
 	 * @param EarthIT_Schema $schema
-	 * @param callable $nameFormatter a string -> string function, e.g. "my shoes" -> "myShoes"
+	 * @param EarthIT_Schema_SchemaObjectNamer $namer to provide 'REST format' names for things
 	 * @param string $default name of default parser to use
 	 * @param array $options more options!
 	 */
-	public function buildStandardParsers( EarthIT_Schema $schema, $nameFormatter, $default='cmip', array $options=array() ) {
-		$schemaObjectNamer = function($obj, $plural=false) use ($nameFormatter) {
-			return call_user_func($nameFormatter, $obj->getName(), $plural);
-		};
+	public function buildStandardParsers(
+		EarthIT_Schema $schema, EarthIT_Schema_SchemaObjectNamer $namer, $default='cmip', array $options=array()
+	) {
 		$cmipParser = new EarthIT_CMIPREST_RequestParser_CMIPRequestParser(
-			$schema, $schemaObjectNamer,
+			$schema, $namer,
 			new EarthIT_CMIPREST_RequestParser_CMIPResultAssemblerFactory($options));
 		$parsers = array(
-			'jao' => new EarthIT_CMIPREST_RequestParser_JAORequestParser( $schema, $nameFormatter ),
+			'jao' => new EarthIT_CMIPREST_RequestParser_JAORequestParser( $schema, $namer ),
 			'cmip' => $cmipParser,
 			'compound' => new EarthIT_CMIPREST_RequestParser_CompoundRequestParser($this)
 		);

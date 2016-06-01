@@ -8,26 +8,20 @@ class EarthIT_CMIPREST_ResultAssembler_JAOResultAssembler implements EarthIT_CMI
 	const DELETED = "BALEETED!";
 	
 	protected $schema;
-	protected $nameFormatter;
+	protected $schemaObjectNamer;
 	protected $plural;
 	
 	/**
 	 * @param EarthIT_Schema $schema the schema that we're emitting responses for
-	 * @param callable $nameFormatter a string -> string function
+	 * @param EarthIT_Schema_SchemaObjectNamer $schemaObjectNamer namer
 	 *   to provide 'REST names' for everything (probably camelCase).
 	 * @param bolean $plural true if we're returning a set of objects,
 	 *   false if we're just returning an object
 	 */
-	public function __construct(EarthIT_Schema $schema, $nameFormatter, $plural) {
+	public function __construct(EarthIT_Schema $schema, EarthIT_Schema_SchemaObjectNamer $schemaObjectNamer, $plural) {
 		$this->schema = $schema;
-		$this->nameFormatter = $nameFormatter;
+		$this->schemaObjectNamer = $schemaObjectNamer;
 		$this->plural = $plural;
-	}
-	
-	// TODO: Make configurable
-	protected function fieldJaoName( EarthIT_Schema_ResourceClass $rc, EarthIT_Schema_Field $f ) {
-		// When emitting JSON, format names as the JS does
-		return EarthIT_Schema_WordUtil::toCamelCase($f->getName());
 	}
 	
 	protected function internalValueToJao( EarthIT_Schema_DataType $dt, $v ) {
@@ -48,13 +42,7 @@ class EarthIT_CMIPREST_ResultAssembler_JAOResultAssembler implements EarthIT_CMI
 	}
 	
 	protected function jaoTypeName( EarthIT_Schema_ResourceClass $rc ) {
-		return call_user_func( $this->nameFormatter,
-			$rc->getFirstPropertyValue(EarthIT_CMIPREST_NS::COLLECTION_NAME) ?:
-			EarthIT_Schema_WordUtil::pluralize($rc->getName())
-		);
-	}
-	protected function jaoFieldName( EarthIT_Schema_Field $f, EarthIT_Schema_ResourceClass $rc ) {
-		return call_user_func( $this->nameFormatter, $f->getName() );
+		return $this->schemaObjectNamer->className($rc, true, $this->schema);
 	}
 	
 	protected function internalObjectToJao( EarthIT_Schema_ResourceClass $rc, array $fieldValues ) {
@@ -72,7 +60,7 @@ class EarthIT_CMIPREST_ResultAssembler_JAOResultAssembler implements EarthIT_CMI
 		// Assemble normal, non-key, non-link fields:
 		foreach( self::nonLinkNonPkFields($rc) as $k=>$field ) {
 			if( array_key_exists($k, $fieldValues) ) {
-				$result[$this->fieldJaoName($rc, $field)] =
+				$result[$this->schemaObjectNamer->fieldName($field, false, $rc, $this->schema)] =
 					$this->internalValueToJao($field->getType(), $fieldValues[$field->getName()]);
 			}
 		}
@@ -89,10 +77,11 @@ class EarthIT_CMIPREST_ResultAssembler_JAOResultAssembler implements EarthIT_CMI
 			for( $i=0; $i<count($originFieldNames); ++$i ) {
 				if( !isset($fieldValues[$originFieldNames[$i]]) ) continue 2;
 				
-				$match[self::jaoFieldName($targetRc->getField($targetFieldNames[$i]), $targetRc)] = $fieldValues[$originFieldNames[$i]];
+				$match[$this->schemaObjectNamer->fieldName($targetRc->getField($targetFieldNames[$i]), false, $targetRc, $this->schema)] =
+					$fieldValues[$originFieldNames[$i]];
 			}
 			$result['links'][EarthIT_Schema_WordUtil::toCamelCase($ref->getName())]['linkage'] = array(
-				'type' => self::jaoTypeName($targetRc)
+				'type' => $this->jaoTypeName($targetRc)
 			) + $match;
 		}
 		return $result;

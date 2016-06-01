@@ -4,17 +4,7 @@ class EarthIT_CMIPREST_CompoundRequestTest extends EarthIT_CMIPREST_TestCase
 {
 	public function setUp() {
 		$this->schema = $this->loadTestSchema();
-		$this->schemaNameFormatter = function($name,$plural=false) {
-			$name = $plural ? EarthIT_Schema_WordUtil::pluralize($name) : $name;
-			return EarthIT_Schema_WordUtil::toCamelCase($name);
-		};
-		$this->schemaObjectNamer = function($obj,$plural=false) {
-			$name = $plural ?
-				($rc->getFirstPropertyValue(EarthIT_CMIPREST_NS::COLLECTION_NAME) ?:
-				 EarthIT_Schema_WordUtil::pluralize($obj->getName())) :
-				$obj->getName();
-			return EarthIT_Schema_WordUtil::toCamelCase($name);
-		};
+		$this->schemaObjectNamer = EarthIT_CMIPREST_Namers::getStandardCamelCaseNamer();
 		$this->memoryStorage = new EarthIT_CMIPREST_MemoryStorage();
 		$this->rester = new EarthIT_CMIPREST_RESTer(array(
 			'schema' => $this->schema,
@@ -148,14 +138,14 @@ class EarthIT_CMIPREST_CompoundRequestTest extends EarthIT_CMIPREST_TestCase
 	public function testDoCompoundActionWithFancyRequestParser() {
 		$requestParser =
 			EarthIT_CMIPREST_RequestParser_FancyRequestParser::buildStandardFancyParser(
-				$this->schema, $this->schemaNameFormatter);
+				$this->schema, $this->schemaObjectNamer);
 		$this->_testDoCompoundAction( $requestParser, 'DO-COMPOUND-ACTION', '' );
 	}
 
 	public function testDoCompoundActionViaPostWithFancyRequestParser() {
 		$requestParser =
 			EarthIT_CMIPREST_RequestParser_FancyRequestParser::buildStandardFancyParser(
-				$this->schema, $this->schemaNameFormatter);
+				$this->schema, $this->schemaObjectNamer);
 		$this->_testDoCompoundAction( $requestParser, 'POST', ';compound' );
 	}
 }

@@ -12,11 +12,11 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 	
 	/**
 	 * @param EarthIT_Schema $schema the schema that we're parsing requests for
-	 * @param callable $schemaObjectNamer a EarthIT_Schema_Field -> string function
+	 * @param EarthIT_Schema_SchemaObjectNamer $schemaObjectNamer namer
 	 *   to provide 'REST names' for fields (probably camelCase).
 	 * @param EarthIT_CMIPREST_RequestParser_ResultAssemblerFactory object to use for getting result assemblers.
 	 */
-	public function __construct( EarthIT_Schema $schema, $schemaObjectNamer, $resultAssemblerFactory=null ) {
+	public function __construct( EarthIT_Schema $schema, EarthIT_Schema_SchemaObjectNamer $schemaObjectNamer, $resultAssemblerFactory=null ) {
 		$this->schema = $schema;
 		$this->schemaObjectNamer = $schemaObjectNamer;
 		
@@ -29,7 +29,7 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 	protected function restObjectToInternal( array $restObj, EarthIT_Schema_ResourceClass $rc ) {
 		$internal = array();
 		foreach( $rc->getFields() as $field ) {
-			$frn = call_user_func($this->schemaObjectNamer, $field, false);
+			$frn = $this->schemaObjectNamer->fieldName($field, false, $rc, $this->schema);
 			if( array_key_exists($frn, $restObj) ) {
 				$internal[$field->getName()] = $restObj[$frn];
 			}

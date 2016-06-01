@@ -5,7 +5,6 @@ use EarthIT_CMIPREST_RequestParser_Util AS RPU;
 class EarthIT_CMIPREST_RequestParser_JAORequestParser implements EarthIT_CMIPREST_RequestParser
 {
 	protected $schema;
-	protected $nameFormatter;
 	protected $schemaObjectNamer;
 	
 	// TODO: Make an interface for name formatter
@@ -15,12 +14,9 @@ class EarthIT_CMIPREST_RequestParser_JAORequestParser implements EarthIT_CMIPRES
 	 * @param callable $schemaObjectNamer a EarthIT_Schema_Field -> string function
 	 *   to provide 'REST names' for fields (probably camelCase).
 	 */
-	public function __construct( EarthIT_Schema $schema, $nameFormatter ) {
+	public function __construct( EarthIT_Schema $schema, EarthIT_Schema_SchemaObjectNamer $schemaObjectNamer ) {
 		$this->schema = $schema;
-		$this->nameFormatter = $nameFormatter;
-		$this->schemaObjectNamer = function($thing, $plural=false) use ($nameFormatter) {
-			return $nameFormatter($thing->getName(), $plural);
-		};
+		$this->schemaObjectNamer = $schemaObjectNamer;
 	}
 	
 	public function parse( $method, $path, $queryString, Nife_Blob $content=null ) {
@@ -76,10 +72,7 @@ class EarthIT_CMIPREST_RequestParser_JAORequestParser implements EarthIT_CMIPRES
 	}
 	
 	protected function jaoTypeName( EarthIT_Schema_ResourceClass $rc ) {
-		return call_user_func( $this->nameFormatter,
-			$rc->getFirstPropertyValue(EarthIT_CMIPREST_NS::COLLECTION_NAME) ?:
-			EarthIT_Schema_WordUtil::pluralize($rc->getName())
-		);
+		return $this->schemaObjectNamer->className( $rc, true, $this->schema );
 	}
 	
 	protected function parseContentData(
@@ -87,21 +80,26 @@ class EarthIT_CMIPREST_RequestParser_JAORequestParser implements EarthIT_CMIPRES
 	) {
 		$fieldsByJsonApiName = array();
 		foreach( $rc->getFields() as $f ) {
-			$fieldsByJsonApiName[call_user_func($this->nameFormatter, $f->getName())] = $f;
+			$fieldsByJsonApiName[$this->schemaObjectNamer->fieldName($f, false, $rc, $this->schema)] = $f;
 		}
 		
 		$refInfoByJsonApiName = array();
 		foreach( $rc->getReferences() as $ref ) {
-			$jaoName = call_user_func($this->nameFormatter, $ref->getName());
+			$jaoName = $this->schemaObjectNamer->referenceName($ref, false, $rc, $this->schema);
+			$targetRc = $this->schema->getResourceClass($ref->getTargetClassName());
 			$tfn = $ref->getTargetFieldNames();
 			$ofn = $ref->getOriginFieldNames();
 			/** field name to be found in 'linkages' => our (schema-form) field name */
 			$fmap = array();
 			for( $i=0; $i<count($tfn); ++$i ) {
-				$fmap[call_user_func($this->nameFormatter, $tfn)] = $ofn[$i];
+				// Is this even right?
+				// Unit tests missing for all this 'JAO' stuff.
+				// If you're working on this later and it seems wrong, it probably is.
+				$targetField = $targetRc->getField($tfn[$i]);
+				$fmap[$this->schemaObjectNamer->fieldName($targetField, false, $targetRc, $this->schema)] = $ofn[$i];
 			}
 			$refInfoByJsonApiName[$jaoName] = array(
-				'targetJsonApiTypeName' => self::jaoTypeName($this->schema->getResourceClass($ref->getTargetClassName()), $this->nameFormatter),
+				'targetJsonApiTypeName' => $this->jaoTypeName($this->schema->getResourceClass($ref->getTargetClassName())),
 				'33fmap' => $fmap,
 			);
 		
@@ -136,7 +134,7 @@ class EarthIT_CMIPREST_RequestParser_JAORequestParser implements EarthIT_CMIPRES
 					}
 					break;
 				case 'type':
-					$expectedTypeName = self::jaoTypeName($rc, $this->nameFormatter);
+					$expectedTypeName = $this->jaoTypeName($rc);
 					if( $expectedTypeName != $v ) {
 						throw new Exception("Type specified in data ('$v') does not match that expected for this URL ('$expectedTypeName')");
 					}
@@ -176,7 +174,7 @@ class EarthIT_CMIPREST_RequestParser_JAORequestParser implements EarthIT_CMIPRES
 	public function toAction( array $req ) {
 		$rc = EarthIT_CMIPREST_Util::getResourceClassByCollectionName($this->schema, $req['collectionName']);
 		
-		$rasm = new EarthIT_CMIPREST_ResultAssembler_JAOResultAssembler($this->schema, $this->nameFormatter, $req['instanceId'] === null);
+		$rasm = new EarthIT_CMIPREST_ResultAssembler_JAOResultAssembler($this->schema, $this->schemaObjectNamer, $req['instanceId'] === null);
 		
 		switch( $req['method'] ) {
 		case 'GET':
@@ -214,16 +212,16 @@ class EarthIT_CMIPREST_RequestParser_JAORequestParser implements EarthIT_CMIPRES
 				return new EarthIT_CMIPREST_RESTAction_GetItemAction($rc, $req['instanceId'], $johnBranches, $rasm);
 			}
 		case 'POST':
-			$items = self::parseContentData($req['contentObject']['data'], $rc, $this->schema, $this->nameFormatter);
+			$items = $this->parseContentData($req['contentObject']['data'], $rc);
 			$item = self::firstAndOnly($items);
 			// TODO: Allow multi-posts
 			return new EarthIT_CMIPREST_RESTAction_PostItemAction($rc, $item, $rasm);
 		case 'PUT':
-			$items = self::parseContentData($req['contentObject']['data'], $rc, $this->schema, $this->nameFormatter);
+			$items = $this->parseContentData($req['contentObject']['data'], $rc);
 			$item = self::firstAndOnly($items);
 			return new EarthIT_CMIPREST_RESTAction_PutItemAction($rc, $req['instanceId'], $item, $rasm);
 		case 'PATCH':
-			$items = self::parseContentData($req['contentObject']['data'], $rc, $this->schema, $this->nameFormatter);
+			$items = $this->parseContentData($req['contentObject']['data'], $rc);
 			$item = self::firstAndOnly($items);
 			return new EarthIT_CMIPREST_RESTAction_PatchItemAction($rc, $req['instanceId'], $item, $rasm);
 		case 'DELETE':
