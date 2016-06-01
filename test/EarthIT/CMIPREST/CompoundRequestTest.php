@@ -4,6 +4,10 @@ class EarthIT_CMIPREST_CompoundRequestTest extends EarthIT_CMIPREST_TestCase
 {
 	public function setUp() {
 		$this->schema = $this->loadTestSchema();
+		$this->schemaNameFormatter = function($name,$plural=false) {
+			$name = $plural ? EarthIT_Schema_WordUtil::pluralize($name) : $name;
+			return EarthIT_Schema_WordUtil::toCamelCase($name);
+		};
 		$this->schemaObjectNamer = function($obj,$plural=false) {
 			$name = $plural ?
 				($rc->getFirstPropertyValue(EarthIT_CMIPREST_NS::COLLECTION_NAME) ?:
@@ -63,7 +67,7 @@ class EarthIT_CMIPREST_CompoundRequestTest extends EarthIT_CMIPREST_TestCase
 		), $asm, "Result of multipatch should look like I think it ought to.");
 	}
 	
-	public function testDoCompoundAction() {
+	protected function _testDoCompoundAction( $requestParser, $method, $path ) {
 		$this->memoryStorage->saveItems( array(
 			array('ID'=>4, 'first name'=>'Bob','last name'=>'Lindmeier'),
 			array('ID'=>5, 'first name'=>'Bob','last name'=>'Saget')
@@ -96,9 +100,8 @@ class EarthIT_CMIPREST_CompoundRequestTest extends EarthIT_CMIPREST_TestCase
 			)
 		);
 
-		$requestParser = new EarthIT_CMIPREST_RequestParser_CMIPRequestParser($this->schema, $this->schemaObjectNamer);
-		$req = $requestParser->parse('DO-COMPOUND-ACTION', '', '', new EarthIT_JSON_PrettyPrintedJSONBlob($requestObject));
-		$this->assertTrue( is_array($req), "RequestParser#parse( compound action stuff ) should return an array; got ".var_export($req,true) );
+		$req = $requestParser->parse($method, $path, '', new EarthIT_JSON_PrettyPrintedJSONBlob($requestObject));
+		$this->assertTrue( is_array($req), "RequestParser#parse( '$method', '$path', compound action stuff ) should return an array; got ".var_export($req,true) );
 		$act = $requestParser->toAction($req);
 		$asm = $this->rester->doAction($act, null);
 		
@@ -140,5 +143,19 @@ class EarthIT_CMIPREST_CompoundRequestTest extends EarthIT_CMIPREST_TestCase
 				)
 			)
 		), $asm, "Result of compound action should look like I think it should" );
+	}
+	
+	public function testDoCompoundActionWithFancyRequestParser() {
+		$requestParser =
+			EarthIT_CMIPREST_RequestParser_FancyRequestParser::buildStandardFancyParser(
+				$this->schema, $this->schemaNameFormatter);
+		$this->_testDoCompoundAction( $requestParser, 'DO-COMPOUND-ACTION', '' );
+	}
+
+	public function testDoCompoundActionViaPostWithFancyRequestParser() {
+		$requestParser =
+			EarthIT_CMIPREST_RequestParser_FancyRequestParser::buildStandardFancyParser(
+				$this->schema, $this->schemaNameFormatter);
+		$this->_testDoCompoundAction( $requestParser, 'POST', ';compound' );
 	}
 }

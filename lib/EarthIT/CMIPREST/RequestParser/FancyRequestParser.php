@@ -10,6 +10,18 @@ class EarthIT_CMIPREST_RequestParser_FancyRequestParser implements EarthIT_CMIPR
 		$this->parsers = $parsers;
 	}
 	
+	public function addParsers( array $parsers ) {
+		foreach( $parsers as $k=>$parser ) {
+			$this->parsers[$k] = $parser;
+		}
+	}
+	
+	public function buildStandardFancyParser( EarthIT_Schema $schema, $nameFormatter, $default='cmip', array $options=array() ) {
+		$P = new self(array());
+		$P->addParsers( $P->buildStandardParsers($schema, $nameFormatter, $default, $options) );
+		return $P;
+	}
+	
 	/**
 	 * TODO: Lazy-load parsers
 	 * TODO: Replace $nameFormatter with some object
@@ -18,7 +30,7 @@ class EarthIT_CMIPREST_RequestParser_FancyRequestParser implements EarthIT_CMIPR
 	 * @param string $default name of default parser to use
 	 * @param array $options more options!
 	 */
-	public static function buildStandardParsers( EarthIT_Schema $schema, $nameFormatter, $default='cmip', array $options=array() ) {
+	public function buildStandardParsers( EarthIT_Schema $schema, $nameFormatter, $default='cmip', array $options=array() ) {
 		$schemaObjectNamer = function($obj, $plural=false) use ($nameFormatter) {
 			return call_user_func($nameFormatter, $obj->getName(), $plural);
 		};
@@ -43,6 +55,9 @@ class EarthIT_CMIPREST_RequestParser_FancyRequestParser implements EarthIT_CMIPR
 		if( preg_match('#^;([^/]*)(.*)#', $path, $bif) ) {
 			$apiModifiers = explode(';', $bif[1]);
 			$pathRemainder = $bif[2];
+		} else if( $requestMethod == 'DO-COMPOUND-ACTION' ) {
+			$apiModifiers = array('compound');
+			$pathRemainder = $path;
 		} else {
 			$apiModifiers = array();
 			$pathRemainder = $path;
