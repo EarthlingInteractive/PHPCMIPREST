@@ -16,7 +16,7 @@ class EarthIT_CMIPREST_RequestParser_FancyRequestParser implements EarthIT_CMIPR
 		}
 	}
 	
-	public function buildStandardFancyParser( EarthIT_Schema $schema, $nameFormatter, $default='cmip', array $options=array() ) {
+	public static function buildStandardFancyParser( EarthIT_Schema $schema, $nameFormatter, $default='cmip', array $options=array() ) {
 		$P = new self(array());
 		$P->addParsers( $P->buildStandardParsers($schema, $nameFormatter, $default, $options) );
 		return $P;
