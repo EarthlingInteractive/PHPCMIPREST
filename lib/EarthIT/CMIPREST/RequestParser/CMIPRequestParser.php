@@ -119,7 +119,7 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 	
 	public function toAction( array $request ) {
 		if( isset($request['propertyName']) ) {
-			throw new Exception("Unrecognized resource property, '$propName'");
+			throw new EarthIT_CMIPREST_RequestInvalid("Unrecognized resource property, '$propName'");
 		}
 		
 		$resourceClass = EarthIT_CMIPREST_Util::getResourceClassByCollectionName($this->schema, $request['collectionName']);
@@ -130,7 +130,7 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 			if( $k === 'keyByIds' ) {
 				$rasmOptions[NOJRA::KEY_BY_IDS] = EarthIT_CMIPREST_Util::parseBoolean($v);
 			} else {
-				throw new Exception("Unrecognized general modifier: '$k'");
+				throw new EarthIT_CMIPREST_RequestInvalid("Unrecognized general modifier: '$k'");
 			}
 		}
 		
@@ -143,7 +143,7 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 				} else if( $k === 'keyByIds' ) {
 					$rasmOptions[NOJRA::KEY_BY_IDS] = EarthIT_CMIPREST_Util::parseBoolean($v);
 				} else {
-					throw new Exception("Unrecognized collection modifier: '$k'");
+					throw new EarthIT_CMIPREST_RequestInvalid("Unrecognized collection modifier: '$k'");
 				}
 			}
 			
@@ -164,7 +164,7 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 			}
 		case 'POST':
 			if( $request['instanceId'] !== null ) {
-				throw new Exception("You may not include item ID when POSTing");
+				throw new EarthIT_CMIPREST_RequestInvalid("You may not include item ID when POSTing");
 			}
 			$data = $request['contentObject'];
 			
@@ -202,7 +202,7 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 			}
 		case 'PUT':
 			if( $request['instanceId'] === null ) {
-				throw new Exception("You ust include item ID when PUTing");
+				throw new EarthIT_CMIPREST_RequestInvalid("You ust include item ID when PUTing");
 			}
 			return new EarthIT_CMIPREST_RESTAction_PutItemAction(
 				$resourceClass, $request['instanceId'],
@@ -230,14 +230,15 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 			}
 		case 'DELETE':
 			if( $request['instanceId'] === null ) {
-				throw new Exception("You ust include item ID when DELETEing");
+				throw new EarthIT_CMIPREST_RequestInvalid("You ust include item ID when DELETEing");
 			}
 			return new EarthIT_CMIPREST_RESTAction_DeleteItemAction(
 				$resourceClass, $request['instanceId'],
 				$this->resultAssemblerFactory->getResultAssembler(RAF::AC_DELETE, $rasmOptions)
 			);
+			// TODO: Handle OPTIONS
 		default:
-			throw new Exception("Unrecognized method, '".$request['method']."'");
+			throw new EarthIT_CMIPREST_RequestInvalid("Unrecognized method, '".$request['method']."'");
 		}
 	}
 }

@@ -68,4 +68,20 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParserTest extends EarthIT_CMIPR
 		)));
 		$act = $parser->toAction($req);
 	}
+	
+	public function testParseInvalid() {
+		$parser = new EarthIT_CMIPREST_RequestParser_CMIPRequestParser($this->schema, $this->schemaObjectNamer);
+		$caught = null;
+		try {
+			$req = $parser->parse('POST', '/people/12', '', new EarthIT_JSON_PrettyPrintedJSONBlob(array(
+				array('firstName'=>'Bob','lastName'=>'Lindmeyer'),
+				array('firstName'=>'Bob','lastName'=>'Saget')
+			)));
+			$act = $parser->toAction($req);
+		} catch( EarthIT_CMIPREST_RequestInvalid $e ) {
+			$caught = $e;
+		}
+		$this->assertNotNull($caught);
+		$this->assertTrue( is_array($caught->getErrorDetails()) );
+	}
 }

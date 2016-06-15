@@ -300,6 +300,8 @@ class EarthIT_CMIPREST_Util
 			return EarthIT_CMIPREST_Util::singleErrorResponse( 404, $e->getMessage() );
 		} else if( $e instanceof EarthIT_CMIPREST_ActionInvalid ) {
 			return EarthIT_CMIPREST_Util::multiErrorResponse( 409, $e->getErrorDetails() );
+		} else if( $e instanceof EarthIT_CMIPREST_RequestInvalid ) {
+			return EarthIT_CMIPREST_Util::multiErrorResponse( 422, $e->getErrorDetails() );
 		} else if( $e instanceof EarthIT_Schema_NoSuchResourceClass ) {
 			return EarthIT_CMIPREST_Util::singleErrorResponse( 404, $e->getMessage() );
 		} else {

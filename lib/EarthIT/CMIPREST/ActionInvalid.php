@@ -1,5 +1,13 @@
 <?php
 
+/**
+ * An action is not valid,
+ * either due to contradictions within it,
+ * or because of conflicts with the state of the rest of the system.
+ *
+ * To be represented in an HTTP response,
+ * status code 409 should be used.
+ */
 class EarthIT_CMIPREST_ActionInvalid extends Exception
 {
 	protected $action;

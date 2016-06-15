@@ -249,6 +249,7 @@ class EarthIT_CMIPREST_RESTerTest extends EarthIT_CMIPREST_TestCase
 		);
 		$act = new EarthIT_CMIPREST_RESTAction_InvalidAction( array( $errorDetail ), $this->standardSuccessActionResultAssembler );
 		$rez = $this->rester->doActionAndGetHttpResponse($act, $this->standardActionContext);
+		$this->assertEquals( 409, $rez->getStatusCode() );
 		$responseString = (string)$rez->getContent();
 		$responseObject = json_decode($responseString, true);
 		$this->assertEquals( array( 'errors' => array($errorDetail) ), $responseObject );
