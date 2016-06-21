@@ -196,9 +196,25 @@ class EarthIT_CMIPREST_RequestParser_Util
 				}
 			}
 		}
-		if( count($inverseJohns) == 1 ) {
-			return $inverseJohns[0];
-		} else if( count($inverseJohns) > 1 ) {
+		
+		// Only one = totally unambiguous!
+		if( count($inverseJohns) == 1 ) return $inverseJohns[0];
+		
+		// If there's 2 from the same target
+		// that differ only in plurality, use the plural one.
+		if( count($inverseJohns) == 2 ) {
+			$byPlurality = array();
+			foreach( $inverseJohns as $ij ) {
+				$byPlurality[$ij->targetIsPlural] = $ij;
+			}
+			if(
+				count($byPlurality) == 2 and
+				$byPlurality[0]->targetResourceClass->getName() == $byPlurality[1]->targetResourceClass->getName()
+			) return $byPlurality[1];
+		}
+		
+		// Otherwise we've got enough ambiguity to warrant an exception.
+		if( count($inverseJohns) > 1 ) {
 			$list = array();
 			foreach( $inverseJohns as $ij ) {
 				$list[] = (string)$ij;
@@ -210,6 +226,7 @@ class EarthIT_CMIPREST_RequestParser_Util
 			);
 		}
 		
+		// Otherwise we found nothing.
 		throw new Exception("Can't find '$linkName' link from ".$originRc->getName());
 	}
 

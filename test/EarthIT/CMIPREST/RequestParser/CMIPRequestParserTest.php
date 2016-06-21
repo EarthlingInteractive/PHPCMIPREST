@@ -84,4 +84,18 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParserTest extends EarthIT_CMIPR
 		$this->assertNotNull($caught);
 		$this->assertTrue( is_array($caught->getErrorDetails()) );
 	}
+	
+	public function testGetFieldDeer() {
+		$parser = new EarthIT_CMIPREST_RequestParser_CMIPRequestParser($this->schema, $this->schemaObjectNamer);
+		$req = $parser->parse('GET', '/field;with=deer/123', '');
+		$act = $parser->toAction($req);
+		// Expectation is that no exception got thrown
+	}
+	
+	public function testGetDeer() {
+		$parser = new EarthIT_CMIPREST_RequestParser_CMIPRequestParser($this->schema, $this->schemaObjectNamer);
+		$req = $parser->parse('GET', '/deer', 'homeFieldId=1234');
+		$act = $parser->toAction($req);
+		// Expectation is that no exception got thrown
+	}
 }

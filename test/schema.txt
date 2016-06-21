@@ -75,3 +75,18 @@ class 'rating' : SRR {
 	resource is fake : boolean    : nullable
 	mood : reference(mood) : nullable = mood code
 }
+
+# These are for testing request parsing.  They don't have actual tables.
+
+class 'field' : comment @ "A place where deer live" : has a REST service {
+	ID : EIPK
+}
+
+class 'deer' : collection name @ "deer" : has a REST service {
+	ID : EIPK
+	name : string
+	# inverse collection name @ "resident deer" would be appropriate,
+	# except that the whole point is to test resolving ambiguity between
+	# singular and plural 'deer'
+	home field : reference(field) = ID = home field ID
+}
