@@ -214,9 +214,15 @@ implements EarthIT_CMIPREST_Storage
 		if( count($selectedValueSqls) == 0 ) {
 			throw new Exception("Can't select zero stuff.");
 		}
-
+		
+		// SELECT DISTINCT instead of just SELECT
+		// so that you don't end up with duplicate items
+		// just because they were joined-to via different intermediate records.
+		// For tables with no PK where you actually *want* duplicates
+		// there is no good solution other than rewriting the query entirely
+		// to select directly from the table instead of using JOINs.
 		$sql =
-			"SELECT ".implode(', ',$selectedValueSqls)."\n".
+			"SELECT DISTINCT ".implode(', ',$selectedValueSqls)."\n".
 			"FROM (\n\t".str_replace("\n","\n\t",
 				"SELECT *\n".
 				$searchQuery['fromSection'].
