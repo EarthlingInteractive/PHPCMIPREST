@@ -136,11 +136,38 @@ class EarthIT_CMIPREST_RequestParser_Util
 		
 		self::parsePathToTree( array_slice($path, 1), $into[$path[0]] );
 	}
-		
+	
+	const JP_EXPLICIT_DIRECT_SINGULAR = 60;
+	const JP_EXPLICIT_INVERSE_PLURAL = 50;
+	const JP_EXPLICIT_INVERSE_SINGULAR = 40;
+	const JP_EXPLICIT_INVERSE_IMPLICIT_PLURAL = 30;
+	const JP_IMPLICIT_INVERSE_PLURAL = 20;
+	const JP_IMPLICIT_INVERSE_SINGULAR = 10;
+	
 	private static function findJohnByName( EarthIT_Schema $schema, EarthIT_Schema_ResourceClass $originRc, $linkName, $namer ) {
+
+		/**
+		 * There may be multiple candidates for what Y in X;with=Y refers to.
+		 * From most to least precedence:
+		 * 
+		 * Explicit direct reference:
+		 * 60. X defines Y : reference(...); this is the easiest to find and taks precedence over everything else - singular
+		 * Explicit inverse references:
+		 * 50. Some class defines a reference(X) : inverse collection name @ "Y" - plural
+		 * 40. Some class defines a reference(X) : inverse name @ "Y" - singular
+		 * 30. Some class defines a reference(X) : inverse name @ "Z" where plural("Z") = "Y" - plural
+		 * Implicit (based on class name) references:
+		 * 20. Some class with plural(name) = "Y" - plural
+		 * 10. Some class with name = "Y" - singular
+		 *
+		 * If multiple johns are found with the *same priority*, the query is ambiguous.
+		 * Otherwise we use the john found with highest precedence.
+		 */
+		
 		foreach( $originRc->getReferences() as $refName=>$ref ) {
 			$name = $namer($ref);
 			if( $linkName == $name ) {
+				// This is the JP_EXPLICIT_DIRECT_SINGULAR case
 				$targetRc = $schema->getResourceClass($ref->getTargetClassName());
 				return new EarthIT_CMIPREST_John(
 					$originRc, self::getFields($originRc, $ref->getOriginFieldNames()),
@@ -150,80 +177,80 @@ class EarthIT_CMIPREST_RequestParser_Util
 			}
 		}
 		
-		/* TODO:
-		 * Eventually we should be able to define inverse relationship
-		 * names and plurality in the schema, possibly falling back on
-		 * the method of finding them following this comment.
+		/**
+		 * array of precedence (see above list) => list of possible johns
 		 */
+		$candidates = array();
 		
-		/*
-		 * Try to find a reference from a class 'X' where plural(X) = the requested link,
-		 * and return a plural John of the inverse of that reference.
-		 */
-		$inverseJohns = array();
 		foreach( $schema->getResourceClasses() as $targetRc ) {
-			foreach( array(true,false) as $plural ) {
-				$targetRcMungedName = $namer($targetRc,$plural);
-				foreach( $targetRc->getReferences() as $inverseRef ) {
-					if( $inverseRef->getTargetClassName() == $originRc->getName() ) {
-						
-						// Find any explicitly-given name for this inverse link
-						$refInverseName = $inverseRef->getFirstPropertyValue(EarthIT_CMIPREST_NS::INVERSE_NAME);
-						if( $plural ) {
-							$refPluralInverseName = $inverseRef->getFirstPropertyValue(EarthIT_CMIPREST_NS::INVERSE_COLLECTION_NAME);
-							if( $refPluralInverseName === null and $refInverseName !== null ) {
-								$refPluralInverseName = EarthIT_Schema_WordUtil::pluralize($refInverseName);
-							}
-							$refInverseName = $refPluralInverseName;
+			// Find any explicitly-named inverse references
+			foreach( $targetRc->getReferences() as $inverseRef ) {
+				if( $inverseRef->getTargetClassName() == $originRc->getName() ) {
+					foreach( $inverseRef->getPropertyValues(EarthIT_CMIPREST_NS::INVERSE_NAME) as $inverseName ) {
+						$mungedRefInverseName = $namer(EarthIT_Schema_SchemaObject::__set_state(array('name'=>$inverseName)));
+						if( $mungedRefInverseName === $linkName ) {
+							$candidates[self::JP_EXPLICIT_INVERSE_SINGULAR][] = new EarthIT_CMIPREST_John(
+								$originRc, self::getFields($originRc, $inverseRef->getTargetFieldNames()),
+								$targetRc, self::getFields($targetRc, $inverseRef->getOriginFieldNames()),
+								false
+							);
 						}
 						
-						if( $refInverseName !== null ) {
-							$mungedName = $namer(EarthIT_Schema_SchemaObject::__set_state(array('name'=>$refInverseName)));
-						} else {
-							// Default to the class name
-							$mungedName = $targetRcMungedName;
+						$inverseNamePlural = EarthIT_Schema_WordUtil::pluralize($inverseName);
+						$mungedRefInverseName = $namer(EarthIT_Schema_SchemaObject::__set_state(array('name'=>$inverseNamePlural)));
+						if( $mungedRefInverseName === $linkName ) {
+							$candidates[self::JP_EXPLICIT_INVERSE_IMPLICIT_PLURAL][] = new EarthIT_CMIPREST_John(
+								$originRc, self::getFields($originRc, $inverseRef->getTargetFieldNames()),
+								$targetRc, self::getFields($targetRc, $inverseRef->getOriginFieldNames()),
+								true
+							);
 						}
+					}
+					
+					foreach( $inverseRef->getPropertyValues(EarthIT_CMIPREST_NS::INVERSE_COLLECTION_NAME) as $inverseCollectionName ) {
+						$mungedRefInverseName = $namer(EarthIT_Schema_SchemaObject::__set_state(array('name'=>$inverseCollectionName)));
+						if( $mungedRefInverseName === $linkName ) {
+							$candidates[self::JP_EXPLICIT_INVERSE_PLURAL][] = new EarthIT_CMIPREST_John(
+								$originRc, self::getFields($originRc, $inverseRef->getTargetFieldNames()),
+								$targetRc, self::getFields($targetRc, $inverseRef->getOriginFieldNames()),
+								true
+							);
+						}
+					}
+					
+					// Find any implicit references
+					foreach( array(
+						self::JP_IMPLICIT_INVERSE_PLURAL => true,
+						self::JP_IMPLICIT_INVERSE_SINGULAR => false
+					) as $prec => $plural ) {
+						$targetRcMungedName = $namer($targetRc,$plural); // This should take collection name into account
 						
-						if( $mungedName == $linkName ) {
+						if( $targetRcMungedName == $linkName ) {
 							$john = new EarthIT_CMIPREST_John(
 								$originRc, self::getFields($originRc, $inverseRef->getTargetFieldNames()),
 								$targetRc, self::getFields($targetRc, $inverseRef->getOriginFieldNames()),
 								$plural
 							);
-							$inverseJohns[] = $john;
+							$candidates[$prec][] = $john;
 						}
 					}
 				}
 			}
 		}
 		
-		// Only one = totally unambiguous!
-		if( count($inverseJohns) == 1 ) return $inverseJohns[0];
-		
-		// If there's 2 from the same target
-		// that differ only in plurality, use the plural one.
-		if( count($inverseJohns) == 2 ) {
-			$byPlurality = array();
-			foreach( $inverseJohns as $ij ) {
-				$byPlurality[$ij->targetIsPlural] = $ij;
+		krsort($candidates);
+		foreach( $candidates as $precedence => $johns ) {
+			if( count($johns) > 1 ) {
+				$list = array();
+				foreach( $inverseJohns as $ij ) {
+					$list[] = (string)$ij;
+				}
+				throw new Exception(
+					"The link '$linkName' from ".$originRc->getName()." is ambiguous.\n".
+					"It could indicate any of the following links: ".implode('; ',$list)
+				);
 			}
-			if(
-				count($byPlurality) == 2 and
-				$byPlurality[0]->targetResourceClass->getName() == $byPlurality[1]->targetResourceClass->getName()
-			) return $byPlurality[1];
-		}
-		
-		// Otherwise we've got enough ambiguity to warrant an exception.
-		if( count($inverseJohns) > 1 ) {
-			$list = array();
-			foreach( $inverseJohns as $ij ) {
-				$list[] = (string)$ij;
-			}
-			// Alternatively, we could just include all of them.
-			throw new Exception(
-				"The link '$linkName' from ".$originRc->getName()." is ambiguous.\n".
-				"It could indicate any of the following links: ".implode('; ',$list)
-			);
+			foreach( $johns as $j ) return $j;
 		}
 		
 		// Otherwise we found nothing.
