@@ -119,7 +119,7 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 	
 	public function toAction( array $request ) {
 		if( isset($request['propertyName']) ) {
-			throw new EarthIT_CMIPREST_RequestInvalid("Unrecognized resource property, '$propName'");
+			throw new EarthIT_CMIPREST_RequestInvalid("Unrecognized resource property, '{$request['propertyName']}'");
 		}
 		
 		$resourceClass = EarthIT_CMIPREST_Util::getResourceClassByCollectionName($this->schema, $request['collectionName']);
