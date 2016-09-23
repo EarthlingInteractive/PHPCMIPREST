@@ -309,6 +309,22 @@ class EarthIT_CMIPREST_Util
 		}
 	}
 	
+	//// Standard name translations
+
+	/*
+	 * collectionName(super duper facility class)  = "super duper facilities"
+	 */
+	public static function collectionName( EarthIT_Schema_SchemaObject $obj ) {
+		return $obj->getFirstPropertyValue(EarthIT_CMIPREST_NS::COLLECTION_NAME) ?:
+			EarthIT_Schema_WordUtil::pluralize($obj->getName());
+	}
+	/*
+	 * http://your.domain/api/<collectionPathComponent>/123
+	 */
+	public static function collectionPathComponent( EarthIT_Schema_SchemaObject $obj ) {
+		return EarthIT_Schema_WordUtil::toCamelCase(self::collectionName($obj));
+	}
+	
 	////
 	
 	public static function encodeItem( array $item, EarthIT_Schema_ResourceClass $rc, EarthIT_CMIPREST_ItemCodec $codec ) {
