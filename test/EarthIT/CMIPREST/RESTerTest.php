@@ -117,6 +117,17 @@ class EarthIT_CMIPREST_RESTerTest extends EarthIT_CMIPREST_TestCase
 		$this->assertEquals($urn, $got['URN']);
 	}
 	
+	public function testPostEntityIdItem() {
+		$rc = $this->schema->getResourceClass('person');
+		
+		$posted = $this->rester->doAction(
+			new EarthIT_CMIPREST_RESTAction_PostItemAction(
+				$rc, array('first name'=>'Jill', 'last name'=>'Stein'),
+				$this->standardSaveActionResultAssembler ),
+			$this->standardActionContext);
+		$this->assertTrue( is_string($posted['id']), "Entity ID 'ID' field returned by POST should be a string" );
+	}
+	
 	public function testDeleteItem() {
 		$rc = $this->schema->getResourceClass('resource');
 		$urn = 'data:text/plain,'.rand(1000000,9999999);
