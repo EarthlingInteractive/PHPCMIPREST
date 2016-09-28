@@ -134,6 +134,12 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 			}
 		}
 		
+		if( isset($request['collectionModifiers']['keyByIds']) ) {
+			$rasmOptions[NOJRA::KEY_BY_IDS] = EarthIT_CMIPREST_Util::parseBoolean(
+				$request['collectionModifiers']['keyByIds']
+			);
+		}
+		
 		switch( $request['method'] ) {
 		case 'GET': case 'HEAD':
 			$johnBranches = array();
@@ -141,7 +147,7 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 				if( $k === 'with' ) {
 					$johnBranches = RPU::withsToJohnBranches($this->schema, $resourceClass, $v, $this->schemaObjectNamer);
 				} else if( $k === 'keyByIds' ) {
-					$rasmOptions[NOJRA::KEY_BY_IDS] = EarthIT_CMIPREST_Util::parseBoolean($v);
+					// Already handled more generally
 				} else {
 					throw new EarthIT_CMIPREST_RequestInvalid("Unrecognized collection modifier: '$k'");
 				}
@@ -202,7 +208,7 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 			}
 		case 'PUT':
 			if( $request['instanceId'] === null ) {
-				throw new EarthIT_CMIPREST_RequestInvalid("You ust include item ID when PUTing");
+				throw new EarthIT_CMIPREST_RequestInvalid("You must include item ID when PUTing");
 			}
 			return new EarthIT_CMIPREST_RESTAction_PutItemAction(
 				$resourceClass, $request['instanceId'],
