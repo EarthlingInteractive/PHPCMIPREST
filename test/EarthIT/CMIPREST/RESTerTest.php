@@ -5,6 +5,8 @@ class EarthIT_CMIPREST_RESTerTest_Context
 	public $userId;
 	
 	public function __construct($userId) { $this->userId = $userId; }
+	
+	public function getUserId() { return $this->userId; }
 }
 
 class EarthIT_CMIPREST_RESTAction_WackAction extends EarthIT_CMIPREST_RESTAction
@@ -23,6 +25,15 @@ class EarthIT_CMIPREST_RESTAction_WackAction extends EarthIT_CMIPREST_RESTAction
 		return $this->resultAssembler;
 	}
 }
+
+/* TODO: Test itemsVisible
+class EarthIT_CMIPREST_RESTerTest_FinickyAuthorizer
+extends EarthIT_CMIPREST_RESTActionAuthorizer_DefaultRESTActionAuthorizer
+{
+	public function itemVisible( $item, EarthIT_Schema_ResourceClass $rc, $ctx, array &$explanation ) {
+	}
+}
+*/
 
 class EarthIT_CMIPREST_RESTerTest extends EarthIT_CMIPREST_TestCase
 {
@@ -65,8 +76,8 @@ class EarthIT_CMIPREST_RESTerTest extends EarthIT_CMIPREST_TestCase
 		
 		$rc = $this->schema->getResourceClass('resource');
 		$this->savedItems = array(
-			$this->storage->postItem( $rc, array('URN'=>'data:text/plain,'.rand(1000000,9999999))),
-			$this->storage->postItem( $rc, array('URN'=>'data:text/plain,'.rand(1000000,9999999)))
+			$this->storage->postItem( $rc, array('ID'=>1001, 'URN'=>'data:text/plain,'.rand(1000000,9999999))),
+			$this->storage->postItem( $rc, array('ID'=>1002, 'URN'=>'data:text/plain,'.rand(1000000,9999999)))
 		);
 	}
 	

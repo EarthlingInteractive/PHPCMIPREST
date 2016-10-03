@@ -20,4 +20,20 @@ class EarthIT_CMIPREST_NS
 	 * returned by CMIP searches and posts (and sent to PATCH requests).
 	 */
 	const ID_KEYED_LIST = 'http://ns.earthit.com/CMIPREST/IDKeyedList';
+	
+	const SEARCH_RESULT_VISIBILITY_MODE = 'http://ns.earthit.com/CMIPREST/searchResultVisibilityMode';
+	/**
+	 * Everything's returned unless it includes something you're not allowed
+	 * to see, in which case you'll get a 403.
+	 */
+	const SRVM_BINARY = 'Binary';
+	/**
+	 * Top-level items that are not readable are hidden.
+	 */
+	const SRVM_ALLOWED_ONLY = 'AllowedOnly';
+	/**
+	 * Items that are not readable are hidden,
+	 * including nexted items.
+	 */
+	const SRVM_RECURSIVE_ALLOWED_ONLY = 'RecursiveAllowedOnly';
 }

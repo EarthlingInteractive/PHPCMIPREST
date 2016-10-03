@@ -92,6 +92,10 @@ class EarthIT_CMIPREST_RESTer
 		$queryParams = array();
 		$relevantObjects = $this->storage->johnlySearchItems( $search, $act->getJohnBranches() );
 		$johnCollections = $this->collectJohns( $act->getJohnBranches(), 'root' );
+
+		$searchOptions = $act->getSearchOptions();
+		$vizMode = isset($searchOptions[EarthIT_CMIPREST_NS::SEARCH_RESULT_VISIBILITY_MODE]) ? 
+			$searchOptions[EarthIT_CMIPREST_NS::SEARCH_RESULT_VISIBILITY_MODE] : EarthIT_CMIPREST_NS::SRVM_BINARY;
 		
 		// If we need to post-authorize, do it.
 		if( $preAuth === EarthIT_CMIPREST_RESTActionAuthorizer::AUTHORIZED_IF_RESULTS_VISIBLE ) {
@@ -99,9 +103,24 @@ class EarthIT_CMIPREST_RESTer
 				// Figure out what resource class of items we got, here
 				$targetRc = count($johns) == 0 ? $rc : $johns[count($johns)-1]->targetResourceClass;
 				
-				// Ensure that they're visisble
-				if( !$this->authorizer->itemsVisible($relevantObjects[$path], $targetRc, $ctx, $authorizationExplanation) ) {
-					throw new EarthIT_CMIPREST_ActionUnauthorized($act, $ctx, $authorizationExplanation);
+				switch( $vizMode ) {
+				case EarthIT_CMIPREST_NS::SRVM_BINARY:
+					// Ensure that they're visisble
+					if( !$this->authorizer->itemsVisible($relevantObjects[$path], $targetRc, $ctx, $authorizationExplanation) ) {
+						throw new EarthIT_CMIPREST_ActionUnauthorized($act, $ctx, $authorizationExplanation);
+					}
+					break;
+				case EarthIT_CMIPREST_NS::RECURSIVE_ALLOWED_ONLY:
+					if( !($this->authorizer instanceof EarthIT_CMIPREST_RESTActionAuthorizer2) ) {
+						throw new Error(
+							"Can't filter search results by visibility because authorizer (".
+							get_class($this->authorizer)." doesn't implement RESTActionAuthorizer2");
+					}
+					$relevantObjects[$path] =
+						$this->authorizer->visibleItems( $relevantObjects[$path], $targetRc, $ctx, $authorizationExplanation);
+					break;
+				default:
+					throw new Exception("Unsupported search result visibility mode: {$vizMode}");
 				}
 			}
 		}

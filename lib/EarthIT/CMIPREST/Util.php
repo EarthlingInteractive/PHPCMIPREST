@@ -2,6 +2,14 @@
 
 class EarthIT_CMIPREST_Util
 {
+	public static function describe( $thing ) {
+		if( $thing === null   ) return "null";
+		if( $thing === true   ) return "true";
+		if( $thing === false  ) return "false";
+		if( is_object($thing) ) return "a ".get_class($thing);
+		return "a ".gettype($thing);
+	}
+	
 	public static function first(array $things, $default=null) {
 		foreach($things as $thing) return $thing;
 		return $default;
@@ -332,5 +340,14 @@ class EarthIT_CMIPREST_Util
 	}
 	public static function decodeItem( array $item, EarthIT_Schema_ResourceClass $rc, EarthIT_CMIPREST_ItemCodec $codec ) {
 		return self::first($codec->decodeItems(array($item), $rc));
+	}
+	
+	////
+	
+	public static function contextUserId( $ctx, $default='123-WHEE-ERROR' ) {
+		if( method_exists($ctx,'getUserId') ) return $ctx->getUserId();
+		if( method_exists($ctx,'getLoggedInUserId') ) return $ctx->getLoggedInUserId();
+		if( $default === '123-WHEE-ERROR' ) throw new Exception("Don't know how to extract user ID from ".self::describe($ctx));
+		return $default;
 	}
 }
