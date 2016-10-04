@@ -1,8 +1,9 @@
 <?php
 
-use EarthIT_CMIPREST_RequestParser_Util AS RPU;
-use EarthIT_CMIPREST_RequestParser_ResultAssemblerFactory AS RAF;
-use EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler AS NOJRA;
+use EarthIT_CMIPREST_RequestParser_Util as RPU;
+use EarthIT_CMIPREST_RequestParser_ResultAssemblerFactory as RAF;
+use EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler as NOJRA;
+use EarthIT_CMIPREST_RESTActionAuthorizer as RAA;
 
 class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPREST_RequestParser
 {
@@ -68,9 +69,13 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 			$orderBy = array();
 			$skip = 0;
 			$limit = null;
+			$visibleToUserId = null;
 			foreach( $params as $p2 ) {
 				list($k,$v) = $p2;
 				switch( $k ) {
+				case 'visibleToUserId':
+					$visibleToUserId = $v;
+					break;
 				case 'orderBy':
 					$p = explode(',', $v);
 					foreach( $p as $x ) {
@@ -109,6 +114,7 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 				'skip' => $skip,
 				'limit' => $limit,
 				'orderBy' => $orderBy,
+				'visibleToUserId' => $visibleToUserId,
 				'generalModifiers' => $generalModifiers,
 				'collectionModifiers' => $collectionModifiers,
 				'contentObject' => $contentObject
@@ -163,10 +169,21 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 				$filter     = RPU::parseFilter2(    $request['filters'], $resourceClass, $this->schema );
 				$comparator = RPU::parseComparator( $request['orderBy'], $resourceClass, $fieldsByRestName );
 				$search = new EarthIT_Storage_Search( $resourceClass, $filter, $comparator, $request['skip'], $request['limit'] );
-				return new EarthIT_CMIPREST_RESTAction_SearchAction(
-					$search, $johnBranches, array(),
+				$searchOptions = array();
+				$suIds = array();
+				if( $request['visibleToUserId'] ) {
+					$searchOptions[RAA::SEARCH_RESULT_VISIBILITY_MODE] = RAA::SRVM_RECURSIVE_ALLOWED_ONLY;
+					$suIds[] = $request['visibleToUserId'];
+				}
+				$searchAct = new EarthIT_CMIPREST_RESTAction_SearchAction(
+					$search, $johnBranches, $searchOptions,
 					$this->resultAssemblerFactory->getResultAssembler(RAF::AC_SEARCH, $rasmOptions)
 				);
+				if( !empty($suIds) ) {
+					return new EarthIT_CMIPREST_RESTAction_SudoAction($searchAct, $suIds);
+				} else {
+					return $searchAct;
+				}
 			}
 		case 'POST':
 			if( $request['instanceId'] !== null ) {

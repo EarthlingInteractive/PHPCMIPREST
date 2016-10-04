@@ -239,7 +239,16 @@ class EarthIT_CMIPREST_RESTer
 	public function doAction( EarthIT_CMIPREST_RESTAction $act, $ctx ) {
 		// TODO: Validate and preAuthorize before doing anything
 		// instead of validating/authorizing each action as it is run.
-		if( $act instanceof EarthIT_CMIPREST_RESTAction_CompoundAction ) {
+		if( $act instanceof EarthIT_CMIPREST_RESTAction_SudoAction ) {
+			foreach( $act->getSuIds() as $suId ) {
+				$explanation = array();
+				if( !$this->authorizer->sudoAllowed($suId, $ctx, $explanation) ) {
+					throw new EarthIT_CMIPREST_ActionUnauthorized($act, $ctx, $explanation);
+				}
+			}
+			$suCtx = EarthIT_CMIPREST_Util::suContext($ctx, $act->getSuIds(), $act->getPermissionMergeMode());
+			return $this->doAction( $act->getAction(), $suCtx );
+		} else if( $act instanceof EarthIT_CMIPREST_RESTAction_CompoundAction ) {
 			return $this->doCompoundAction($act, $ctx);
 		} else {
 			return $this->doSimpleAction($act, $ctx);

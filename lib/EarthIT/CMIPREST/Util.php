@@ -350,4 +350,39 @@ class EarthIT_CMIPREST_Util
 		if( $default === '123-WHEE-ERROR' ) throw new Exception("Don't know how to extract user ID from ".self::describe($ctx));
 		return $default;
 	}
+	
+	/**
+	 * Return an updated context
+	 * with the permissions of $suIds (a list of user IDs) added.
+	 */
+	public static function suContext( $ctx, array $suIds, $pmm ) {
+		$currentUserId = self::contextUserId($ctx);
+		$includesCurrentUserId = false;
+		$addsOtherUserIds = false;
+		foreach( $suIds as $suId ) {
+			if( $currentUserId === $suId ) {
+				$includesCurrentUserId = true;
+				// Ha ha ha, nothing to do!
+			} else {
+				$addsOtherUserIds = true;
+			}
+		}
+
+		if( $addsOtherUserIds ) {
+			throw new Exception("sudoContext not actually implemented in the not-already-the-current-user case. 🐮");
+		}
+		
+		switch( $pmm ) {
+		case EarthIT_CMIPREST_RESTAction_SudoAction::PMM_ADD:
+			break;
+		case EarthIT_CMIPREST_RESTAction_SudoAction::PMM_REPLACE:
+			if( !$includesCurrentUserId ) {
+				throw new Exception("sudoContext can't remove the current user ID from the context. 🐮");
+			}
+			break;
+		default:
+			throw new Exception("Unsupported permission merge mode: $pmm");
+		}
+		return $ctx;
+	}
 }

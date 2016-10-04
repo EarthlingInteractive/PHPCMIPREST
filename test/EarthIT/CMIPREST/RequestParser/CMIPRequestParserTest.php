@@ -1,5 +1,7 @@
 <?php
 
+use EarthIT_CMIPREST_RESTActionAuthorizer as RAA;
+
 class EarthIT_CMIPREST_RequestParser_CMIPRequestParserTest extends EarthIT_CMIPREST_TestCase
 {
 	public function setUp() {
@@ -24,7 +26,7 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParserTest extends EarthIT_CMIPR
 			array('fieldName'=>'lastName','pattern'=>'Bundy')
 		), $req['filters']);
 	}
-	
+
 	public function testParseSearchWithoutIdKeysUsingCollectionModifier() {
 		$parser = new EarthIT_CMIPREST_RequestParser_CMIPRequestParser($this->schema, $this->schemaObjectNamer);
 		$req = $parser->parse('GET', '/people;keyByIds=false', 'firstName=Ted&lastName=Bundy&limit=100,25' );
@@ -33,6 +35,22 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParserTest extends EarthIT_CMIPR
 		$this->assertEquals('false', $req['collectionModifiers']['keyByIds']);
 		$act = $parser->toAction($req);
 		$this->assertFalse($act->getResultAssembler()->keyByIds);
+	}
+	
+	public function testParseSearchVisibleToUserId() {
+		$parser = new EarthIT_CMIPREST_RequestParser_CMIPRequestParser($this->schema, $this->schemaObjectNamer);
+		$req = $parser->parse('GET', '/people', 'firstName=Ted&lastName=Bundy&limit=100,25&visibleToUserId=8888' );
+		$this->assertEquals('people', $req['collectionName'] );
+		$this->assertNull($req['instanceId']);
+		$act = $parser->toAction($req);
+		$this->assertTrue( $act instanceof EarthIT_CMIPREST_RESTAction_SudoAction,
+			"Search with ?visibleToUserId should be parsed as a SudoAction" );
+		$this->assertTrue( $act->getAction() instanceof EarthIT_CMIPREST_RESTAction_SearchAction,
+			"Search SudoAction's action should be a search action" );
+		$searchAct = $act->getAction();
+		$searchOpts = $searchAct->getSearchOptions();
+		$this->assertTrue( isset($searchOpts[RAA::SEARCH_RESULT_VISIBILITY_MODE]) );
+		$this->assertEquals( RAA::SRVM_RECURSIVE_ALLOWED_ONLY, $searchOpts[RAA::SEARCH_RESULT_VISIBILITY_MODE] );
 	}
 	
 	public function testParseSearchWithoutIdKeysUsingGeneralModifier() {

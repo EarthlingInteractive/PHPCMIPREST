@@ -337,4 +337,23 @@ class EarthIT_CMIPREST_RESTerTest extends EarthIT_CMIPREST_TestCase
 		$rezo = EarthIT_JSON::decode($rez->getContent());
 		$this->assertEquals( array('1002'), array_keys($rezo) );
 	}
+	
+	//// Test sudoing
+	
+	public function testSudoAsSomeoneElse() {
+		$this->setUpFinickyAuthRester();
+		$act = $this->makeResourceSearchAction(EarthIT_CMIPREST_RESTActionAuthorizer::SRVM_RECURSIVE_ALLOWED_ONLY);
+		$act = new EarthIT_CMIPREST_RESTAction_SudoAction($act, array(1338));
+		$rez = $this->rester->doActionAndGetHttpResponse($act, $this->standardActionContext);
+		$this->assertEquals( 403, $rez->getStatusCode() );
+	}
+	public function testSudoAsSelf() {
+		$this->setUpFinickyAuthRester();
+		$act = $this->makeResourceSearchAction(EarthIT_CMIPREST_RESTActionAuthorizer::SRVM_RECURSIVE_ALLOWED_ONLY);
+		$act = new EarthIT_CMIPREST_RESTAction_SudoAction($act, array(1337));
+		$rez = $this->rester->doActionAndGetHttpResponse($act, $this->standardActionContext);
+		$this->assertEquals( 200, $rez->getStatusCode() );
+		$rezo = EarthIT_JSON::decode($rez->getContent());
+		$this->assertEquals( array('1002'), array_keys($rezo) );
+	}
 }

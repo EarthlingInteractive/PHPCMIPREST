@@ -47,4 +47,18 @@ implements EarthIT_CMIPREST_RESTActionAuthorizer2
 		}
 		return $visibleItems;
 	}
+	
+	/** @override */
+	public function sudoAllowed( $userId, $ctx, array &$explanation ) {
+		$ctxUserId = EarthIT_CMIPREST_Util::contextUserId($ctx);
+		if( $ctxUserId === $userId ) {
+			$explanation[] = "User $userId is allowed to do stuff on their own behalf.";
+			return true;
+		} else {
+			$explanation[] =
+				"User ".var_export($ctxUserId,true)." !== user ".var_export($userId,true).
+				", so by default can't do actions on their behalf.";
+			return false;
+		}
+	}
 }
