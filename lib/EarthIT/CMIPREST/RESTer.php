@@ -87,6 +87,8 @@ class EarthIT_CMIPREST_RESTer
 	}
 	
 	protected function doSearchAction( EarthIT_CMIPREST_RESTAction_SearchAction $act, $ctx, $preAuth, $authorizationExplanation ) {
+		if( !$preAuth ) throw new Exception("\$preAuth = false passed to doSearchAction.");
+		
 		$rc = $act->getResourceClass();
 		$search = $act->getSearch();
 		$queryParams = array();
@@ -94,25 +96,28 @@ class EarthIT_CMIPREST_RESTer
 		$johnCollections = $this->collectJohns( $act->getJohnBranches(), 'root' );
 
 		$searchOptions = $act->getSearchOptions();
-		$vizMode = isset($searchOptions[EarthIT_CMIPREST_NS::SEARCH_RESULT_VISIBILITY_MODE]) ? 
-			$searchOptions[EarthIT_CMIPREST_NS::SEARCH_RESULT_VISIBILITY_MODE] : EarthIT_CMIPREST_NS::SRVM_BINARY;
+		$vizMode = isset($searchOptions[EarthIT_CMIPREST_RESTActionAuthorizer::SEARCH_RESULT_VISIBILITY_MODE]) ? 
+			$searchOptions[EarthIT_CMIPREST_RESTActionAuthorizer::SEARCH_RESULT_VISIBILITY_MODE] : EarthIT_CMIPREST_RESTActionAuthorizer::SRVM_BINARY;
 		
 		// If we need to post-authorize, do it.
-		if( $preAuth === EarthIT_CMIPREST_RESTActionAuthorizer::AUTHORIZED_IF_RESULTS_VISIBLE ) {
+		if(
+			$preAuth === EarthIT_CMIPREST_RESTActionAuthorizer::AUTHORIZED_IF_RESULTS_VISIBLE or
+			$vizMode !== EarthIT_CMIPREST_RESTActionAuthorizer::SRVM_BINARY
+		) {
 			foreach( $johnCollections as $path => $johns ) {
 				// Figure out what resource class of items we got, here
 				$targetRc = count($johns) == 0 ? $rc : $johns[count($johns)-1]->targetResourceClass;
 				
 				switch( $vizMode ) {
-				case EarthIT_CMIPREST_NS::SRVM_BINARY:
+				case EarthIT_CMIPREST_RESTActionAuthorizer::SRVM_BINARY:
 					// Ensure that they're visisble
 					if( !$this->authorizer->itemsVisible($relevantObjects[$path], $targetRc, $ctx, $authorizationExplanation) ) {
 						throw new EarthIT_CMIPREST_ActionUnauthorized($act, $ctx, $authorizationExplanation);
 					}
 					break;
-				case EarthIT_CMIPREST_NS::RECURSIVE_ALLOWED_ONLY:
+				case EarthIT_CMIPREST_RESTActionAuthorizer::SRVM_RECURSIVE_ALLOWED_ONLY:
 					if( !($this->authorizer instanceof EarthIT_CMIPREST_RESTActionAuthorizer2) ) {
-						throw new Error(
+						throw new Exception(
 							"Can't filter search results by visibility because authorizer (".
 							get_class($this->authorizer)." doesn't implement RESTActionAuthorizer2");
 					}

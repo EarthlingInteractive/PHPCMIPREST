@@ -5,7 +5,32 @@
  */
 interface EarthIT_CMIPREST_RESTActionAuthorizer
 {
+	/**
+	 * Can be returned from preAuthorizeSimpleAction for searches
+	 * to indicate that the search should be done and the results checked.
+	 */
 	const AUTHORIZED_IF_RESULTS_VISIBLE = 'if-search-results-visible';
+	
+	/**
+	 * Pass as a search option key mapped to one of the SRVM_* constants
+	 * to indicate what to do with unviewable results
+	 */
+	const SEARCH_RESULT_VISIBILITY_MODE = 'http://ns.earthit.com/CMIPREST/searchResultVisibilityMode';
+	/**
+	 * Everything's returned unless it includes something you're not allowed
+	 * to see, in which case you'll get a 403.
+	 * This is the default.
+	 */
+	const SRVM_BINARY = 'Binary';
+	/**
+	 * Top-level items that are not readable are hidden.
+	 */
+	const SRVM_ALLOWED_ONLY = 'AllowedOnly';
+	/**
+	 * Items that are not readable are hidden,
+	 * including nexted items.
+	 */
+	const SRVM_RECURSIVE_ALLOWED_ONLY = 'RecursiveAllowedOnly';
 	
 	/**
 	 * Will be called to determine whether a simple action (not a

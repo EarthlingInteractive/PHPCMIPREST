@@ -7,6 +7,8 @@ class EarthIT_CMIPREST_RESTerTest_Context
 	public function __construct($userId) { $this->userId = $userId; }
 	
 	public function getUserId() { return $this->userId; }
+	
+	public function userIsAuthenticated() { return $this->userId !== null; }
 }
 
 class EarthIT_CMIPREST_RESTAction_WackAction extends EarthIT_CMIPREST_RESTAction
@@ -26,14 +28,17 @@ class EarthIT_CMIPREST_RESTAction_WackAction extends EarthIT_CMIPREST_RESTAction
 	}
 }
 
-/* TODO: Test itemsVisible
 class EarthIT_CMIPREST_RESTerTest_FinickyAuthorizer
 extends EarthIT_CMIPREST_RESTActionAuthorizer_DefaultRESTActionAuthorizer
 {
 	public function itemVisible( $item, EarthIT_Schema_ResourceClass $rc, $ctx, array &$explanation ) {
+		if( $item['ID'] === '1002' ) {
+			return true;
+		} else {
+			$explanation[] = "Item #{$item['ID']} not visible because it's not #1002.";
+		}
 	}
 }
-*/
 
 class EarthIT_CMIPREST_RESTerTest extends EarthIT_CMIPREST_TestCase
 {
@@ -52,6 +57,8 @@ class EarthIT_CMIPREST_RESTerTest extends EarthIT_CMIPREST_TestCase
 		$this->standardSaveActionResultAssembler =
 			new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler('assembleSingleItemResult', false);
 		$this->standardMultiSaveActionResultAssembler =
+			new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler('assembleMultiItemResult', true);
+		$this->standardSearchActionResultAssembler =
 			new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler('assembleMultiItemResult', true);
 		$this->standardSuccessActionResultAssembler =
 			new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler('assembleSuccessResult', false);
@@ -287,5 +294,47 @@ class EarthIT_CMIPREST_RESTerTest extends EarthIT_CMIPREST_TestCase
 		$responseString = (string)$rez->getContent();
 		$responseObject = json_decode($responseString, true);
 		$this->assertEquals( array( 'errors' => array($errorDetail) ), $responseObject );
+	}
+	
+	//// Test authorization
+	
+	protected function makeResourceSearchAction( $srvm=null ) {
+		$searchOptions = array();
+		if( $srvm ) $searchOptions[EarthIT_CMIPREST_RESTActionAuthorizer::SEARCH_RESULT_VISIBILITY_MODE] = $srvm;
+		$rc = $this->schema->getResourceClass('resource');
+		return new EarthIT_CMIPREST_RESTAction_SearchAction(
+			new EarthIT_Storage_Search($rc),
+			array(), $searchOptions,
+			$this->standardSearchActionResultAssembler
+		);
+	}
+	
+	protected function setUpFinickyAuthRester() {
+		$this->rester = new EarthIT_CMIPREST_RESTer(array(
+			'storage' => $this->storage,
+			'schema' => $this->schema,
+			'authorizer' => new EarthIT_CMIPREST_RESTerTest_FinickyAuthorizer()
+		));
+	}
+	
+	public function testSearchInvisibleResources() {
+		$this->setUpFinickyAuthRester();
+		$act = $this->makeResourceSearchAction();
+		$rez = $this->rester->doActionAndGetHttpResponse($act, $this->standardActionContext);
+		$this->assertEquals( 403, $rez->getStatusCode() );
+	}
+	public function testSearchInvisibleResourcesExplicitly() {
+		$this->setUpFinickyAuthRester();
+		$act = $this->makeResourceSearchAction(EarthIT_CMIPREST_RESTActionAuthorizer::SRVM_BINARY);
+		$rez = $this->rester->doActionAndGetHttpResponse($act, $this->standardActionContext);
+		$this->assertEquals( 403, $rez->getStatusCode() );
+	}
+	public function testSearchVisibleResources() {
+		$this->setUpFinickyAuthRester();
+		$act = $this->makeResourceSearchAction(EarthIT_CMIPREST_RESTActionAuthorizer::SRVM_RECURSIVE_ALLOWED_ONLY);
+		$rez = $this->rester->doActionAndGetHttpResponse($act, $this->standardActionContext);
+		$this->assertEquals( 200, $rez->getStatusCode() );
+		$rezo = EarthIT_JSON::decode($rez->getContent());
+		$this->assertEquals( array('1002'), array_keys($rezo) );
 	}
 }
