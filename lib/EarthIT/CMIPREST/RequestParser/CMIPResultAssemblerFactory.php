@@ -5,6 +5,8 @@ use EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler AS NOJRA;
 class EarthIT_CMIPREST_RequestParser_CMIPResultAssemblerFactory
 implements EarthIT_CMIPREST_RequestParser_ResultAssemblerFactory
 {
+	const GROUPED_BY_CLASS = 'groupItemsByClass';
+	
 	public static function getInstance() {
 		// This could return a cached instance but it's easier to just new one up
 		return new self(true);
@@ -41,8 +43,10 @@ implements EarthIT_CMIPREST_RequestParser_ResultAssemblerFactory
 	}
 	
 	public function getResultAssembler( $actionClass, array $options=array() ) {
-		return new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler(
-			self::meth($actionClass),
-			$options + $this->defaultOptions);
+		$allOpts = $options + $this->defaultOptions;
+		if( !empty($allOpts[self::GROUPED_BY_CLASS]) ) {
+			return new EarthIT_CMIPREST_ResultAssembler_GBCResultAssembler($allOpts);
+		}
+		return new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler(self::meth($actionClass), $allOpts);
 	}
 }

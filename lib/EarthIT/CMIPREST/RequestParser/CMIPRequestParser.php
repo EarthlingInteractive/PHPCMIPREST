@@ -2,6 +2,7 @@
 
 use EarthIT_CMIPREST_RequestParser_Util as RPU;
 use EarthIT_CMIPREST_RequestParser_ResultAssemblerFactory as RAF;
+use EarthIT_CMIPREST_RequestParser_CMIPResultAssemblerFactory as CMIPRAF;
 use EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler as NOJRA;
 use EarthIT_CMIPREST_RESTActionAuthorizer as RAA;
 
@@ -133,9 +134,11 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 		$rasmOptions = array();
 		
 		foreach( $request['generalModifiers'] as $k=>$v ) {
-			if( $k === 'keyByIds' ) {
+			switch( $k ) {
+			case 'keyByIds':
 				$rasmOptions[NOJRA::KEY_BY_IDS] = EarthIT_CMIPREST_Util::parseBoolean($v);
-			} else {
+				break;
+			default:
 				throw new EarthIT_CMIPREST_RequestInvalid("Unrecognized general modifier: '$k'");
 			}
 		}
@@ -152,6 +155,8 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 			foreach( $request['collectionModifiers'] as $k=>$v ) {
 				if( $k === 'with' ) {
 					$johnBranches = RPU::withsToJohnBranches($this->schema, $resourceClass, $v, $this->schemaObjectNamer);
+				} else if( $k === 'groupedByClass' ) {
+					$rasmOptions[CMIPRAF::GROUPED_BY_CLASS] = true;
 				} else if( $k === 'keyByIds' ) {
 					// Already handled more generally
 				} else {
