@@ -9,18 +9,28 @@ class EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler implements EarthIT_CMI
 	const DELETED = "BALEETED!";
 	
 	const KEY_BY_IDS = 'keyItemsById';
+	const INCLUDE_JSON_METADATA = 'includeJsonMetadata';
 	
 	protected $method;
 	protected $keyByIds;
+	protected $includeJsonMetadata;
 	protected $basicWwwAuthenticationRealm;
 	
 	public function __construct($method, $options=array()) {
 		if( is_bool($options) ) $options = array(self::KEY_BY_IDS => $options); // For backward combatibility!
 		$this->method = $method;
 		$this->keyByIds = isset($options[self::KEY_BY_IDS]) ? $options[self::KEY_BY_IDS] : true;
+		$this->includeJsonMetadata = isset($options[self::INCLUDE_JSON_METADATA]) ? $options[self::INCLUDE_JSON_METADATA] : false;
 		$this->basicWwwAuthenticationRealm =
 			isset($options[EarthIT_CMIPREST_Util::BASIC_WWW_AUTHENTICATION_REALM]) ?
 			$options[EarthIT_CMIPREST_Util::BASIC_WWW_AUTHENTICATION_REALM] : null;
+	}
+	
+	protected function jsonTyped($v, $jt) {
+		if( !$this->includeJsonMetadata ) return $v;
+		if( !is_array($v) ) return $v;
+		$v[EarthIT_JSON::JSON_TYPE] = $jt;
+		return $v;
 	}
 	
 	// TODO: Make configurable
@@ -50,6 +60,7 @@ class EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler implements EarthIT_CMI
 	 */
 	protected function _q45( EarthIT_Schema_ResourceClass $rc, array $items ) {
 		$restObjects = array();
+		$keyedByIds = false;
 		foreach( $items as $item ) {
 			$restItem = $this->internalObjectToRest($rc, $item);
 			if( $this->keyByIds and ($itemId = EarthIT_CMIPREST_Util::itemId($rc, $item)) !== null ) {
@@ -58,7 +69,7 @@ class EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler implements EarthIT_CMI
 				$restObjects[] = $restItem;
 			}
 		}
-		return $restObjects;
+		return $this->jsonTyped($restObjects, $keyedByIds ? EarthIT_JSON::JT_OBJECT : EarthIT_JSON::JS_LIST);
 	}
 	
 	protected function assembleMultiItemResult( EarthIT_Schema_ResourceClass $rootRc, array $johnCollections, array $relevantObjects ) {
@@ -92,7 +103,7 @@ class EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler implements EarthIT_CMI
 					$matchFields[$targetFieldName] = $originFieldName;
 				}
 				foreach( $relevantRestObjects[$originPath] as $ok=>$ov ) {
-					$relations = array();
+					$relations = $this->jsonTyped(array(), $keyedByIds ? EarthIT_JSON::JT_OBJECT : EarthIT_JSON::JS_LIST);
 					foreach( $relevantRestObjects[$path] as $tk=>$tv ) {
 						$matches = true;
 						foreach( $matchFields as $trf=>$orf ) {

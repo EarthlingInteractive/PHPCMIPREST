@@ -138,6 +138,9 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 			case 'keyByIds':
 				$rasmOptions[NOJRA::KEY_BY_IDS] = EarthIT_CMIPREST_Util::parseBoolean($v);
 				break;
+			case 'strictJsonArrays':
+				$rasmOptions[NOJRA::INCLUDE_JSON_METADATA] = EarthIT_CMIPREST_Util::parseBoolean($v);
+				break;
 			default:
 				throw new EarthIT_CMIPREST_RequestInvalid("Unrecognized general modifier: '$k'");
 			}
