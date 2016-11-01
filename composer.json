@@ -6,7 +6,7 @@
 		"php": ">=5.2",
 		"ryprop/nife": "^0.2",
 		"togos/action": "^1.0.0",
-		"earthit/php-common": "^1.1.1",
+		"earthit/php-common": "^1.4.1",
 		"earthit/schema": "^1.2.1",
 		"earthit/storage": "^0.4.1",
 		"earthit/dbc": "^1.0.0"
