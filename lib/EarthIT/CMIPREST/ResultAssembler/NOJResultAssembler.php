@@ -103,8 +103,10 @@ class EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler implements EarthIT_CMI
 					$matchFields[$targetFieldName] = $originFieldName;
 				}
 				foreach( $relevantRestObjects[$originPath] as $ok=>$ov ) {
-					$relations = $this->jsonTyped(array(), $keyedByIds ? EarthIT_JSON::JT_OBJECT : EarthIT_JSON::JS_LIST);
+					if( $ok == EarthIT_JSON::JSON_TYPE ) continue;
+					$relations = array();
 					foreach( $relevantRestObjects[$path] as $tk=>$tv ) {
+						if( $tk == EarthIT_JSON::JSON_TYPE ) continue;
 						$matches = true;
 						foreach( $matchFields as $trf=>$orf ) {
 							if( $tv[$trf] != $ov[$orf] ) $matches = false;
@@ -117,6 +119,7 @@ class EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler implements EarthIT_CMI
 							}
 						}
 					}
+					$relations = $this->jsonTyped($relations, $this->keyByIds ? EarthIT_JSON::JT_OBJECT : EarthIT_JSON::JT_LIST);
 					if( $plural ) {
 						$relevantRestObjects[$originPath][$ok][$lastPathPart] = $relations;
 					} else {
