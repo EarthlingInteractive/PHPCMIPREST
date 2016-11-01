@@ -47,7 +47,7 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 			if( count($kv) == 2 ) {
 				$modVals[$kv[0]] = $kv[1];
 			} else {
-				$modVals[$p] = $p;
+				$modVals[$p] = true;
 			}
 		}
 		return $modVals;
@@ -138,6 +138,9 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 			case 'keyByIds':
 				$rasmOptions[NOJRA::KEY_BY_IDS] = EarthIT_CMIPREST_Util::parseBoolean($v);
 				break;
+			case 'groupedByClass':
+				$rasmOptions[CMIPRAF::GROUPED_BY_CLASS] = EarthIT_CMIPREST_Util::parseBoolean($v);
+				break;
 			case 'strictJsonArrays':
 				$rasmOptions[NOJRA::INCLUDE_JSON_METADATA] = EarthIT_CMIPREST_Util::parseBoolean($v);
 				break;
@@ -145,24 +148,30 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 				throw new EarthIT_CMIPREST_RequestInvalid("Unrecognized general modifier: '$k'");
 			}
 		}
-		
-		if( isset($request['collectionModifiers']['keyByIds']) ) {
-			$rasmOptions[NOJRA::KEY_BY_IDS] = EarthIT_CMIPREST_Util::parseBoolean(
-				$request['collectionModifiers']['keyByIds']
-			);
+
+		foreach( $request['collectionModifiers'] as $k=>$v ) {
+			switch( $k ) {
+			case 'keyByIds':
+				$rasmOptions[NOJRA::KEY_BY_IDS] = EarthIT_CMIPREST_Util::parseBoolean($v);
+				break;
+			}
 		}
 		
 		switch( $request['method'] ) {
 		case 'GET': case 'HEAD':
 			$johnBranches = array();
 			foreach( $request['collectionModifiers'] as $k=>$v ) {
-				if( $k === 'with' ) {
+				switch( $k ) {
+				case 'with':
 					$johnBranches = RPU::withsToJohnBranches($this->schema, $resourceClass, $v, $this->schemaObjectNamer);
-				} else if( $k === 'groupedByClass' ) {
+					break;
+				case 'groupedByClass':
 					$rasmOptions[CMIPRAF::GROUPED_BY_CLASS] = true;
-				} else if( $k === 'keyByIds' ) {
+					break;
+				case 'keyByIds':
 					// Already handled more generally
-				} else {
+					break;
+				default:
 					throw new EarthIT_CMIPREST_RequestInvalid("Unrecognized collection modifier: '$k'");
 				}
 			}

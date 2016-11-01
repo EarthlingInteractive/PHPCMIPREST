@@ -54,22 +54,28 @@ class EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler implements EarthIT_CMI
 		return $result;
 	}
 	
+	protected function shouldKeyRestItemsById( EarthIT_Schema_ResourceClass $rc ) {
+		if( !$this->keyByIds ) return false;
+		$pk = $rc->getPrimaryKey();
+		return $pk !== null && count($pk->getFieldNames()) > 0;
+	}
+	
 	/**
 	 * Convert the given rows from DB to REST format according to the
 	 * specified resource class.
 	 */
 	protected function _q45( EarthIT_Schema_ResourceClass $rc, array $items ) {
 		$restObjects = array();
-		$keyedByIds = false;
+		$keyByIds = $this->shouldKeyRestItemsById($rc);
 		foreach( $items as $item ) {
 			$restItem = $this->internalObjectToRest($rc, $item);
-			if( $this->keyByIds and ($itemId = EarthIT_CMIPREST_Util::itemId($rc, $item)) !== null ) {
-				$restObjects[$itemId] = $restItem;
+			if( $keyByIds ) {
+				$restObjects[EarthIT_Storage_Util::itemId($item,$rc)] = $restItem;
 			} else {
 				$restObjects[] = $restItem;
 			}
 		}
-		return $this->jsonTyped($restObjects, $keyedByIds ? EarthIT_JSON::JT_OBJECT : EarthIT_JSON::JT_LIST);
+		return $this->jsonTyped($restObjects, $keyByIds ? EarthIT_JSON::JT_OBJECT : EarthIT_JSON::JT_LIST);
 	}
 	
 	protected function assembleMultiItemResult( EarthIT_Schema_ResourceClass $rootRc, array $johnCollections, array $relevantObjects ) {
