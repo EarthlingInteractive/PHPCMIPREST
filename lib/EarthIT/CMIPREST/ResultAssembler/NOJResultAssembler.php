@@ -69,7 +69,7 @@ class EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler implements EarthIT_CMI
 				$restObjects[] = $restItem;
 			}
 		}
-		return $this->jsonTyped($restObjects, $keyedByIds ? EarthIT_JSON::JT_OBJECT : EarthIT_JSON::JS_LIST);
+		return $this->jsonTyped($restObjects, $keyedByIds ? EarthIT_JSON::JT_OBJECT : EarthIT_JSON::JT_LIST);
 	}
 	
 	protected function assembleMultiItemResult( EarthIT_Schema_ResourceClass $rootRc, array $johnCollections, array $relevantObjects ) {
