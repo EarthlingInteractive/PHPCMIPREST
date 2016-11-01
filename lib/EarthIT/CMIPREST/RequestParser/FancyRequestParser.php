@@ -46,7 +46,7 @@ class EarthIT_CMIPREST_RequestParser_FancyRequestParser implements EarthIT_CMIPR
 	
 	/** Pre-modified path */
 	protected static function pmp( array $modifiers, $remainder ) {
-		return ($modifiers ? ';'.implode($modifiers) : '').$remainder;
+		return ($modifiers ? ';'.implode(';',$modifiers) : '').$remainder;
 	}
 	
 	public function parse( $requestMethod, $path, $queryString, Nife_Blob $content=null ) {
