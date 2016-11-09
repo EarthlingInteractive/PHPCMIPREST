@@ -109,7 +109,7 @@ class EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler implements EarthIT_CMI
 					$matchFields[$targetFieldName] = $originFieldName;
 				}
 				foreach( $relevantRestObjects[$originPath] as $ok=>$ov ) {
-					if( $ok == EarthIT_JSON::JSON_TYPE ) continue;
+					if( $ok === EarthIT_JSON::JSON_TYPE ) continue;
 					$relations = array();
 					// This is probably slightly broken when keyByIds=true
 					// but the class has no primary key.

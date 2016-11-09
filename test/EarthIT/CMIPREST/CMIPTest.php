@@ -42,4 +42,18 @@ class EarthIT_CMIPREST_CMIPTest extends EarthIT_CMIPREST_TestCase
 		$co = EarthIT_JSON::decode($rez->getContent());
 		$this->assertEquals(array('resources','ratings'), array_keys($co));		
 	}
+	
+	public function testWithWithoutKeyingByIds() {
+		$parser = new EarthIT_CMIPREST_RequestParser_CMIPRequestParser($this->schema, $this->schemaObjectNamer);
+		$req = $parser->parse('GET', '/resources;with=ratings;keyByIds=false', '');
+		$act = $parser->toAction($req);
+		
+		$resources = $this->rester->doAction($act, $this->standardActionContext);
+		$this->assertTrue( is_array($resources) );
+		$this->assertTrue( count($resources) > 0 );
+		foreach( $resources as $resource ) {
+			$this->assertTrue( array_key_exists('ratings',$resource), "Each resource should have 'ratings'" );
+			$this->assertTrue( is_array($resource['ratings']) );
+		}
+	}
 }
