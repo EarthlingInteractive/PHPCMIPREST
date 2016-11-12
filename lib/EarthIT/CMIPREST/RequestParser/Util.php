@@ -242,9 +242,7 @@ class EarthIT_CMIPREST_RequestParser_Util
 		foreach( $candidates as $precedence => $johns ) {
 			if( count($johns) > 1 ) {
 				$list = array();
-				foreach( $inverseJohns as $ij ) {
-					$list[] = (string)$ij;
-				}
+				foreach( $johns as $j ) $list[] = (string)$j;
 				throw new Exception(
 					"The link '$linkName' from ".$originRc->getName()." is ambiguous.\n".
 					"It could indicate any of the following links: ".implode('; ',$list)
