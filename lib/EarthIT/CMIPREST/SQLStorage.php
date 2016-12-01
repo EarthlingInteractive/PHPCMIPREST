@@ -131,8 +131,8 @@ implements EarthIT_CMIPREST_Storage
 		} else $orderBySection = '';
 		
 		$limitClauseParts = array();
-		if( $search->getLimit() !== null ) $limitClauseParts[] = "LIMIT ".$sp->getLimit();
-		if( $search->getSkip() != 0 ) $limitClauseParts[] = "OFFSET ".$sp->getSkip();
+		if( $search->getLimit() !== null ) $limitClauseParts[] = "LIMIT ".$search->getLimit();
+		if( $search->getSkip() != 0 ) $limitClauseParts[] = "OFFSET ".$search->getSkip();
 		$limitSection = $limitClauseParts ? implode(' ',$limitClauseParts)."\n" : '';
 		
 		return array(
