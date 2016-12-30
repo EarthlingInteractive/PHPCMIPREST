@@ -18,6 +18,7 @@ class EarthIT_CMIPREST_RESTer
 	protected $storage;
 	protected $schema;
 	protected $authorizer;
+	protected $preUpdateListeners;
 	
 	public function __construct( $params ) {
 		if( !is_array($params) ) {
@@ -29,7 +30,8 @@ class EarthIT_CMIPREST_RESTer
 			'dbAdapter' => null,
 			'dbNamer' => null,
 			'schema' => null,
-			'authorizer' => new EarthIT_CMIPREST_RESTActionAuthorizer_DefaultRESTActionAuthorizer()
+			'authorizer' => new EarthIT_CMIPREST_RESTActionAuthorizer_DefaultRESTActionAuthorizer(),
+			'preUpdateListeners' => array(),
 		);
 		
 		if( ($this->storage = $params['storage']) ) {
@@ -47,6 +49,7 @@ class EarthIT_CMIPREST_RESTer
 		}
 		
 		$this->authorizer = $params['authorizer'];
+		$this->preUpdateListeners = $params['preUpdateListeners'];
 	}
 		
 	//// Action validation/authorization
@@ -200,6 +203,10 @@ class EarthIT_CMIPREST_RESTer
 		}
 		
 		// Otherwise it's A-Okay!
+		
+		foreach( $this->preUpdateListeners as $pul ) {
+			call_user_func($pul, $act, $ctx);
+		}
 		
 		if( $act instanceof EarthIT_CMIPREST_RESTAction_PostItemAction ) {
 			$rc = $act->getResourceClass();
