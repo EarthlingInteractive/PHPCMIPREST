@@ -115,7 +115,7 @@ class EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler implements EarthIT_CMI
 					// but the class has no primary key.
 					// TODO: call shouldKeyItemsById on the class instead of just looking at $this->keyByIds.
 					foreach( $relevantRestObjects[$path] as $tk=>$tv ) {
-						if( $tk == EarthIT_JSON::JSON_TYPE ) continue;
+						if( $tk === EarthIT_JSON::JSON_TYPE ) continue;
 						$matches = true;
 						foreach( $matchFields as $trf=>$orf ) {
 							if( $tv[$trf] != $ov[$orf] ) $matches = false;
