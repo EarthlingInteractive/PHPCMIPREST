@@ -57,23 +57,7 @@ class EarthIT_CMIPREST_Util
 	}
 	
 	public static function getIdRegex( EarthIT_Schema_ResourceClass $rc ) {
-		$pk = $rc->getPrimaryKey();
-		if( $pk === null or count($pk->getFieldNames()) == 0 ) {
-			throw new Exception("No ID regex because no primary key for ".$rc->getName().".");
-		}
-		
-		$fields = $rc->getFields();
-		$parts = array();
-		foreach( $pk->getFieldNames() as $fn ) {
-			$field = $fields[$fn];
-			$datatype = $field->getType();
-			$fRegex = $datatype->getRegex();
-			if( $fRegex === null ) {
-				throw new Exception("Can't build ID regex because ID component field '$fn' is of type '".$datatype->getName()."', which doesn't have a regex.");
-			}
-			$parts[] = "($fRegex)";
-		}
-		return implode("-", $parts);
+		return EarthIT_Storage_Util::itemIdRegex( $rc );
 	}
 
 	/**

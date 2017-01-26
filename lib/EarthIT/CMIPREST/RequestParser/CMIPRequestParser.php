@@ -109,7 +109,7 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 			return array(
 				'method' => $requestMethod,
 				'collectionName' => $collectionSeg,
-				'instanceId' => $instanceSeg,
+				'instanceId' => $instanceSeg ? urldecode($instanceSeg) : null,
 				'propertyName' => $propertySeg,
 				'filters' => $filters,
 				'skip' => $skip,

@@ -10,7 +10,8 @@ interface EarthIT_CMIPREST_RequestParser
 	/**
 	 * @api
 	 * @param string $requestMethod HTTP request method; GET, PUT, POST, etc
-	 * @param string $path Post-"/api" path.  e.g. for /api;foop/123 this would be ";foop/123"
+	 * @param string $path Post-"/api" path, with components still URL-encoded.
+    *   e.g. for /api;foop/123%20456 this would be ";foop/123%20456"
 	 * @param string $queryString the thing after "?"
 	 * @param Blob|null $content request content
 	 * @return null|array Array representing the parsed request, null if it was unparseable

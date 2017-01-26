@@ -9,6 +9,14 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParserTest extends EarthIT_CMIPR
 		$this->schemaObjectNamer = EarthIT_CMIPREST_Namers::getStandardCamelCaseNamer();
 	}
 	
+	public function testParseGetItemWithUrlEscapedPathComponents() {
+		$parser = new EarthIT_CMIPREST_RequestParser_CMIPRequestParser($this->schema, $this->schemaObjectNamer);
+		$req = $parser->parse('GET', '/junk/ABC%20123%2fslash', '' );
+		$this->assertEquals('junk', $req['collectionName'] );
+		$this->assertEquals('ABC 123/slash', $req['instanceId'] );
+		
+	}
+	
 	public function testParseSearch() {
 		$parser = new EarthIT_CMIPREST_RequestParser_CMIPRequestParser($this->schema, $this->schemaObjectNamer);
 		$req = $parser->parse('GET', '/fooples', 'firstName=Ted&lastName=Bundy&limit=100,25&orderBy=-birthDate,%2Bweight,ssn' );
