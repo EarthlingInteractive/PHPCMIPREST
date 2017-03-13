@@ -1,6 +1,6 @@
 <?php
 
-abstract class EarthIT_CMIPREST_RESTAction_ResourceAction extends EarthIT_CMIPREST_RESTAction
+abstract class EarthIT_CMIPREST_RESTAction_ResourceAction extends EarthIT_CMIPREST_RESTAction implements JsonSerializable
 {
 	protected $resourceClass;
 	protected $resultAssembler;

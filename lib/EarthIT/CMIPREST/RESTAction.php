@@ -14,4 +14,21 @@ abstract class EarthIT_CMIPREST_RESTAction implements TOGoS_Action
 	 */
 	public abstract function getActionDescription();
 	public abstract function getResultAssembler();
+	
+	public function jsonSerialize() {
+		$props = array(
+			'phpClassName' => get_class($this),
+			'resourceClassName' => $this->resourceClass->getName(),
+		) + get_object_vars($this);
+		unset($props['resourceClass']); // Too jungley
+		return $props;
+	}
+	
+	public function __toString() {
+		try {
+			return EarthIT_JSON::prettyEncode($this);
+		} catch( Exception $e ) {
+			return get_class($this).":(error while encoding properties: ".$e->getMessage().")";
+		}
+	}
 }

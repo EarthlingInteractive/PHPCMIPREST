@@ -24,6 +24,13 @@ class EarthIT_CMIPREST_ResultAssembler_JAOResultAssembler implements EarthIT_CMI
 		$this->plural = $plural;
 	}
 	
+	protected function jsonSerialize() {
+		return array(
+			'schemaObjectNamer' => $this->schemaObjectNamer,
+			'plural' => $this->plural,
+		);
+	}
+	
 	protected function internalValueToJao( EarthIT_Schema_DataType $dt, $v ) {
 		return $v;
 	}
