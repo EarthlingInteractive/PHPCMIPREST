@@ -123,8 +123,8 @@ implements EarthIT_CMIPREST_Storage
 		if( count($orderByComponents = $search->getComparator()->getComponents()) > 0 ) {
 			$orderBySqlComponents = array();
 			foreach( $orderByComponents as $oc ) {
-				$columnName = $this->dbObjectNamer->getColumnName($fields[$oc->getFieldName()]);
-				$orderByColumnParamName = $PU->newParam('orderBy', new EarthIT_DBC_SQLIdentifier($columnName));
+				$columnName = $this->dbObjectNamer->getColumnName($rc, $fields[$oc->getFieldName()]);
+				$orderByColumnParamName = $PB->newParam('orderBy', new EarthIT_DBC_SQLIdentifier($columnName));
 				$orderBySqlComponents[] = "{{$orderByColumnParamName}} ".$oc->getDirection();
 			}
 			$orderBySection = "ORDER BY ".implode(', ',$orderBySqlComponents)."\n";

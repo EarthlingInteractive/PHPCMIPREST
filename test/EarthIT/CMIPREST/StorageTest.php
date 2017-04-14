@@ -118,6 +118,20 @@ abstract class EarthIT_CMIPREST_StorageTest extends EarthIT_CMIPREST_TestCase
 		$johnBranches = EarthIT_CMIPREST_RequestParser_Util::withsToJohnBranches(
 			$this->schema, $ratingRc,
 			'author,subject', $objectNamer, '.');
+		
+		$rez = $this->storage->johnlySearchItems( $search, $johnBranches, array() );
+		$this->assertEquals( array(
+			'root' => array( $rating ),
+			'root.author' => array( $person ),
+			'root.subject' => array( $resource )
+		), $rez);
+		
+		// This time with an order-by
+		$search = new EarthIT_Storage_Search(
+			$ratingRc,
+			EarthIT_Storage_ItemFilters::byId($person['ID'].'-'.$resource['ID'], $ratingRc),
+			EarthIT_Storage_FieldwiseComparator::parse('author ID') );
+		
 		$rez = $this->storage->johnlySearchItems( $search, $johnBranches, array() );
 		$this->assertEquals( array(
 			'root' => array( $rating ),
