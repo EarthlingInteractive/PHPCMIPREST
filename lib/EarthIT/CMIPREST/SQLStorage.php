@@ -120,7 +120,11 @@ implements EarthIT_CMIPREST_Storage
 		
 		$filterSql = $search->getFilter()->toSql($tableAlias, $this->dbObjectNamer, $PB );
 		
-		if( count($orderByComponents = $search->getComparator()->getComponents()) > 0 ) {
+		$comparator = $search->getComparator();
+		if( !($comparator instanceof EarthIT_Storage_FieldwiseComparator) ) {
+			throw new Exception("Unsupported comparator class: ".get_class($comparator));
+		}
+		if( count($orderByComponents = $comparator->getComponents()) > 0 ) {
 			$orderBySqlComponents = array();
 			foreach( $orderByComponents as $oc ) {
 				$columnName = $this->dbObjectNamer->getColumnName($rc, $fields[$oc->getFieldName()]);
