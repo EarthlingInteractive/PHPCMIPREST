@@ -5,6 +5,7 @@ use EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler AS NOJRA;
 class EarthIT_CMIPREST_RequestParser_CMIPResultAssemblerFactory
 implements EarthIT_CMIPREST_RequestParser_ResultAssemblerFactory
 {
+	const FORMAT = 'format';
 	const GROUPED_BY_CLASS = 'groupItemsByClass';
 	
 	public static function getInstance() {
@@ -44,6 +45,17 @@ implements EarthIT_CMIPREST_RequestParser_ResultAssemblerFactory
 	
 	public function getResultAssembler( $actionClass, array $options=array() ) {
 		$allOpts = $options + $this->defaultOptions;
+		if( isset($allOpts[self::FORMAT]) ) {
+			$format = $allOpts[self::FORMAT];
+			switch( $format ) {
+			case 'csv':
+				return new EarthIT_CMIPREST_ResultAssembler_CSVResultAssembler($allOpts);
+			case 'json':
+				break;
+			default:
+				throw new Exception("Unrecognized format: $format");
+			}
+		}
 		if( !empty($allOpts[self::GROUPED_BY_CLASS]) ) {
 			return new EarthIT_CMIPREST_ResultAssembler_GBCResultAssembler($allOpts);
 		}

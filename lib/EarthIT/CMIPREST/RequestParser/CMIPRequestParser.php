@@ -138,6 +138,9 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 			case 'keyByIds':
 				$rasmOptions[NOJRA::KEY_BY_IDS] = EarthIT_CMIPREST_Util::parseBoolean($v);
 				break;
+			case 'format':
+				$rasmOptions[CMIPRAF::FORMAT] = $v;
+				break;
 			case 'groupedByClass':
 				$rasmOptions[CMIPRAF::GROUPED_BY_CLASS] = EarthIT_CMIPREST_Util::parseBoolean($v);
 				break;
