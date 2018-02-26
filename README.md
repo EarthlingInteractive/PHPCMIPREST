@@ -94,6 +94,8 @@ Field-matching parameter values may be in one of the following formats:
 - ```lt:<value>``` - matches values less than that given
 - ```gt:<value>``` - matches values greater than that given
 - ```in:<list>``` - matches any value that is mentioned in the comma-separated list
+- ```is:null``` - matches nulls
+- ```not:<expression>``` - negate a filter, e.g. ```not:is:null``` or ```not:like:*foo*```
 
 Search parameters will be automatically parsed as appropriate given
 the field that they are matching on (e.g. if there is a field,
