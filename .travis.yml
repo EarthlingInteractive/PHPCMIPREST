@@ -2,16 +2,12 @@ language: php
 
 sudo: false
 
-# It might work (or be made to work)
-# in PHP 5.2 and 5.3.  Do that later.
 php:
-  - 5.4
-  - 5.5
-  - 5.6
+  - 8.1
   - nightly
 
 addons:
-  postgresql: "9.3"
+  postgresql: "15.4"
 
 before_script:
   - make test/config/dbc.json test/db-scripts/create-database.sql

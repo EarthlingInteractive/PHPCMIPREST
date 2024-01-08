@@ -18,7 +18,7 @@ implements EarthIT_CMIPREST_ResultAssembler
 	
 	public function needsResult() { return true; } // Otherwise we'd be using a different assembler!
 	
-	public function assembleResult( EarthIT_CMIPREST_ActionResult $result, TOGoS_Action $action=null, $ctx=null ) {
+	public function assembleResult( EarthIT_CMIPREST_ActionResult $result, EarthIT_CMIPREST_Action $action=null, $ctx=null ) {
 		if( !($result instanceof EarthIT_CMIPREST_CompoundActionResult) )
 			throw new Exception(get_class($this)." doesn't know how to assemble non-CompoundActionResults");
 		

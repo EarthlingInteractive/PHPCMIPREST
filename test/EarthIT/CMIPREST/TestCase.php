@@ -1,6 +1,7 @@
 <?php
+use PHPUnit\Framework\TestCase;
 
-abstract class EarthIT_CMIPREST_TestCase extends PHPUnit_Framework_TestCase
+abstract class EarthIT_CMIPREST_TestCase extends TestCase
 {
 	protected $configDir = 'test/config';
 	

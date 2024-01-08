@@ -4,7 +4,7 @@ use EarthIT_CMIPREST_RESTActionAuthorizer as RAA;
 
 class EarthIT_CMIPREST_RequestParser_CMIPRequestParserTest extends EarthIT_CMIPREST_TestCase
 {
-	public function setUp() {
+	public function setUp() : void {
 		$this->schema = $this->loadTestSchema();
 		$this->schemaObjectNamer = EarthIT_CMIPREST_Namers::getStandardCamelCaseNamer();
 	}

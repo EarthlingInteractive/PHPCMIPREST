@@ -16,7 +16,7 @@ interface EarthIT_CMIPREST_RequestParser
 	 * @param Blob|null $content request content
 	 * @return null|array Array representing the parsed request, null if it was unparseable
 	 */
-	public function parse( $requestMethod, $path, $queryString, Nife_Blob $content=null );
+	public function parse( $requestMethod, $path, $queryString, Nife_Blob|EarthIT_JSON_PrettyPrintedJSONBlob $content=null );
 	
 	/**
 	 * @api

@@ -41,7 +41,7 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 	
 	protected static function parseMods($m) {
 		$modVals = array();
-		foreach( explode(';', $m) as $p ) {
+		foreach( explode(';', $m ?? '') as $p ) {
 			if( $p == '' ) continue;
 			$kv = explode('=', $p, 2);
 			if( count($kv) == 2 ) {
@@ -53,7 +53,7 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 		return $modVals;
 	}
 	
-	public function parse( $requestMethod, $path, $queryString, Nife_Blob $content=null ) {
+	public function parse( $requestMethod, $path, $queryString, Nife_Blob|EarthIT_JSON_PrettyPrintedJSONBlob $content=null ) {
 		if( preg_match('#^ (?P<generalMods> ;[^/]+)? /(?P<collection> [^/;]+) (?:;(?P<collectionMods> [^/]*))? (?:/(?P<instance> [^/]*))? (?:/(?P<property> [^/]*))? $#x', $path, $bif) ) {
 			$generalModSeg    = RPU::m($bif, 'generalMods');
 			$collectionSeg    = RPU::m($bif, 'collection');

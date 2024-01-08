@@ -112,7 +112,7 @@ class EarthIT_CMIPREST_ResultAssembler_JAOResultAssembler implements EarthIT_CMI
 	}
 	
 	/** @override */
-	public function assembleResult( EarthIT_CMIPREST_ActionResult $result, TOGoS_Action $action=null, $ctx=null ) {
+	public function assembleResult( EarthIT_CMIPREST_ActionResult $result, EarthIT_CMIPREST_Action $action=null, $ctx=null ) {
 		if( !($result instanceof EarthIT_CMIPREST_StorageResult) )
 			throw new Exception(get_class($this)." doesn't know how to assemble things that aren't StorageResults");
 		
@@ -146,7 +146,7 @@ class EarthIT_CMIPREST_ResultAssembler_JAOResultAssembler implements EarthIT_CMI
 	}
 	
 	/** @override */
-	public function assembledResultToHttpResponse( $rez, TOGoS_Action $action=null, $ctx=null ) {
+	public function assembledResultToHttpResponse( $rez, EarthIT_CMIPREST_Action $action=null, $ctx=null ) {
 		if( $rez === self::SUCCESS or $rez === self::DELETED ) {
 			return Nife_Util::httpResponse("204 Okay");
 		} else if( $rez === null ) {
@@ -157,7 +157,7 @@ class EarthIT_CMIPREST_ResultAssembler_JAOResultAssembler implements EarthIT_CMI
 	}
 
 	/** @override */
-	public function exceptionToHttpResponse( Exception $e, TOGoS_Action $action=null, $ctx=null ) {
+	public function exceptionToHttpResponse( Exception $e, EarthIT_CMIPREST_Action $action=null, $ctx=null ) {
 		return EarthIT_CMIPREST_Util::exceptionalNormalJsonHttpResponse($e);
 	}
 }

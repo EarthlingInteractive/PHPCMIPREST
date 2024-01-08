@@ -11,9 +11,9 @@ class EarthIT_CMIPREST_ActionStringificationTest extends EarthIT_CMIPREST_TestCa
 			"{\n".
 			"\t\"phpClassName\": \"EarthIT_CMIPREST_RESTAction_GetItemAction\",\n".
 			"\t\"resourceClassName\": \"resource\",\n".
+			"\t\"resultAssembler\": {},\n".
 			"\t\"itemId\": \"1234\",\n".
-			"\t\"johnBranches\": [],\n".
-			"\t\"resultAssembler\": {}\n".
+			"\t\"johnBranches\": []\n".
 			"}",
 			$actStr
 		);

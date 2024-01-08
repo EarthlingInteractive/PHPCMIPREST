@@ -16,7 +16,7 @@ implements EarthIT_CMIPREST_ResultAssembler
 	
 	public function needsResult() { return true; } // Otherwise we'd be using a different assembler!
 	
-	public function assembleResult( EarthIT_CMIPREST_ActionResult $result, TOGoS_Action $action=null, $ctx=null ) {
+	public function assembleResult( EarthIT_CMIPREST_ActionResult $result, EarthIT_CMIPREST_Action $action=null, $ctx=null ) {
 		$actionResults = array();
 		foreach( $result->getAssembledSubActionResults() as $k=>$res ) {
 			// If any of the sub-actions failed, we won't even get to this point.
@@ -34,7 +34,7 @@ implements EarthIT_CMIPREST_ResultAssembler
 		return array('actionResults'=>$actionResults);
 	}
 
-	public function assembledResultToHttpResponse( $rez, TOGoS_Action $action=null, $ctx=null ) {
+	public function assembledResultToHttpResponse( $rez, EarthIT_CMIPREST_Action $action=null, $ctx=null ) {
 		return Nife_Util::httpResponse(200, EarthIT_JSON::encode($rez), 'application/json');
 	}
 }

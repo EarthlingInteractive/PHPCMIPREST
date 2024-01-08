@@ -19,10 +19,10 @@ interface EarthIT_CMIPREST_ResultAssembler
 	 * going to take the results needs.  Normally this will be an array.
 	 * 
 	 * @param EarthIT_CMIPREST_ActionResult $result the return value of the action
-	 * @param TOGoS_Action $action the action that was invoked to get this result
+	 * @param EarthIT_CMIPREST_Action $action the action that was invoked to get this result
 	 * @param mixed $ctx some value representing the context in which the action was done
 	 */
-	public function assembleResult( EarthIT_CMIPREST_ActionResult $result, TOGoS_Action $action=null, $ctx=null );
+	public function assembleResult( EarthIT_CMIPREST_ActionResult $result, EarthIT_CMIPREST_Action $action=null, $ctx=null );
 
 	/**
 	 * TODO: will need something like this
@@ -40,10 +40,10 @@ interface EarthIT_CMIPREST_ResultAssembler
 	 * Take the result returned by assembleResult and encode
 	 * it as a Nife_HTTP_Response
 	 */
-	public function assembledResultToHttpResponse( $assembled, TOGoS_Action $action=null, $ctx=null );
+	public function assembledResultToHttpResponse( $assembled, EarthIT_CMIPREST_Action $action=null, $ctx=null );
 	
 	/**
 	 * Encode the fact that an exception occurred as a Nife_HTTP_Response.
 	 */
-	public function exceptionToHttpResponse( Exception $e, TOGoS_Action $action=null, $ctx=null );
+	public function exceptionToHttpResponse( Exception $e, EarthIT_CMIPREST_Action $action=null, $ctx=null );
 }

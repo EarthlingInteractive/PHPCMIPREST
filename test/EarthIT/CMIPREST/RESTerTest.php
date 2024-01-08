@@ -53,7 +53,7 @@ class EarthIT_CMIPREST_RESTerTest extends EarthIT_CMIPREST_TestCase
 	
 	protected $savedItems;
 	
-	public function setUp() {
+	public function setUp() : void {
 		$this->standardSaveActionResultAssembler =
 			new EarthIT_CMIPREST_ResultAssembler_NOJResultAssembler('assembleSingleItemResult', false);
 		$this->standardMultiSaveActionResultAssembler =

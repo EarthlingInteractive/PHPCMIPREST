@@ -11,7 +11,7 @@ class EarthIT_CMIPREST_RESTAction_SudoAction extends EarthIT_CMIPREST_RESTAction
 	protected $action;
 	protected $suIds;
 	protected $permissionMergeMode;
-	public function __construct( TOGoS_Action $action, array $suIds, $permissionMergeMode=self::PMM_ADD ) {
+	public function __construct( EarthIT_CMIPREST_Action $action, array $suIds, $permissionMergeMode=self::PMM_ADD ) {
 		$this->action = $action;
 		$this->suIds = $suIds;
 		$this->permissionMergeMode = $permissionMergeMode;

@@ -3,27 +3,27 @@
 	"description": "Collection-Modifiers-ID-Property REST framework",
 	"license": "MIT",
 	"require": {
-		"php": ">=5.2",
-		"ryprop/nife": "^0.2",
-		"togos/action": "^1.0.0",
-		"earthit/php-common": "^1.6.0",
-		"earthit/schema": "^1.2.1",
-		"earthit/storage": "^0.4.8",
-		"earthit/dbc": "^1.0.0"
+		"php": ">=8.1",
+		"earthit/php-common": "^2.0.1",
+		"earthit/schema": "^2.0.1",
+		"earthit/storage": "^2.0.1",
+		"earthit/dbc": "^2.0.1"
 	},
 	"require-dev": {
-		"doctrine/dbal": "~2.4",
-		"phpunit/phpunit": "^4.8.35"
+		"doctrine/dbal": "~3.7.2",
+		"phpunit/phpunit": "^10.5.5"
 	},
 	"autoload": {
 		"psr-0": {
 			"EarthIT_CMIPREST_": "lib/",
+			"Nife_": "lib/",
 			"JsonSerializable": "lib/"
 		}
 	},
 	"autoload-dev": {
 		"psr-0": {
-			"EarthIT_CMIPREST_": "test/"
+			"EarthIT_CMIPREST_": "test/",
+			"Nife_": "test/"
 		}
 	}
 }

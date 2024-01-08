@@ -2,7 +2,7 @@
 
 class EarthIT_CMIPREST_CMIPTest extends EarthIT_CMIPREST_TestCase
 {
-	public function setUp() {
+	public function setUp() : void {
 		$this->schema = $this->loadTestSchema();
 		$this->schemaObjectNamer = EarthIT_CMIPREST_Namers::getStandardCamelCaseNamer();
 		$this->storage = new EarthIT_CMIPREST_MemoryStorage();

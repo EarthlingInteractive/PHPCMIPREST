@@ -7,7 +7,7 @@ abstract class EarthIT_CMIPREST_StorageTest extends EarthIT_CMIPREST_TestCase
 	
 	protected abstract function createStorage();
 	
-	public function setUp() {
+	public function setUp() : void {
 		$this->schema = $this->loadTestSchema();
 		$this->storage = $this->createStorage();
 	}

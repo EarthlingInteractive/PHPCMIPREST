@@ -49,7 +49,7 @@ class EarthIT_CMIPREST_RequestParser_FancyRequestParser implements EarthIT_CMIPR
 		return ($modifiers ? ';'.implode(';',$modifiers) : '').$remainder;
 	}
 	
-	public function parse( $requestMethod, $path, $queryString, Nife_Blob $content=null ) {
+	public function parse( $requestMethod, $path, $queryString, Nife_Blob|EarthIT_JSON_PrettyPrintedJSONBlob $content=null ) {
 		if( preg_match('#^;([^/]*)(.*)#', $path, $bif) ) {
 			$apiModifiers = explode(';', $bif[1]);
 			$pathRemainder = $bif[2];

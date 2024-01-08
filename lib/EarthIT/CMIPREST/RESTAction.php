@@ -3,7 +3,7 @@
 /**
  * Base class for REST actions.
  */
-abstract class EarthIT_CMIPREST_RESTAction implements TOGoS_Action
+abstract class EarthIT_CMIPREST_RESTAction implements EarthIT_CMIPREST_Action
 {
 	/**
 	 * Returns a verb-phrase that describes what is being done
@@ -15,7 +15,7 @@ abstract class EarthIT_CMIPREST_RESTAction implements TOGoS_Action
 	public abstract function getActionDescription();
 	public abstract function getResultAssembler();
 	
-	public function jsonSerialize() {
+	public function jsonSerialize() : mixed {
 		$props = array(
 			'phpClassName' => get_class($this),
 			'resourceClassName' => $this->resourceClass->getName(),

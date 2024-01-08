@@ -26,7 +26,7 @@ class EarthIT_PHPCMIPREST_RESTItemCodecTest extends EarthIT_CMIPREST_TestCase {
 	
 	protected $codec;
 	
-	public function setUp() {
+	public function setUp() : void {
 		$this->codec = EarthIT_CMIPREST_RESTItemCodec::getInstance();
 	}
 	
