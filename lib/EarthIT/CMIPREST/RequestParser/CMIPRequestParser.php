@@ -53,7 +53,7 @@ class EarthIT_CMIPREST_RequestParser_CMIPRequestParser implements EarthIT_CMIPRE
 		return $modVals;
 	}
 	
-	public function parse( $requestMethod, $path, $queryString, Nife_Blob|EarthIT_JSON_PrettyPrintedJSONBlob $content=null ) {
+	public function parse( $requestMethod, $path, $queryString, Nife_Blob|EarthIT_JSON_PrettyPrintedJSONBlob|EarthIT_FileTemplateBlob $content=null ) {
 		if( preg_match('#^ (?P<generalMods> ;[^/]+)? /(?P<collection> [^/;]+) (?:;(?P<collectionMods> [^/]*))? (?:/(?P<instance> [^/]*))? (?:/(?P<property> [^/]*))? $#x', $path, $bif) ) {
 			$generalModSeg    = RPU::m($bif, 'generalMods');
 			$collectionSeg    = RPU::m($bif, 'collection');

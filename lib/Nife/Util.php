@@ -6,7 +6,7 @@
 class Nife_Util
 {
 	public static function blob( $thing ) {
-		if( $thing instanceof Nife_Blob || $thing instanceof EarthIT_JSON_PrettyPrintedJSONBlob ) {
+		if( $thing instanceof Nife_Blob || $thing instanceof EarthIT_JSON_PrettyPrintedJSONBlob || $thing instanceof EarthIT_FileTemplateBlob ) {
 			return $thing;
 		} else if( is_scalar($thing) ) {
 			return new Nife_StringBlob($thing);
@@ -20,7 +20,7 @@ class Nife_Util
 	 * __toString when there is no obviously more straightforward or
 	 * efficient way.
 	 */
-	public static function stringifyBlob( Nife_Blob|EarthIT_JSON_PrettyPrintedJSONBlob $blob ) {
+	public static function stringifyBlob( Nife_Blob|EarthIT_JSON_PrettyPrintedJSONBlob|EarthIT_FileTemplateBlob $blob ) {
 		$c = new Nife_Collector();
 		$blob->writeTo($c);
 		return (string)$c;
@@ -84,7 +84,7 @@ class Nife_Util
 	public static function output( $thing ) {
 		if( is_scalar($thing) ) {
 			echo $thing;
-		} else if( $item instanceof Nife_Blob || $thing instanceof EarthIT_JSON_PrettyPrintedJSONBlob ) {
+		} else if( $item instanceof Nife_Blob || $thing instanceof EarthIT_JSON_PrettyPrintedJSONBlob || $item instanceof EarthIT_FileTemplateBlob ) {
 			$thing->writeTo( array('Nife_Util','output') );
 		} else {
 			throw new Exception("Don't know how to write ".var_export($thing,true)." to output.");

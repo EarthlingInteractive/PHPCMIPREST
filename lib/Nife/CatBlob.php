@@ -15,7 +15,7 @@ class Nife_CatBlob implements Nife_Blob
 	}
 	
 	protected static function itemLength($item) {
-		if( $item instanceof Nife_Blob || $item instanceof EarthIT_JSON_PrettyPrintedJSONBlob ) return $item->getLength();
+		if( $item instanceof Nife_Blob || $item instanceof EarthIT_JSON_PrettyPrintedJSONBlob || $item instanceof EarthIT_FileTemplateBlob ) return $item->getLength();
 		if( is_string($item) ) return strlen($item);
 		return null;
 	}
@@ -32,7 +32,7 @@ class Nife_CatBlob implements Nife_Blob
 	
 	public function writeTo( $callback ) {
 		foreach( $this->items as $item ) {
-			if( $item instanceof Nife_Blob || $item instanceof EarthIT_JSON_PrettyPrintedJSONBlob ) $item->writeTo($callback);
+			if( $item instanceof Nife_Blob || $item instanceof EarthIT_JSON_PrettyPrintedJSONBlob || $item instanceof EarthIT_FileTemplateBlob) $item->writeTo($callback);
 			else call_user_func( $callback, (string)$item );
 		}
 	}

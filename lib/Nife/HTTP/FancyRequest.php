@@ -111,7 +111,7 @@ implements Nife_HTTP_Request
 		return isset($params[$k]) ? $params[$k] : $default;
 	}
 	
-	protected function setContent( Nife_Blob|EarthIT_JSON_PrettyPrintedJSONBlob $content=null ) {
+	protected function setContent( Nife_Blob|EarthIT_JSON_PrettyPrintedJSONBlob|EarthIT_FileTemplateBlob $content=null ) {
 		$content = Nife_Util::blob($content);
 		$this->contentFuture = new Nife_Futures_Constant($content);
 	}
