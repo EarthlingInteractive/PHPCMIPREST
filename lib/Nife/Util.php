@@ -84,7 +84,7 @@ class Nife_Util
 	public static function output( $thing ) {
 		if( is_scalar($thing) ) {
 			echo $thing;
-		} else if( $item instanceof Nife_Blob || $thing instanceof EarthIT_JSON_PrettyPrintedJSONBlob || $item instanceof EarthIT_FileTemplateBlob ) {
+		} else if( $thing instanceof Nife_Blob || $thing instanceof EarthIT_JSON_PrettyPrintedJSONBlob || $thing instanceof EarthIT_FileTemplateBlob ) {
 			$thing->writeTo( array('Nife_Util','output') );
 		} else {
 			throw new Exception("Don't know how to write ".var_export($thing,true)." to output.");
