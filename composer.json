@@ -4,7 +4,7 @@
 	"license": "MIT",
 	"require": {
 		"php": ">=8.1",
-		"earthit/php-common": "^2.0.1",
+		"earthit/php-common": "^2.0.2",
 		"earthit/schema": "^2.0.1",
 		"earthit/storage": "^2.0.1",
 		"earthit/dbc": "^2.0.1"

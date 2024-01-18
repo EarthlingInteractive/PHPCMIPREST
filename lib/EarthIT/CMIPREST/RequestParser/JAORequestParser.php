@@ -19,7 +19,7 @@ class EarthIT_CMIPREST_RequestParser_JAORequestParser implements EarthIT_CMIPRES
 		$this->schemaObjectNamer = $schemaObjectNamer;
 	}
 	
-	public function parse( $method, $path, $queryString, Nife_Blob|EarthIT_JSON_PrettyPrintedJSONBlob $content=null ) {
+	public function parse( $method, $path, $queryString, Nife_Blob|EarthIT_JSON_PrettyPrintedJSONBlob|EarthIT_FileTemplateBlob $content=null ) {
 		if( !preg_match( '#^/([^/]+)(?:/(.*))?$#', $path, $bif ) ) {
 			throw new Exception("Failed to parse '$path' as a JAO request");
 		}
