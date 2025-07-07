@@ -10,7 +10,7 @@ implements EarthIT_CMIPREST_RequestParser
 		$this->subRequestParser = $subRequestParser;
 	}
 	
-	public function parse( $requestMethod, $path, $queryString, Nife_Blob|EarthIT_JSON_PrettyPrintedJSONBlob|EarthIT_FileTemplateBlob $content=null ) {
+	public function parse( $requestMethod, $path, $queryString, Nife_Blob|EarthIT_JSON_PrettyPrintedJSONBlob|EarthIT_FileTemplateBlob|null $content=null ) {
 		if( $path == '' and ($requestMethod == 'DO-COMPOUND-ACTION' or $requestMethod == 'POST') ) {
 			return array(
 				'method' => 'DO-COMPOUND-ACTION',

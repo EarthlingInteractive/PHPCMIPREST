@@ -17,7 +17,7 @@ class EarthIT_CMIPREST_RequestInvalid extends Exception
 {
 	protected $errorDetails;
 	
-	public function __construct( $errorDetails, $code=0, Throwable $previous=null ) {
+	public function __construct( $errorDetails, $code=0, Throwable|null $previous=null ) {
 		if( is_string($errorDetails) ) {
 			$message = $errorDetails;
 			$errorDetails = array('message'=>$errorDetails);

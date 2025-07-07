@@ -13,38 +13,38 @@
  * - hasMoreResults
  * - nextResult
  */
-interface Nife_DBC_QueryResult implements Iterator
+interface Nife_DBC_QueryResult extends Iterator
 {
 	/**
 	 * @return int for queries that modifiy the DB, the number of affected rows,
 	 *   0 for pure selects, and null if unknown.
 	 */
 	public function getAffectedRowCount();
-	
+
 	/**
 	 * If new records with auto-incremented IDs were added, this should return
 	 * the latest such ID.  Null should be returned otherwise.
 	 */
 	public function getLastInsertId();
-	
+
 	/**
 	 * @returns array an array of associative arrays, one per result row;
 	 *   should return an empty array if the query returned no rows.
 	 */
 	public function getRows(); 
-	
+
 	/**
 	 * Return true if there is another result set after this one
 	 * (which can be gotten with nextResult()
 	 */
 	public function hasMoreResults();
-	
+
 	/**
 	 * For queries that return multiple result sets, this should return
 	 * the next one.  It should return null if this is the last result
 	 * set.
 	 */
 	public function nextResult();
-	
+
 	// __destruct should release any resources still held, e.g. buffered rows
 }

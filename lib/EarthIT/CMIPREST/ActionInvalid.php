@@ -24,7 +24,7 @@ class EarthIT_CMIPREST_ActionInvalid extends Exception
 	 *     "notes": [ "Your thingamabob is in an invalid state and you should probably reset your database" ]
 	 *   }
 	 */
-	public function __construct( EarthIT_CMIPREST_Action $action, array $errorDetails=array(), $code=0, Exception $previous=null ) {
+	public function __construct( EarthIT_CMIPREST_Action $action, array $errorDetails=array(), $code=0, Exception|null $previous=null ) {
 		$this->action = $action;
 		$this->errorDetails = $errorDetails;
 		$message = isset($errorDetails['message']) ? $errorDetails['message'] : 'Action Invalid';

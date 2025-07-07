@@ -14,7 +14,7 @@ interface Nife_Future
 	 * Wait for the future's value to become available and return it.
 	 */
 	public function get();
-	
+
 	// __invoke should be an alias for get()
 	// __toString should not wait for or use the value
 	// __destruct should cancel any work being done

@@ -8,11 +8,11 @@ extends EarthIT_Schema_SimpleAbstractSchemaObjectNamer
 		$this->next = $next;
 	}
 	
-	public function formatName( $name, $plural=false, EarthIT_Schema $s=null ) {
+	public function formatName( $name, $plural=false, EarthIT_Schema|null $s=null ) {
 		$this->next->formatName( $name, $plural, $s );
 	}
 	
-	public function name( EarthIT_Schema_SchemaObject $obj, $plural=false, EarthIT_Schema $s=null ) {
+	public function name( EarthIT_Schema_SchemaObject $obj, $plural=false, EarthIT_Schema|null $s=null ) {
 		if( $plural and ($pluralName = $obj->getFirstPropertyValue(EarthIT_CMIPREST_NS::COLLECTION_NAME)) !== null ) {
 			return $this->next->formatName($pluralName, false, $s);
 		} else {

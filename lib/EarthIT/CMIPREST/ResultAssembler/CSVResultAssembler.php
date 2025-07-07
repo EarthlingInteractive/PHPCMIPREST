@@ -12,7 +12,7 @@ class EarthIT_CMIPREST_ResultAssembler_CSVResultAssembler implements EarthIT_CMI
 	 * @param EarthIT_CMIPREST_Action $action the action that was invoked to get this result
 	 * @param mixed $ctx some value representing the context in which the action was done
 	 */
-	public function assembleResult( EarthIT_CMIPREST_ActionResult $result, EarthIT_CMIPREST_Action $action=null, $ctx=null ) {
+	public function assembleResult( EarthIT_CMIPREST_ActionResult $result, EarthIT_CMIPREST_Action|null $action=null, $ctx=null ) {
 		$rootRc = $result->getRootResourceClass();
 		$columnHeaders = array();
 		foreach( $rootRc->getFields() as $fn=>$field ) {
@@ -35,14 +35,14 @@ class EarthIT_CMIPREST_ResultAssembler_CSVResultAssembler implements EarthIT_CMI
 	 * Take the result returned by assembleResult and encode
 	 * it as a Nife_HTTP_Response
 	 */
-	public function assembledResultToHttpResponse( $assembled, EarthIT_CMIPREST_Action $action=null, $ctx=null ) {
+	public function assembledResultToHttpResponse( $assembled, EarthIT_CMIPREST_Action|null $action=null, $ctx=null ) {
 		return Nife_Util::httpResponse(200, new EarthIT_CMIPREST_CSVBlob($assembled), array('content-type'=>'text/csv'));
 	}
 	
 	/**
 	 * Encode the fact that an exception occurred as a Nife_HTTP_Response.
 	 */
-	public function exceptionToHttpResponse( Exception $e, EarthIT_CMIPREST_Action $action=null, $ctx=null ) {
+	public function exceptionToHttpResponse( Exception $e, EarthIT_CMIPREST_Action|null $action=null, $ctx=null ) {
 		$userIsAuthenticated = ($ctx and method_exists($ctx,'userIsAuthenticated')) ? $ctx->userIsAuthenticated() : false;
 		return EarthIT_CMIPREST_Util::exceptionalNormalJsonHttpResponse($e, $userIsAuthenticated, array(
 			EarthIT_CMIPREST_Util::BASIC_WWW_AUTHENTICATION_REALM => $this->basicWwwAuthenticationRealm

@@ -2,6 +2,10 @@
 
 class Nife_StringBlob implements Nife_Blob
 {
+	/**
+	 * @var string the string data of the blob
+	 */
+	protected $data;
 	public function __construct( $data ) {
 		$this->data = (string)$data;
 	}

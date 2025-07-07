@@ -42,7 +42,7 @@ class EarthIT_CMIPREST_RESTActions
 		return self::compoundAction( $itemPosts, $expression );
 	}
 	
-	public static function compoundAction( array $subActions, EarthIT_CMIPREST_Expression $resultExpression=null ) {
+	public static function compoundAction( array $subActions, EarthIT_CMIPREST_Expression|null $resultExpression=null ) {
 		if( $resultExpression !== null ) {
 			$rasm = new EarthIT_CMIPREST_ResultAssembler_ExpressionBasedCompoundResultAssembler( $resultExpression );
 		} else {

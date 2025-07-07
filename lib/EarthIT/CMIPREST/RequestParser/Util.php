@@ -50,7 +50,7 @@ class EarthIT_CMIPREST_RequestParser_Util
 		return implode('&',$p);
 	}
 	
-	public static function parseJsonContent( Nife_Blob|EarthIT_JSON_PrettyPrintedJSONBlob|EarthIT_FileTemplateBlob $content=null ) {
+	public static function parseJsonContent( Nife_Blob|EarthIT_JSON_PrettyPrintedJSONBlob|EarthIT_FileTemplateBlob|null $content=null ) {
 		if( $content === null ) return null;
 		if( $content->getLength() === 0 ) return null;
 		if( $content instanceof Nife_Blob || $content instanceof EarthIT_JSON_PrettyPrintedJSONBlob || $content instanceof EarthIT_FileTemplateBlob ) return $content->getValue();
